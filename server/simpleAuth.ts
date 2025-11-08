@@ -51,6 +51,16 @@ export async function simpleLogin(req: Request, res: Response) {
 
     const employee = result[0];
 
+    // Ensure User record exists for this employee
+    const { upsertUser } = await import("./db");
+    await upsertUser({
+      openId: `employee-${employee.employeeId}`,
+      name: employee.name,
+      email: employee.email,
+      role: "employee",
+      lastSignedIn: new Date(),
+    });
+
     // JWTトークンを生成
     const user: SimpleAuthUser = {
       id: employee.id,
