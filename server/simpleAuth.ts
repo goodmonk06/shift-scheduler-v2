@@ -52,14 +52,27 @@ export async function simpleLogin(req: Request, res: Response) {
     const employee = result[0];
 
     // Ensure User record exists for this employee
-    const { upsertUser } = await import("./db");
+    const { upsertUser, getUserByOpenId } = await import("./db");
+    const openId = `employee-${employee.employeeId}`;
+
     await upsertUser({
-      openId: `employee-${employee.employeeId}`,
+      openId,
       name: employee.name,
       email: employee.email,
       role: "user", // Use "user" role (employee is not in the enum)
       lastSignedIn: new Date(),
     });
+
+    // Get the User record to link with Employee
+    const userRecord = await getUserByOpenId(openId);
+
+    // Update Employee's userId if not already set
+    if (userRecord && employee.userId !== userRecord.id) {
+      await db
+        .update(employees)
+        .set({ userId: userRecord.id })
+        .where(eq(employees.id, employee.id));
+    }
 
     // JWTトークンを生成
     const user: SimpleAuthUser = {
