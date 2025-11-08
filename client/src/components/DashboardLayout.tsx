@@ -89,7 +89,9 @@ export default function DashboardLayout({
           </div>
           <Button
             onClick={() => {
-              window.location.href = getLoginUrl();
+              const loginUrl = getLoginUrl();
+              // If OAuth is not configured, use simple auth (employee login)
+              window.location.href = loginUrl || "/employee/login";
             }}
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
