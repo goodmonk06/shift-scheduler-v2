@@ -59,6 +59,12 @@ async function startServer() {
     serveStatic(app);
   }
 
+  // Error handler - must be after all routes
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("[ERROR]", err);
+    res.status(500).json({ error: "Internal server error", message: err.message });
+  });
+
   const port = parseInt(process.env.PORT || "3000");
   const host = "0.0.0.0"; // Listen on all network interfaces for Railway
 
