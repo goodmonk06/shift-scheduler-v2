@@ -31,7 +31,7 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+# PORT is set by Railway automatically, do not override it
 
 # Copy only production dependencies and built files
 COPY --from=deps /app/node_modules ./node_modules

@@ -86,8 +86,13 @@ async function startServer() {
   const port = parseInt(process.env.PORT || "3000");
   const host = "0.0.0.0"; // Listen on all network interfaces for Railway
 
+  console.log(`[ENV] PORT=${process.env.PORT}`);
+  console.log(`[ENV] NODE_ENV=${process.env.NODE_ENV}`);
+  console.log(`[ENV] All env vars:`, Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('KEY')));
+
   server.listen(port, host, () => {
     console.log(`Server running on http://${host}:${port}/`);
+    console.log(`[Server] Listening on port ${port}, expecting Railway to connect`);
   });
 }
 
