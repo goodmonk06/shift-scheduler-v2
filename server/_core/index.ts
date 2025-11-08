@@ -60,9 +60,10 @@ async function startServer() {
   }
 
   const port = parseInt(process.env.PORT || "3000");
+  const host = "0.0.0.0"; // Listen on all network interfaces for Railway
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  server.listen(port, host, () => {
+    console.log(`Server running on http://${host}:${port}/`);
   });
 }
 
