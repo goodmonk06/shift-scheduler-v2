@@ -33,7 +33,7 @@ export async function createContext(
           openId: `employee-${simpleAuthUser.employeeId}`,
           name: simpleAuthUser.name,
           email: simpleAuthUser.email,
-          role: "user", // Use "user" role (employee is not in the enum)
+          role: simpleAuthUser.role === "admin" ? "admin" : "user", // Preserve admin role
           loginMethod: null,
           createdAt: new Date(),
           updatedAt: new Date(),

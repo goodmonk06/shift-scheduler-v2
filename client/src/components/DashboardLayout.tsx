@@ -27,7 +27,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
+const adminMenuItems = [
   { icon: LayoutDashboard, label: "ダッシュボード", path: "/" },
   { icon: Users, label: "職員管理", path: "/employees" },
   { icon: Briefcase, label: "役職グループ", path: "/position-groups" },
@@ -40,6 +40,12 @@ const menuItems = [
   { icon: BarChart3, label: "統計・レポート", path: "/reports" },
   { icon: Bell, label: "緊急通知", path: "/emergency-notifications" },
   { icon: Archive, label: "アーカイブ", path: "/archives" },
+];
+
+const employeeMenuItems = [
+  { icon: LayoutDashboard, label: "マイシフト", path: "/" },
+  { icon: FileText, label: "希望休申請", path: "/leave-requests" },
+  { icon: FileText, label: "シフト変更提案", path: "/change-proposals" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -133,8 +139,11 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+
+  // Choose menu items based on user role
+  const menuItems = user?.role === "admin" ? adminMenuItems : employeeMenuItems;
+  const activeMenuItem = menuItems.find(item => item.path === location);
 
   useEffect(() => {
     if (isCollapsed) {

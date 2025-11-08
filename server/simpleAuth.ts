@@ -13,7 +13,7 @@ export interface SimpleAuthUser {
   employeeId: string;
   name: string;
   email: string | null;
-  role: "employee";
+  role: "employee" | "admin";
 }
 
 /**
@@ -51,6 +51,9 @@ export async function simpleLogin(req: Request, res: Response) {
 
     const employee = result[0];
 
+    // Determine if this is an admin employee (starts with "ADMIN")
+    const isAdmin = employee.employeeId.toUpperCase().startsWith("ADMIN");
+
     // Ensure User record exists for this employee
     const { upsertUser, getUserByOpenId } = await import("./db");
     const openId = `employee-${employee.employeeId}`;
@@ -59,28 +62,32 @@ export async function simpleLogin(req: Request, res: Response) {
       openId,
       name: employee.name,
       email: employee.email,
-      role: "user", // Use "user" role (employee is not in the enum)
+      role: isAdmin ? "admin" : "user", // Admin employees get admin role
       lastSignedIn: new Date(),
     });
 
     // Get the User record to link with Employee
     const userRecord = await getUserByOpenId(openId);
 
+    if (!userRecord) {
+      return res.status(500).json({ error: "ユーザーレコードの作成に失敗しました" });
+    }
+
     // Update Employee's userId if not already set
-    if (userRecord && employee.userId !== userRecord.id) {
+    if (employee.userId !== userRecord.id) {
       await db
         .update(employees)
         .set({ userId: userRecord.id })
         .where(eq(employees.id, employee.id));
     }
 
-    // JWTトークンを生成
+    // JWTトークンを生成 - IMPORTANT: Use User.id, not Employee.id
     const user: SimpleAuthUser = {
-      id: employee.id,
+      id: userRecord.id, // Use User.id instead of Employee.id
       employeeId: employee.employeeId,
       name: employee.name,
       email: employee.email,
-      role: "employee",
+      role: isAdmin ? "admin" : "employee",
     };
 
     const token = jwt.sign(user, SIMPLE_AUTH_SECRET, {

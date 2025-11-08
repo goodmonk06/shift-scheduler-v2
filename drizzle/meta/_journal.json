@@ -57,6 +57,13 @@
       "when": 1762566034272,
       "tag": "0007_cooing_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1762586510445,
+      "tag": "0008_harsh_komodo",
+      "breakpoints": true
     }
   ]
 }
