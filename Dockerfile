@@ -24,13 +24,7 @@ RUN echo "=== Starting build ===" && \
 
 # Verify build output
 RUN echo "=== Build output structure ===" && \
-    ls -laR dist/ && \
-    echo "=== Checking for index.html ===" && \
-    find dist/ -name "index.html" -ls && \
-    echo "=== Checking for JS files ===" && \
-    find dist/ -name "*.js" -ls && \
-    echo "=== Checking for CSS files ===" && \
-    find dist/ -name "*.css" -ls
+    ls -laR dist/
 
 # Production stage
 FROM base AS runner

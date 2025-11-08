@@ -64,9 +64,20 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  app.use("*", (_req, res, next) => {
     const indexPath = path.resolve(distPath, "index.html");
     console.log(`[Static] Serving index.html from: ${indexPath}`);
-    res.sendFile(indexPath);
+
+    if (!fs.existsSync(indexPath)) {
+      console.error(`[Static] ERROR: index.html not found at ${indexPath}`);
+      return next(new Error(`index.html not found at ${indexPath}`));
+    }
+
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error(`[Static] ERROR sending file:`, err);
+        next(err);
+      }
+    });
   });
 }
