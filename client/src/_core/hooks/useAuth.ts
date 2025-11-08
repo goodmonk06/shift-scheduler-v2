@@ -38,6 +38,9 @@ export function useAuth(options?: UseAuthOptions) {
     } finally {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
+      // Clear localStorage and redirect to employee login
+      localStorage.removeItem("manus-runtime-user-info");
+      window.location.href = "/employee/login";
     }
   }, [logoutMutation, utils]);
 
