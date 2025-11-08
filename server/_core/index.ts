@@ -10,6 +10,17 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { simpleLogin, simpleLogout, getSimpleAuthUser } from "../simpleAuth";
 
+// Handle unhandled promise rejections
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[FATAL] Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+// Handle uncaught exceptions
+process.on("uncaughtException", (error) => {
+  console.error("[FATAL] Uncaught Exception:", error);
+  process.exit(1);
+});
+
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();

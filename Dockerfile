@@ -18,13 +18,19 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build both client and server
-RUN pnpm build
+RUN echo "=== Starting build ===" && \
+    pnpm build && \
+    echo "=== Build completed ==="
 
 # Verify build output
 RUN echo "=== Build output structure ===" && \
-    ls -la dist/ && \
-    echo "=== dist/public contents ===" && \
-    ls -la dist/public/ || echo "dist/public does not exist!"
+    ls -laR dist/ && \
+    echo "=== Checking for index.html ===" && \
+    find dist/ -name "index.html" -ls && \
+    echo "=== Checking for JS files ===" && \
+    find dist/ -name "*.js" -ls && \
+    echo "=== Checking for CSS files ===" && \
+    find dist/ -name "*.css" -ls
 
 # Production stage
 FROM base AS runner
