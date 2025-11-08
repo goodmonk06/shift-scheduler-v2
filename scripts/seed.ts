@@ -41,28 +41,19 @@ async function main() {
   ]);
   console.log("✅ Created work time slots");
 
-  // テスト職員の作成
+  // テスト職員の作成（管理者は職員ではないので含めない）
   await db.insert(schema.employees).values([
-    {
-      employeeId: "ADMIN001",
-      name: "管理者",
-      email: "admin@example.com",
-      positionGroupId: positionGroup1Id,
-      isActive: true,
-    },
     {
       employeeId: "EMP00001",
       name: "テスト太郎",
       email: "test@example.com",
       positionGroupId: positionGroup1Id,
-      isActive: true,
     },
     {
       employeeId: "EMP00002",
       name: "テスト花子",
       email: "test2@example.com",
       positionGroupId: positionGroup2Id,
-      isActive: true,
     },
   ]);
   console.log("✅ Created test employees");

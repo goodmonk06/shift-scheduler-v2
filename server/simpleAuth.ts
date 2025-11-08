@@ -13,7 +13,7 @@ export interface SimpleAuthUser {
   employeeId: string;
   name: string;
   email: string | null;
-  role: "employee" | "admin";
+  role: "employee";
 }
 
 /**
@@ -51,9 +51,6 @@ export async function simpleLogin(req: Request, res: Response) {
 
     const employee = result[0];
 
-    // Determine if this is an admin employee (starts with "ADMIN")
-    const isAdmin = employee.employeeId.toUpperCase().startsWith("ADMIN");
-
     // Ensure User record exists for this employee
     const { upsertUser, getUserByOpenId } = await import("./db");
     const openId = `employee-${employee.employeeId}`;
@@ -62,7 +59,7 @@ export async function simpleLogin(req: Request, res: Response) {
       openId,
       name: employee.name,
       email: employee.email,
-      role: isAdmin ? "admin" : "user", // Admin employees get admin role
+      role: "user", // Employees always have "user" role
       lastSignedIn: new Date(),
     });
 
@@ -87,7 +84,7 @@ export async function simpleLogin(req: Request, res: Response) {
       employeeId: employee.employeeId,
       name: employee.name,
       email: employee.email,
-      role: isAdmin ? "admin" : "employee",
+      role: "employee",
     };
 
     const token = jwt.sign(user, SIMPLE_AUTH_SECRET, {

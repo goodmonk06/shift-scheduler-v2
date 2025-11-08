@@ -23,6 +23,7 @@ import EmployeeLeaveRequests from "./pages/employee/EmployeeLeaveRequests";
 import EmployeeChangeProposals from "./pages/employee/EmployeeChangeProposals";
 import EmployeeProfile from "./pages/admin/EmployeeProfile";
 import EmployeeLogin from "./pages/employee/EmployeeLogin";
+import AdminLogin from "./pages/admin/AdminLogin";
 
 function Router() {
   return (
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/reports" component={Reports} />
       <Route path="/emergency-notifications" component={EmergencyNotifications} />
       <Route path="/archives" component={Archives} />
+      <Route path="/admin/login" component={AdminLogin} />
       <Route path="/employee/login" component={EmployeeLogin} />
       <Route path="/employee" component={EmployeeHome} />
       <Route path="/employee/shifts" component={EmployeeShifts} />

@@ -15,8 +15,16 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       // Clear OAuth session cookie
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      // Clear Simple Auth cookie
+      // Clear Simple Auth cookie (employee)
       ctx.res.clearCookie("simple_auth_token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: -1,
+        path: "/",
+      });
+      // Clear Admin Auth cookie
+      ctx.res.clearCookie("admin_auth_token", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",

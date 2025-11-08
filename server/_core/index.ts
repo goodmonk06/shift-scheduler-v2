@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { simpleLogin, simpleLogout, getSimpleAuthUser } from "../simpleAuth";
+import { adminLogin, adminLogout, getAdminAuthUser } from "../adminAuth";
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (reason, promise) => {
@@ -62,6 +63,11 @@ async function startServer() {
   app.post("/api/simple-auth/login", simpleLogin);
   app.post("/api/simple-auth/logout", simpleLogout);
   app.get("/api/simple-auth/me", getSimpleAuthUser);
+
+  // Admin auth routes
+  app.post("/api/admin-auth/login", adminLogin);
+  app.post("/api/admin-auth/logout", adminLogout);
+  app.get("/api/admin-auth/me", getAdminAuthUser);
   // tRPC API
   app.use(
     "/api/trpc",

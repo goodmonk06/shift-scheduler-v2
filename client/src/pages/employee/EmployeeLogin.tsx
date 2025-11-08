@@ -77,6 +77,11 @@ export default function EmployeeLogin() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "ログイン中..." : "ログイン"}
             </Button>
+            <div className="text-center text-sm text-muted-foreground mt-4">
+              <a href="/admin/login" className="text-blue-600 hover:underline">
+                管理者ログインはこちら
+              </a>
+            </div>
           </form>
         </CardContent>
       </Card>
