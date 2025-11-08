@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, date, employeeId, timeSlotId, status, generatedBy FROM shiftDetails WHERE shiftId = 1 AND generatedBy = 'ai' LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4VC8uge3RQ9miAE.e2e9d56c0bca --database D6Za279RcByuaKBWSbx3WZ --execute SELECT id, date, employeeId, timeSlotId, status, generatedBy FROM shiftDetails WHERE shiftId = 1 AND generatedBy = 'ai' LIMIT 3;",
+  "rows": [
+    {
+      "id": "60001",
+      "date": "2024-06-01",
+      "employeeId": "4",
+      "timeSlotId": "4",
+      "status": "working",
+      "generatedBy": "ai"
+    },
+    {
+      "id": "60002",
+      "date": "2024-06-01",
+      "employeeId": "5",
+      "timeSlotId": "1",
+      "status": "working",
+      "generatedBy": "ai"
+    },
+    {
+      "id": "60003",
+      "date": "2024-06-01",
+      "employeeId": "6",
+      "timeSlotId": "2",
+      "status": "working",
+      "generatedBy": "ai"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tdate\temployeeId\ttimeSlotId\tstatus\tgeneratedBy\n60001\t2024-06-01\t4\t4\tworking\tai\n60002\t2024-06-01\t5\t1\tworking\tai\n60003\t2024-06-01\t6\t2\tworking\tai\n",
+  "stderr": "",
+  "execution_time_ms": 1527
+}

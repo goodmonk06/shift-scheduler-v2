@@ -1,0 +1,281 @@
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } from "drizzle-orm/mysql-core";
+
+/**
+ * Core user table backing auth flow.
+ */
+export const users = mysqlTable("users", {
+  id: int("id").autoincrement().primaryKey(),
+  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  name: text("name"),
+  email: varchar("email", { length: 320 }),
+  loginMethod: varchar("loginMethod", { length: 64 }),
+  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+});
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+
+/**
+ * Position Groups (役職グループ)
+ * Examples: 社長、施設長、正社員、パート
+ */
+export const positionGroups = mysqlTable("positionGroups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  employmentType: mysqlEnum("employmentType", ["fulltime", "parttime"]).notNull(),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PositionGroup = typeof positionGroups.$inferSelect;
+export type InsertPositionGroup = typeof positionGroups.$inferInsert;
+
+/**
+ * Employees (職員)
+ */
+export const employees = mysqlTable("employees", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"), // FK to users - nullable for employees without login
+  employeeId: varchar("employeeId", { length: 50 }).notNull().unique().$defaultFn(() => ''), // 職員ID（簡易ログイン用、自動生成）
+  name: varchar("name", { length: 100 }).notNull(),
+  email: varchar("email", { length: 320 }), // メールアドレス（簡易ログイン用）
+  positionGroupId: int("positionGroupId").notNull(), // FK to positionGroups
+  skillLevel: int("skillLevel").default(100).notNull(), // 50-100 (0.5人前〜1人前を0.5-1で50-100で表現)
+  canWorkNightShift: boolean("canWorkNightShift").default(false).notNull(),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = typeof employees.$inferInsert;
+
+/**
+ * Work Time Slots (勤務時間枠)
+ * Examples: 早番、遅番、夜勤
+ */
+export const workTimeSlots = mysqlTable("workTimeSlots", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 50 }).notNull(),
+  displayLabel: varchar("displayLabel", { length: 10 }).notNull(),
+  startTime: varchar("startTime", { length: 5 }).notNull(), // HH:MM format
+  endTime: varchar("endTime", { length: 5 }).notNull(), // HH:MM format
+  isNightShift: boolean("isNightShift").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorkTimeSlot = typeof workTimeSlots.$inferSelect;
+export type InsertWorkTimeSlot = typeof workTimeSlots.$inferInsert;
+
+/**
+ * Employee Constraints (職員の勤務制約)
+ */
+export const employeeConstraints = mysqlTable("employeeConstraints", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(), // FK to employees
+  constraintType: mysqlEnum("constraintType", [
+    "available_day",
+    "available_time",
+    "max_consecutive_days",
+    "max_weekly_hours"
+  ]).notNull(),
+  dayOfWeek: int("dayOfWeek"), // 0-6 (0=Sunday), nullable
+  startTime: varchar("startTime", { length: 5 }), // HH:MM format, nullable
+  endTime: varchar("endTime", { length: 5 }), // HH:MM format, nullable
+  maxValue: int("maxValue"), // nullable
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmployeeConstraint = typeof employeeConstraints.$inferSelect;
+export type InsertEmployeeConstraint = typeof employeeConstraints.$inferInsert;
+
+/**
+ * Workplace Rules (職場ルール)
+ */
+export const workplaceRules = mysqlTable("workplaceRules", {
+  id: int("id").autoincrement().primaryKey(),
+  ruleType: mysqlEnum("ruleType", [
+    "min_rest_days",
+    "night_shift_quota",
+    "post_night_shift_rest",
+    "required_staff_pattern"
+  ]).notNull(),
+  employmentType: mysqlEnum("employmentType", ["fulltime", "parttime", "all"]).notNull(),
+  ruleValue: json("ruleValue").notNull(), // JSON format for flexible rule storage
+  description: text("description"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorkplaceRule = typeof workplaceRules.$inferSelect;
+export type InsertWorkplaceRule = typeof workplaceRules.$inferInsert;
+
+/**
+ * Required Staffing (必要人数設定)
+ * 24時間×7曜日のマトリクス
+ */
+export const requiredStaffing = mysqlTable("requiredStaffing", {
+  id: int("id").autoincrement().primaryKey(),
+  dayOfWeek: int("dayOfWeek").notNull(), // 0-6 (0=Sunday)
+  hour: int("hour").notNull(), // 0-23
+  requiredCount: int("requiredCount").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RequiredStaffing = typeof requiredStaffing.$inferSelect;
+export type InsertRequiredStaffing = typeof requiredStaffing.$inferInsert;
+
+/**
+ * Shifts (シフト)
+ */
+export const shifts = mysqlTable("shifts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // FK to users - creator
+  year: int("year").notNull(),
+  month: int("month").notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  status: mysqlEnum("status", ["draft", "tentative", "confirmed", "archived"]).default("draft").notNull(),
+  generatedBy: mysqlEnum("generatedBy", ["manual", "ai"]).default("manual").notNull(),
+  tentativePublishedAt: timestamp("tentativePublishedAt"),
+  confirmedAt: timestamp("confirmedAt"),
+  isArchived: boolean("isArchived").default(false).notNull(),
+  archivedAt: timestamp("archivedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Shift = typeof shifts.$inferSelect;
+export type InsertShift = typeof shifts.$inferInsert;
+
+/**
+ * Shift Details (シフト詳細)
+ */
+export const shiftDetails = mysqlTable("shiftDetails", {
+  id: int("id").autoincrement().primaryKey(),
+  shiftId: int("shiftId").notNull(), // FK to shifts
+  employeeId: int("employeeId").notNull(), // FK to employees
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
+  status: mysqlEnum("status", ["working", "off", "requested_off", "emergency_off"]).notNull(),
+  timeSlotId: int("timeSlotId"), // FK to workTimeSlots, nullable
+  generatedBy: mysqlEnum("generatedBy", ["manual", "ai"]).default("manual").notNull(), // Track if shift was manually created or AI-generated
+  isChanged: boolean("isChanged").default(false).notNull(),
+  previousTimeSlotId: int("previousTimeSlotId"), // FK to workTimeSlots, nullable
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ShiftDetail = typeof shiftDetails.$inferSelect;
+export type InsertShiftDetail = typeof shiftDetails.$inferInsert;
+
+/**
+ * Leave Requests (希望休申請)
+ */
+export const leaveRequests = mysqlTable("leaveRequests", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(), // FK to employees
+  shiftId: int("shiftId"), // FK to shifts (nullable - not assigned until shift is created)
+  requestDate: varchar("requestDate", { length: 10 }), // YYYY-MM-DD format (deprecated, use startDate/endDate)
+  startDate: varchar("startDate", { length: 10 }).notNull(), // YYYY-MM-DD format
+  endDate: varchar("endDate", { length: 10 }).notNull(), // YYYY-MM-DD format
+  reason: text("reason"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LeaveRequest = typeof leaveRequests.$inferSelect;
+export type InsertLeaveRequest = typeof leaveRequests.$inferInsert;
+
+/**
+ * Change Proposals (変更提案)
+ */
+export const changeProposals = mysqlTable("changeProposals", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(), // FK to employees
+  shiftId: int("shiftId").notNull(), // FK to shifts
+  proposalDate: varchar("proposalDate", { length: 10 }).notNull(), // YYYY-MM-DD format
+  currentTimeSlotId: int("currentTimeSlotId"), // FK to workTimeSlots, nullable
+  proposedTimeSlotId: int("proposedTimeSlotId"), // FK to workTimeSlots, nullable
+  reason: text("reason").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ChangeProposal = typeof changeProposals.$inferSelect;
+export type InsertChangeProposal = typeof changeProposals.$inferInsert;
+
+/**
+ * Emergency Notifications (緊急通知)
+ */
+export const emergencyNotifications = mysqlTable("emergencyNotifications", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  isUrgent: boolean("isUrgent").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type EmergencyNotification = typeof emergencyNotifications.$inferSelect;
+export type InsertEmergencyNotification = typeof emergencyNotifications.$inferInsert;
+
+/**
+ * Shift Feedback (シフト評価)
+ */
+export const shiftFeedback = mysqlTable("shiftFeedback", {
+  id: int("id").autoincrement().primaryKey(),
+  shiftId: int("shiftId").notNull(), // FK to shifts
+  feedbackDate: varchar("feedbackDate", { length: 10 }).notNull(), // YYYY-MM-DD format
+  rating: int("rating").notNull(), // 1-5
+  comment: text("comment"),
+  wasUnderstaffed: boolean("wasUnderstaffed").default(false).notNull(),
+  createdBy: int("createdBy").notNull(), // FK to users
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ShiftFeedback = typeof shiftFeedback.$inferSelect;
+export type InsertShiftFeedback = typeof shiftFeedback.$inferInsert;
+
+/**
+ * Audit Logs (監査ログ)
+ * 誰がいつ何をしたかを記録
+ */
+export const auditLogs = mysqlTable("auditLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  actorUserId: int("actorUserId").notNull(), // FK to users
+  action: varchar("action", { length: 64 }).notNull(), // e.g. 'SHIFT_CONFIRMED', 'PROPOSAL_APPROVED'
+  target: varchar("target", { length: 128 }).notNull(), // e.g. 'shift:2025-11'
+  meta: json("meta"), // Additional metadata
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
+ * Push Subscriptions (Web Push購読情報)
+ * スマホ・ブラウザへのプッシュ通知用
+ */
+export const pushSubscriptions = mysqlTable("pushSubscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // FK to users
+  endpoint: varchar("endpoint", { length: 512 }).notNull(),
+  p256dh: varchar("p256dh", { length: 255 }).notNull(),
+  auth: varchar("auth", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;

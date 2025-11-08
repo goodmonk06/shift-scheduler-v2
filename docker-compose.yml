@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # MySQL database for local development
+  db:
+    image: mysql:8.0
+    container_name: shift-scheduler-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: shifts
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Application (optional - for full Docker stack)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shift-scheduler-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://app:app@db:3306/shifts
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "sleep 10 && node dist/index.js"
+
+volumes:
+  mysql_data:

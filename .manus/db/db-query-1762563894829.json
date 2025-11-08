@@ -1,0 +1,35 @@
+{
+  "query": "SELECT date, generatedBy, employeeId FROM shiftDetails WHERE shiftId = 1 ORDER BY generatedBy, id LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4VC8uge3RQ9miAE.e2e9d56c0bca --database D6Za279RcByuaKBWSbx3WZ --execute SELECT date, generatedBy, employeeId FROM shiftDetails WHERE shiftId = 1 ORDER BY generatedBy, id LIMIT 5;",
+  "rows": [
+    {
+      "date": "2025-11-04",
+      "generatedBy": "manual",
+      "employeeId": "1"
+    },
+    {
+      "date": "2025-11-06",
+      "generatedBy": "manual",
+      "employeeId": "7"
+    },
+    {
+      "date": "2024-06-01",
+      "generatedBy": "ai",
+      "employeeId": "4"
+    },
+    {
+      "date": "2024-06-01",
+      "generatedBy": "ai",
+      "employeeId": "5"
+    },
+    {
+      "date": "2024-06-01",
+      "generatedBy": "ai",
+      "employeeId": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "date\tgeneratedBy\temployeeId\n2025-11-04\tmanual\t1\n2025-11-06\tmanual\t7\n2024-06-01\tai\t4\n2024-06-01\tai\t5\n2024-06-01\tai\t6\n",
+  "stderr": "",
+  "execution_time_ms": 1510
+}

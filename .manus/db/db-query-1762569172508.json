@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO employees (employeeId, name, email, positionGroupId, skillLevel, canWorkNightShift, createdAt, updatedAt) VALUES ('test-employee-00002', 'テスト職員2', 'test2@example.com', 1, 100, false, NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4VC8uge3RQ9miAE.e2e9d56c0bca --database D6Za279RcByuaKBWSbx3WZ --execute INSERT INTO employees (employeeId, name, email, positionGroupId, skillLevel, canWorkNightShift, createdAt, updatedAt) VALUES ('test-employee-00002', 'テスト職員2', 'test2@example.com', 1, 100, false, NOW(), NOW());",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1623
+}

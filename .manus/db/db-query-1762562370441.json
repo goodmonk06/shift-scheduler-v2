@@ -1,0 +1,90 @@
+{
+  "query": "SELECT * FROM requiredStaffing LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4VC8uge3RQ9miAE.e2e9d56c0bca --database D6Za279RcByuaKBWSbx3WZ --execute SELECT * FROM requiredStaffing LIMIT 10;",
+  "rows": [
+    {
+      "id": "1",
+      "dayOfWeek": "0",
+      "hour": "0",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "2",
+      "dayOfWeek": "0",
+      "hour": "1",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "3",
+      "dayOfWeek": "0",
+      "hour": "2",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "4",
+      "dayOfWeek": "0",
+      "hour": "3",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "5",
+      "dayOfWeek": "0",
+      "hour": "4",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "6",
+      "dayOfWeek": "0",
+      "hour": "5",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "7",
+      "dayOfWeek": "0",
+      "hour": "6",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "8",
+      "dayOfWeek": "0",
+      "hour": "7",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "9",
+      "dayOfWeek": "0",
+      "hour": "8",
+      "requiredCount": "2",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    },
+    {
+      "id": "10",
+      "dayOfWeek": "0",
+      "hour": "9",
+      "requiredCount": "3",
+      "createdAt": "2025-11-05 15:50:24",
+      "updatedAt": "2025-11-05 15:50:24"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tdayOfWeek\thour\trequiredCount\tcreatedAt\tupdatedAt\n1\t0\t0\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n2\t0\t1\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n3\t0\t2\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n4\t0\t3\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n5\t0\t4\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n6\t0\t5\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n7\t0\t6\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n8\t0\t7\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n9\t0\t8\t2\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n10\t0\t9\t3\t2025-11-05 15:50:24\t2025-11-05 15:50:24\n",
+  "stderr": "",
+  "execution_time_ms": 2109
+}

@@ -1,0 +1,25 @@
+{
+  "query": "SELECT * FROM shifts ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4VC8uge3RQ9miAE.e2e9d56c0bca --database D6Za279RcByuaKBWSbx3WZ --execute SELECT * FROM shifts ORDER BY id;",
+  "rows": [
+    {
+      "id": "30001",
+      "userId": "1",
+      "year": "2025",
+      "month": "11",
+      "name": "2025年11月シフト",
+      "status": "draft",
+      "generatedBy": "ai",
+      "tentativePublishedAt": "NULL",
+      "confirmedAt": "NULL",
+      "createdAt": "2025-11-08 01:01:21",
+      "updatedAt": "2025-11-08 01:02:50",
+      "isArchived": "0",
+      "archivedAt": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tyear\tmonth\tname\tstatus\tgeneratedBy\ttentativePublishedAt\tconfirmedAt\tcreatedAt\tupdatedAt\tisArchived\tarchivedAt\n30001\t1\t2025\t11\t2025年11月シフト\tdraft\tai\tNULL\tNULL\t2025-11-08 01:01:21\t2025-11-08 01:02:50\t0\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1559
+}

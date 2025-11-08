@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762353651048,
+      "tag": "0000_great_silver_samurai",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762353774164,
+      "tag": "0001_stiff_eddie_brock",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762356528599,
+      "tag": "0002_lyrical_wild_child",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1762356911939,
+      "tag": "0003_polite_la_nuit",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1762357285401,
+      "tag": "0004_ambitious_joystick",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1762362328470,
+      "tag": "0005_outstanding_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1762363071998,
+      "tag": "0006_far_lester",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1762566034272,
+      "tag": "0007_cooing_darkstar",
+      "breakpoints": true
+    }
+  ]
+}
