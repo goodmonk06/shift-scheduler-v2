@@ -20,6 +20,12 @@ COPY . .
 # Build both client and server
 RUN pnpm build
 
+# Verify build output
+RUN echo "=== Build output structure ===" && \
+    ls -la dist/ && \
+    echo "=== dist/public contents ===" && \
+    ls -la dist/public/ || echo "dist/public does not exist!"
+
 # Production stage
 FROM base AS runner
 WORKDIR /app
@@ -32,6 +38,15 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/drizzle ./drizzle
+
+# Verify runtime file structure
+RUN echo "=== Runtime file structure ===" && \
+    pwd && \
+    ls -la && \
+    echo "=== dist/ contents ===" && \
+    ls -la dist/ && \
+    echo "=== dist/public/ contents ===" && \
+    ls -la dist/public/ || echo "dist/public does not exist!"
 
 EXPOSE 3000
 
