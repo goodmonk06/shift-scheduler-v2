@@ -33,10 +33,10 @@ export async function createContext(
           openId: `employee-${simpleAuthUser.employeeId}`,
           name: simpleAuthUser.name,
           email: simpleAuthUser.email,
-          role: "employee" as any, // Cast to match User type
+          role: "user", // Use "user" role (employee is not in the enum)
           loginMethod: null,
           createdAt: new Date(),
-          updatedAt: null,
+          updatedAt: new Date(),
           lastSignedIn: new Date(),
         };
       }

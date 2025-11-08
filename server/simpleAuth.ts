@@ -57,7 +57,7 @@ export async function simpleLogin(req: Request, res: Response) {
       openId: `employee-${employee.employeeId}`,
       name: employee.name,
       email: employee.email,
-      role: "employee",
+      role: "user", // Use "user" role (employee is not in the enum)
       lastSignedIn: new Date(),
     });
 
