@@ -53,8 +53,8 @@ export async function adminLogin(req: Request, res: Response) {
     // JWTトークンを生成
     const adminUser: AdminAuthUser = {
       id: user.id,
-      name: user.name,
-      email: user.email,
+      name: user.name || '管理者',
+      email: user.email || '',
       role: "admin",
     };
 

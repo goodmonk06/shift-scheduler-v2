@@ -42,23 +42,118 @@ async function main() {
   console.log("✅ Created work time slots");
 
   // テスト職員の作成（管理者は職員ではないので含めない）
-  await db.insert(schema.employees).values([
+  const employees = await db.insert(schema.employees).values([
     {
       employeeId: "EMP00001",
-      name: "テスト太郎",
-      email: "test@example.com",
+      name: "山田太郎",
+      email: "yamada@example.com",
       positionGroupId: positionGroup1Id,
+      skillLevel: 100,
+      canWorkNightShift: true,
+      displayOrder: 1,
     },
     {
       employeeId: "EMP00002",
-      name: "テスト花子",
-      email: "test2@example.com",
+      name: "佐藤花子",
+      email: "sato@example.com",
+      positionGroupId: positionGroup1Id,
+      skillLevel: 100,
+      canWorkNightShift: true,
+      displayOrder: 2,
+    },
+    {
+      employeeId: "EMP00003",
+      name: "田中次郎",
+      email: "tanaka@example.com",
       positionGroupId: positionGroup2Id,
+      skillLevel: 50,
+      canWorkNightShift: false,
+      displayOrder: 3,
+    },
+  ]).$returningId();
+  console.log("✅ Created test employees (3 users)");
+
+  const employeeIds = employees.map(e => e.id);
+
+  // 管理者ユーザーの取得（shifts作成用）
+  const adminUser = await db.select().from(schema.users).where(
+    (user) => user.email === "admin@example.com"
+  ).limit(1);
+  const adminUserId = adminUser[0]?.id || 1;
+
+  // テストシフトの作成
+  const testShifts = await db.insert(schema.shifts).values([
+    {
+      userId: adminUserId,
+      year: 2025,
+      month: 12,
+      name: "2025年12月シフト（下書き）",
+      status: "draft",
+      generatedBy: "manual",
+      leaveRequestDeadline: new Date("2025-11-25T23:59:59"),
+    },
+    {
+      userId: adminUserId,
+      year: 2025,
+      month: 11,
+      name: "2025年11月シフト（仮確定）",
+      status: "tentative",
+      generatedBy: "ai",
+      leaveRequestDeadline: new Date("2025-10-25T23:59:59"),
+      additionalRequestDeadline: new Date("2025-11-15T23:59:59"),
+      tentativePublishedAt: new Date("2025-11-01T10:00:00"),
+    },
+  ]).$returningId();
+  console.log("✅ Created test shifts (2 shifts)");
+
+  const draftShiftId = testShifts[0].id;
+  const tentativeShiftId = testShifts[1].id;
+
+  // テスト希望休の作成
+  await db.insert(schema.leaveRequests).values([
+    {
+      employeeId: employeeIds[0], // 山田太郎
+      shiftId: tentativeShiftId,
+      requestDate: "2025-11-10",
+      startDate: "2025-11-10",
+      endDate: "2025-11-10",
+      leaveType: "休",
+      status: "pending",
+      isAdditional: false,
+    },
+    {
+      employeeId: employeeIds[1], // 佐藤花子
+      shiftId: tentativeShiftId,
+      requestDate: "2025-11-15",
+      startDate: "2025-11-15",
+      endDate: "2025-11-15",
+      leaveType: "時間指定",
+      startTime: "14:00",
+      endTime: "18:00",
+      status: "approved",
+      isAdditional: true,
+    },
+    {
+      employeeId: employeeIds[2], // 田中次郎
+      shiftId: draftShiftId,
+      requestDate: "2025-12-20",
+      startDate: "2025-12-20",
+      endDate: "2025-12-22",
+      leaveType: "有休",
+      status: "pending",
+      isAdditional: false,
     },
   ]);
-  console.log("✅ Created test employees");
+  console.log("✅ Created test leave requests (3 requests)");
 
-  console.log("✅ Seeding complete!");
+  console.log("\n🎉 Seeding complete!");
+  console.log("\n📝 Test Data Summary:");
+  console.log("  - Admin user: admin@example.com");
+  console.log("  - Employees: EMP00001 (山田太郎), EMP00002 (佐藤花子), EMP00003 (田中次郎)");
+  console.log("  - Position groups: 正社員, パート");
+  console.log("  - Work time slots: 早番, 遅番, 夜勤");
+  console.log("  - Shifts: 2025年11月 (tentative), 2025年12月 (draft)");
+  console.log("  - Leave requests: 3 requests");
 }
 
 main()

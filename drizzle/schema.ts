@@ -142,8 +142,12 @@ export const shifts = mysqlTable("shifts", {
   year: int("year").notNull(),
   month: int("month").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
-  status: mysqlEnum("status", ["draft", "tentative", "confirmed", "archived"]).default("draft").notNull(),
+  status: mysqlEnum("status", ["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).default("draft").notNull(), // 6段階ステータス
   generatedBy: mysqlEnum("generatedBy", ["manual", "ai"]).default("manual").notNull(),
+  leaveRequestDeadline: timestamp("leaveRequestDeadline"), // 通常の希望休締め切り
+  additionalRequestDeadline: timestamp("additionalRequestDeadline"), // 追加希望締め切り（仮確定後）
+  aiPrompt: text("aiPrompt"), // AI生成時のプロンプト（デバッグ用）
+  aiResponse: json("aiResponse"), // AI生成時のレスポンス（デバッグ用）
   tentativePublishedAt: timestamp("tentativePublishedAt"),
   confirmedAt: timestamp("confirmedAt"),
   isArchived: boolean("isArchived").default(false).notNull(),
@@ -185,6 +189,10 @@ export const leaveRequests = mysqlTable("leaveRequests", {
   requestDate: varchar("requestDate", { length: 10 }), // YYYY-MM-DD format (deprecated, use startDate/endDate)
   startDate: varchar("startDate", { length: 10 }).notNull(), // YYYY-MM-DD format
   endDate: varchar("endDate", { length: 10 }).notNull(), // YYYY-MM-DD format
+  leaveType: mysqlEnum("leaveType", ["休", "有休", "時間指定"]).default("休").notNull(), // 休みの種類
+  startTime: varchar("startTime", { length: 5 }), // HH:MM format, nullable
+  endTime: varchar("endTime", { length: 5 }), // HH:MM format, nullable
+  isAdditional: boolean("isAdditional").default(false).notNull(), // 追加希望休（仮確定後）
   reason: text("reason"),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   submittedAt: timestamp("submittedAt").defaultNow().notNull(),
@@ -279,3 +287,41 @@ export const pushSubscriptions = mysqlTable("pushSubscriptions", {
 
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;
 export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
+
+/**
+ * Shift Actuals (シフト実績)
+ * 勤務後の実績報告を管理
+ */
+export const shiftActuals = mysqlTable("shiftActuals", {
+  id: int("id").autoincrement().primaryKey(),
+  shiftDetailId: int("shiftDetailId").notNull(), // FK to shiftDetails
+  actualStartTime: varchar("actualStartTime", { length: 5 }), // HH:MM format
+  actualEndTime: varchar("actualEndTime", { length: 5 }), // HH:MM format
+  note: text("note"), // 備考（残業理由など）
+  reportedAt: timestamp("reportedAt").defaultNow().notNull(),
+  approvedAt: timestamp("approvedAt"),
+  approvedBy: int("approvedBy"), // FK to users
+  status: mysqlEnum("status", ["reported", "approved", "rejected"]).default("reported").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ShiftActual = typeof shiftActuals.$inferSelect;
+export type InsertShiftActual = typeof shiftActuals.$inferInsert;
+
+/**
+ * Staff Settings (職員設定)
+ * 職員のカスタマイズ設定（テーマ、ヘッダー画像、フォントサイズ）
+ */
+export const staffSettings = mysqlTable("staffSettings", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull().unique(), // FK to employees
+  theme: mysqlEnum("theme", ["default", "sakura", "ocean", "forest", "sunset"]).default("default").notNull(),
+  headerImage: mysqlEnum("headerImage", ["flowers", "nature", "ocean", "sakura", "mountain"]).default("flowers").notNull(),
+  fontSize: mysqlEnum("fontSize", ["small", "medium", "large", "xlarge"]).default("medium").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StaffSettings = typeof staffSettings.$inferSelect;
+export type InsertStaffSettings = typeof staffSettings.$inferInsert;

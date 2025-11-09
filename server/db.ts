@@ -426,6 +426,12 @@ export async function updateLeaveRequest(id: number, data: Partial<InsertLeaveRe
   return await db.update(leaveRequests).set(data).where(eq(leaveRequests.id, id));
 }
 
+export async function deleteLeaveRequest(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.delete(leaveRequests).where(eq(leaveRequests.id, id));
+}
+
 // ========== Change Proposals ==========
 
 export async function getAllChangeProposals() {

@@ -253,8 +253,10 @@ export const appRouter = router({
         year: z.number(),
         month: z.number(),
         name: z.string(),
-        status: z.enum(["draft", "tentative", "confirmed", "archived"]).optional(),
+        status: z.enum(["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
         generatedBy: z.enum(["manual", "ai"]).optional(),
+        leaveRequestDeadline: z.date().optional(),
+        additionalRequestDeadline: z.date().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         return await db.createShift({
@@ -265,13 +267,19 @@ export const appRouter = router({
     archive: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        return await db.updateShift(input.id, { isArchived: true, archivedAt: new Date() });
+        return await db.updateShift(input.id, {
+          status: "archived",
+          isArchived: true,
+          archivedAt: new Date()
+        });
       }),
     update: protectedProcedure
       .input(z.object({
         id: z.number(),
         name: z.string().optional(),
-        status: z.enum(["draft", "tentative", "confirmed", "archived"]).optional(),
+        status: z.enum(["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
+        leaveRequestDeadline: z.date().optional(),
+        additionalRequestDeadline: z.date().optional(),
         tentativePublishedAt: z.date().optional(),
         confirmedAt: z.date().optional(),
       }))
@@ -283,6 +291,27 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         return await db.deleteShift(input.id);
+      }),
+    publishTentative: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        additionalRequestDeadline: z.date().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, additionalRequestDeadline } = input;
+        return await db.updateShift(id, {
+          status: "tentative",
+          tentativePublishedAt: new Date(),
+          additionalRequestDeadline,
+        });
+      }),
+    confirm: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.updateShift(input.id, {
+          status: "confirmed",
+          confirmedAt: new Date(),
+        });
       }),
     generateAI: protectedProcedure
       .input(z.object({ shiftId: z.number() }))
@@ -301,13 +330,13 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const shift = await db.getShiftById(input.shiftId);
         if (!shift) throw new Error("Shift not found");
-        
+
         const pdfBuffer = await generateShiftPDF({
           shiftId: input.shiftId,
           year: shift.year,
           month: shift.month,
         });
-        
+
         // Base64エンコードして返す
         return {
           pdf: pdfBuffer.toString('base64'),
@@ -380,10 +409,14 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({
         employeeId: z.number(),
-        shiftId: z.number(),
+        shiftId: z.number().optional(),
         requestDate: z.string().optional(), // deprecated
         startDate: z.string(),
         endDate: z.string(),
+        leaveType: z.enum(["休", "有休", "時間指定"]).optional(),
+        startTime: z.string().optional(), // HH:MM format
+        endTime: z.string().optional(), // HH:MM format
+        isAdditional: z.boolean().optional(), // 追加希望休（仮確定後）
         reason: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
@@ -395,11 +428,22 @@ export const appRouter = router({
     update: protectedProcedure
       .input(z.object({
         id: z.number(),
-        status: z.enum(["pending", "approved", "rejected"]),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        leaveType: z.enum(["休", "有休", "時間指定"]).optional(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        reason: z.string().optional(),
+        status: z.enum(["pending", "approved", "rejected"]).optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         return await db.updateLeaveRequest(id, data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteLeaveRequest(input.id);
       }),
     approve: protectedProcedure
       .input(z.object({ id: z.number() }))

@@ -45,11 +45,11 @@ export async function generateShiftWithAI(params: GenerateShiftParams): Promise<
     console.log("[AIシフト生成] 既存AIシフト削除完了");
 
     // 3. 第1段階: パートのシフトを生成（柔軟な勤務条件を優先）
-    const partTimeShifts = await generatePartTimeShifts(context, []);
-    console.log("[AIシフト生成] パートシフト生成完了:", partTimeShifts.length);
+    const partTimeResult = await generatePartTimeShifts(context, [], shiftId);
+    console.log("[AIシフト生成] パートシフト生成完了:", partTimeResult.shifts.length);
 
     // 4. 第1段階のシフトをDBに保存（generatedBy: "ai"を追加）
-    for (const shift of partTimeShifts) {
+    for (const shift of partTimeResult.shifts) {
       await db.createShiftDetail({
         ...shift,
         shiftId,
@@ -60,11 +60,11 @@ export async function generateShiftWithAI(params: GenerateShiftParams): Promise<
     console.log("[AIシフト生成] パートシフトDB保存完了");
 
     // 5. 第2段階: 正社員のシフトを生成（パートの配置を考慮して不足分を補う）
-    const fullTimeShifts = await generateFullTimeShifts(context, partTimeShifts);
-    console.log("[AIシフト生成] 正社員シフト生成完了:", fullTimeShifts.length);
+    const fullTimeResult = await generateFullTimeShifts(context, partTimeResult.shifts, shiftId);
+    console.log("[AIシフト生成] 正社員シフト生成完了:", fullTimeResult.shifts.length);
 
     // 6. 第2段階のシフトをDBに保存（generatedBy: "ai"を追加）
-    for (const shift of fullTimeShifts) {
+    for (const shift of fullTimeResult.shifts) {
       await db.createShiftDetail({
         ...shift,
         shiftId,
@@ -74,11 +74,27 @@ export async function generateShiftWithAI(params: GenerateShiftParams): Promise<
     }
     console.log("[AIシフト生成] 正社員シフトDB保存完了");
 
-    // 7. シフトのステータスを更新
+    // 7. シフトのステータスを更新し、AIプロンプトとレスポンスを保存
+    const combinedPrompt = `=== パートシフト生成プロンプト ===\n${partTimeResult.prompt}\n\n=== 正社員シフト生成プロンプト ===\n${fullTimeResult.prompt}`;
+    const combinedResponse = {
+      partTime: {
+        usage: partTimeResult.response.usage,
+        model: partTimeResult.response.model,
+        shiftsCount: partTimeResult.shifts.length,
+      },
+      fullTime: {
+        usage: fullTimeResult.response.usage,
+        model: fullTimeResult.response.model,
+        shiftsCount: fullTimeResult.shifts.length,
+      },
+    };
+
     await db.updateShift(shiftId, {
       generatedBy: "ai",
+      aiPrompt: combinedPrompt,
+      aiResponse: combinedResponse,
     });
-    console.log("[AIシフト生成] 完了");
+    console.log("[AIシフト生成] 完了（プロンプト/レスポンス保存済み）");
   } catch (error: any) {
     console.error("[AIシフト生成] エラー:", error);
     throw error;
@@ -131,8 +147,9 @@ async function collectContext(
  */
 async function generatePartTimeShifts(
   context: ShiftGenerationContext,
-  existingShifts: any[]
-): Promise<any[]> {
+  existingShifts: any[],
+  shiftId: number
+): Promise<{ shifts: any[], prompt: string, response: any }> {
   const prompt = buildPartTimePrompt(context, existingShifts);
 
   const response = await invokeLLM({
@@ -178,7 +195,12 @@ async function generatePartTimeShifts(
   const content = response.choices[0].message.content;
   const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
   const result = JSON.parse(contentStr || "{}");
-  return result.shifts || [];
+
+  return {
+    shifts: result.shifts || [],
+    prompt,
+    response: response,
+  };
 }
 
 /**
@@ -186,8 +208,9 @@ async function generatePartTimeShifts(
  */
 async function generateFullTimeShifts(
   context: ShiftGenerationContext,
-  partTimeShifts: any[]
-): Promise<any[]> {
+  partTimeShifts: any[],
+  shiftId: number
+): Promise<{ shifts: any[], prompt: string, response: any }> {
   const prompt = buildFullTimePrompt(context, partTimeShifts);
 
   const response = await invokeLLM({
@@ -233,7 +256,12 @@ async function generateFullTimeShifts(
   const content = response.choices[0].message.content;
   const contentStr = typeof content === 'string' ? content : JSON.stringify(content);
   const result = JSON.parse(contentStr || "{}");
-  return result.shifts || [];
+
+  return {
+    shifts: result.shifts || [],
+    prompt,
+    response: response,
+  };
 }
 
 /**
