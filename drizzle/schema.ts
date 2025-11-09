@@ -39,7 +39,7 @@ export type InsertPositionGroup = typeof positionGroups.$inferInsert;
  */
 export const employees = mysqlTable("employees", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId"), // FK to users - nullable for employees without login
+  userId: int("userId").references(() => users.id, { onDelete: 'set null' }), // FK to users - nullable for employees without login
   employeeId: varchar("employeeId", { length: 50 }).notNull().unique().$defaultFn(() => ''), // 職員ID（簡易ログイン用、自動生成）
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }), // メールアドレス（簡易ログイン用）
@@ -138,7 +138,7 @@ export type InsertRequiredStaffing = typeof requiredStaffing.$inferInsert;
  */
 export const shifts = mysqlTable("shifts", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(), // FK to users - creator
+  userId: int("userId").notNull().references(() => users.id, { onDelete: 'restrict' }), // FK to users - creator
   year: int("year").notNull(),
   month: int("month").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
@@ -249,7 +249,7 @@ export const shiftFeedback = mysqlTable("shiftFeedback", {
   rating: int("rating").notNull(), // 1-5
   comment: text("comment"),
   wasUnderstaffed: boolean("wasUnderstaffed").default(false).notNull(),
-  createdBy: int("createdBy").notNull(), // FK to users
+  createdBy: int("createdBy").notNull().references(() => users.id, { onDelete: 'cascade' }), // FK to users
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -262,7 +262,7 @@ export type InsertShiftFeedback = typeof shiftFeedback.$inferInsert;
  */
 export const auditLogs = mysqlTable("auditLogs", {
   id: int("id").autoincrement().primaryKey(),
-  actorUserId: int("actorUserId").notNull(), // FK to users
+  actorUserId: int("actorUserId").notNull().references(() => users.id, { onDelete: 'cascade' }), // FK to users
   action: varchar("action", { length: 64 }).notNull(), // e.g. 'SHIFT_CONFIRMED', 'PROPOSAL_APPROVED'
   target: varchar("target", { length: 128 }).notNull(), // e.g. 'shift:2025-11'
   meta: json("meta"), // Additional metadata
@@ -278,7 +278,7 @@ export type InsertAuditLog = typeof auditLogs.$inferInsert;
  */
 export const pushSubscriptions = mysqlTable("pushSubscriptions", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(), // FK to users
+  userId: int("userId").notNull().references(() => users.id, { onDelete: 'cascade' }), // FK to users
   endpoint: varchar("endpoint", { length: 512 }).notNull(),
   p256dh: varchar("p256dh", { length: 255 }).notNull(),
   auth: varchar("auth", { length: 255 }).notNull(),
@@ -294,13 +294,13 @@ export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
  */
 export const shiftActuals = mysqlTable("shiftActuals", {
   id: int("id").autoincrement().primaryKey(),
-  shiftDetailId: int("shiftDetailId").notNull(), // FK to shiftDetails
+  shiftDetailId: int("shiftDetailId").notNull().references(() => shiftDetails.id, { onDelete: 'cascade' }), // FK to shiftDetails
   actualStartTime: varchar("actualStartTime", { length: 5 }), // HH:MM format
   actualEndTime: varchar("actualEndTime", { length: 5 }), // HH:MM format
   note: text("note"), // 備考（残業理由など）
   reportedAt: timestamp("reportedAt").defaultNow().notNull(),
   approvedAt: timestamp("approvedAt"),
-  approvedBy: int("approvedBy"), // FK to users
+  approvedBy: int("approvedBy").references(() => users.id, { onDelete: 'set null' }), // FK to users
   status: mysqlEnum("status", ["reported", "approved", "rejected"]).default("reported").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -315,7 +315,7 @@ export type InsertShiftActual = typeof shiftActuals.$inferInsert;
  */
 export const staffSettings = mysqlTable("staffSettings", {
   id: int("id").autoincrement().primaryKey(),
-  employeeId: int("employeeId").notNull().unique(), // FK to employees
+  employeeId: int("employeeId").notNull().unique().references(() => employees.id, { onDelete: 'cascade' }), // FK to employees
   theme: mysqlEnum("theme", ["default", "sakura", "ocean", "forest", "sunset"]).default("default").notNull(),
   headerImage: mysqlEnum("headerImage", ["flowers", "nature", "ocean", "sakura", "mountain"]).default("flowers").notNull(),
   fontSize: mysqlEnum("fontSize", ["small", "medium", "large", "xlarge"]).default("medium").notNull(),

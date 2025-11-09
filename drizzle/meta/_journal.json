@@ -85,6 +85,13 @@
       "when": 1762688556290,
       "tag": "0011_illegal_harpoon",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1762701331707,
+      "tag": "0012_wandering_frog_thor",
+      "breakpoints": true
     }
   ]
 }
