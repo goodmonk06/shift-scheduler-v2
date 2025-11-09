@@ -3,7 +3,7 @@ import {
   Home, Users, Sparkles, Calendar,
   Briefcase, Clock, Settings, UsersRound,
   FileText, Bell, Archive, BarChart3,
-  RefreshCw, LogOut
+  RefreshCw, LogOut, Server
 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { ScrollArea } from "./components/ui/scroll-area";
@@ -22,11 +22,12 @@ import { ChangeProposals } from "./components/ChangeProposals";
 import { Statistics } from "./components/Statistics";
 import { EmergencyNotifications } from "./components/EmergencyNotifications";
 import { ShiftArchive } from "./components/ShiftArchive";
+import { ServerManagement } from "./components/ServerManagement";
 
-type AdminView = 
-  | "dashboard" 
-  | "employees" 
-  | "position-groups" 
+type AdminView =
+  | "dashboard"
+  | "employees"
+  | "position-groups"
   | "work-time-slots"
   | "workplace-rules"
   | "required-staffing"
@@ -36,7 +37,8 @@ type AdminView =
   | "change-proposals"
   | "statistics"
   | "emergency-notifications"
-  | "archive";
+  | "archive"
+  | "server-management";
 
 interface AdminAppProps {
   hasNotifications?: boolean;
@@ -94,6 +96,8 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
         return <EmergencyNotifications />;
       case "archive":
         return <ShiftArchive />;
+      case "server-management":
+        return <ServerManagement />;
       default:
         return <AdminDashboard onNavigate={handleViewChange} />;
     }
@@ -236,6 +240,14 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
               >
                 <Archive className="w-4 h-4 mr-2" />
                 アーカイブ
+              </Button>
+              <Button
+                variant={adminView === "server-management" ? "default" : "ghost"}
+                className="w-full justify-start rounded-xl"
+                onClick={() => handleViewChange("server-management")}
+              >
+                <Server className="w-4 h-4 mr-2" />
+                サーバー管理
               </Button>
             </div>
 
