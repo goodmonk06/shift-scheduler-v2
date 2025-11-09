@@ -31,7 +31,7 @@ export async function generateShiftWithAI(params: GenerateShiftParams): Promise<
   try {
     console.log("[AIシフト生成] 開始:", { shiftId, year, month });
 
-    // 1. コンテキスト情報を収集
+    // 1. コンテキスト情報を収集（トランザクション外で実行）
     const context = await collectContext(shiftId, year, month);
     console.log("[AIシフト生成] コンテキスト収集完了:", {
       employees: context.employees.length,
@@ -40,63 +40,77 @@ export async function generateShiftWithAI(params: GenerateShiftParams): Promise<
       workTimeSlots: context.workTimeSlots.length,
     });
 
-    // 2. AI生成のシフト詳細のみを削除（手動作成分は保持）
-    await db.deleteAIGeneratedShiftDetails(shiftId);
-    console.log("[AIシフト生成] 既存AIシフト削除完了");
-
-    // 3. 第1段階: パートのシフトを生成（柔軟な勤務条件を優先）
+    // 2. 第1段階: パートのシフトをAI生成（トランザクション外で実行）
     const partTimeResult = await generatePartTimeShifts(context, [], shiftId);
     console.log("[AIシフト生成] パートシフト生成完了:", partTimeResult.shifts.length);
 
-    // 4. 第1段階のシフトをDBに保存（generatedBy: "ai"を追加）
-    for (const shift of partTimeResult.shifts) {
-      await db.createShiftDetail({
-        ...shift,
-        shiftId,
-        status: "working" as const,
-        generatedBy: "ai" as const,
-      });
-    }
-    console.log("[AIシフト生成] パートシフトDB保存完了");
-
-    // 5. 第2段階: 正社員のシフトを生成（パートの配置を考慮して不足分を補う）
+    // 3. 第2段階: 正社員のシフトをAI生成（トランザクション外で実行）
     const fullTimeResult = await generateFullTimeShifts(context, partTimeResult.shifts, shiftId);
     console.log("[AIシフト生成] 正社員シフト生成完了:", fullTimeResult.shifts.length);
 
-    // 6. 第2段階のシフトをDBに保存（generatedBy: "ai"を追加）
-    for (const shift of fullTimeResult.shifts) {
-      await db.createShiftDetail({
-        ...shift,
-        shiftId,
-        status: "working" as const,
-        generatedBy: "ai" as const,
-      });
+    // 4. トランザクション開始: すべてのDB操作を原子的に実行
+    const database = await db.getDb();
+    if (!database) {
+      throw new Error("Database connection not available");
     }
-    console.log("[AIシフト生成] 正社員シフトDB保存完了");
 
-    // 7. シフトのステータスを更新し、AIプロンプトとレスポンスを保存
-    const combinedPrompt = `=== パートシフト生成プロンプト ===\n${partTimeResult.prompt}\n\n=== 正社員シフト生成プロンプト ===\n${fullTimeResult.prompt}`;
-    const combinedResponse = {
-      partTime: {
-        usage: partTimeResult.response.usage,
-        model: partTimeResult.response.model,
-        shiftsCount: partTimeResult.shifts.length,
-      },
-      fullTime: {
-        usage: fullTimeResult.response.usage,
-        model: fullTimeResult.response.model,
-        shiftsCount: fullTimeResult.shifts.length,
-      },
-    };
+    await database.transaction(async (tx) => {
+      console.log("[AIシフト生成] トランザクション開始");
 
-    await db.updateShift(shiftId, {
-      generatedBy: "ai",
-      aiPrompt: combinedPrompt,
-      aiResponse: combinedResponse,
+      // ステップ1: AI生成のシフト詳細のみを削除（手動作成分は保持）
+      await db.deleteAIGeneratedShiftDetailsWithTransaction(tx, shiftId);
+      console.log("[AIシフト生成] 既存AIシフト削除完了");
+
+      // ステップ2: パートシフトをDBに保存（generatedBy: "ai"を追加）
+      for (const shift of partTimeResult.shifts) {
+        await db.createShiftDetailWithTransaction(tx, {
+          ...shift,
+          shiftId,
+          status: "working" as const,
+          generatedBy: "ai" as const,
+        });
+      }
+      console.log("[AIシフト生成] パートシフトDB保存完了");
+
+      // ステップ3: 正社員シフトをDBに保存（generatedBy: "ai"を追加）
+      for (const shift of fullTimeResult.shifts) {
+        await db.createShiftDetailWithTransaction(tx, {
+          ...shift,
+          shiftId,
+          status: "working" as const,
+          generatedBy: "ai" as const,
+        });
+      }
+      console.log("[AIシフト生成] 正社員シフトDB保存完了");
+
+      // ステップ4: シフトのステータスを更新し、AIプロンプトとレスポンスを保存
+      const combinedPrompt = `=== パートシフト生成プロンプト ===\n${partTimeResult.prompt}\n\n=== 正社員シフト生成プロンプト ===\n${fullTimeResult.prompt}`;
+      const combinedResponse = {
+        partTime: {
+          usage: partTimeResult.response.usage,
+          model: partTimeResult.response.model,
+          shiftsCount: partTimeResult.shifts.length,
+        },
+        fullTime: {
+          usage: fullTimeResult.response.usage,
+          model: fullTimeResult.response.model,
+          shiftsCount: fullTimeResult.shifts.length,
+        },
+      };
+
+      await db.updateShiftWithTransaction(tx, shiftId, {
+        generatedBy: "ai",
+        aiPrompt: combinedPrompt,
+        aiResponse: combinedResponse,
+      });
+      console.log("[AIシフト生成] シフト情報更新完了");
+
+      console.log("[AIシフト生成] トランザクションコミット準備完了");
     });
-    console.log("[AIシフト生成] 完了（プロンプト/レスポンス保存済み）");
+
+    console.log("[AIシフト生成] 完了（すべての操作が成功しました）");
   } catch (error: any) {
-    console.error("[AIシフト生成] エラー:", error);
+    console.error("[AIシフト生成] エラー（トランザクションがロールバックされました）:", error);
     throw error;
   }
 }

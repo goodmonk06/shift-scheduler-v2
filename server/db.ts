@@ -500,3 +500,40 @@ export async function createShiftFeedback(data: InsertShiftFeedback) {
   const result = await db.insert(shiftFeedback).values(data);
   return result;
 }
+
+// ========== Transaction Support Functions ==========
+
+/**
+ * トランザクション内でAI生成シフト詳細を削除
+ * @param tx - トランザクションオブジェクト
+ * @param shiftId - シフトID
+ */
+export async function deleteAIGeneratedShiftDetailsWithTransaction(tx: any, shiftId: number) {
+  return await tx.delete(shiftDetails)
+    .where(
+      and(
+        eq(shiftDetails.shiftId, shiftId),
+        eq(shiftDetails.generatedBy, "ai")
+      )
+    );
+}
+
+/**
+ * トランザクション内でシフト詳細を作成
+ * @param tx - トランザクションオブジェクト
+ * @param data - シフト詳細データ
+ */
+export async function createShiftDetailWithTransaction(tx: any, data: InsertShiftDetail) {
+  const result = await tx.insert(shiftDetails).values(data);
+  return result;
+}
+
+/**
+ * トランザクション内でシフト情報を更新
+ * @param tx - トランザクションオブジェクト
+ * @param id - シフトID
+ * @param data - 更新データ
+ */
+export async function updateShiftWithTransaction(tx: any, id: number, data: Partial<InsertShift>) {
+  return await tx.update(shifts).set(data).where(eq(shifts.id, id));
+}

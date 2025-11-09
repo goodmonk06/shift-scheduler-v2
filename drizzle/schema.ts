@@ -43,7 +43,7 @@ export const employees = mysqlTable("employees", {
   employeeId: varchar("employeeId", { length: 50 }).notNull().unique().$defaultFn(() => ''), // 職員ID（簡易ログイン用、自動生成）
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }), // メールアドレス（簡易ログイン用）
-  positionGroupId: int("positionGroupId").notNull(), // FK to positionGroups
+  positionGroupId: int("positionGroupId").notNull().references(() => positionGroups.id, { onDelete: 'restrict' }), // FK to positionGroups
   skillLevel: int("skillLevel").default(100).notNull(), // 50-100 (0.5人前〜1人前を0.5-1で50-100で表現)
   canWorkNightShift: boolean("canWorkNightShift").default(false).notNull(),
   displayOrder: int("displayOrder").default(0).notNull(),
@@ -77,7 +77,7 @@ export type InsertWorkTimeSlot = typeof workTimeSlots.$inferInsert;
  */
 export const employeeConstraints = mysqlTable("employeeConstraints", {
   id: int("id").autoincrement().primaryKey(),
-  employeeId: int("employeeId").notNull(), // FK to employees
+  employeeId: int("employeeId").notNull().references(() => employees.id, { onDelete: 'cascade' }), // FK to employees
   constraintType: mysqlEnum("constraintType", [
     "available_day",
     "available_time",
@@ -164,14 +164,14 @@ export type InsertShift = typeof shifts.$inferInsert;
  */
 export const shiftDetails = mysqlTable("shiftDetails", {
   id: int("id").autoincrement().primaryKey(),
-  shiftId: int("shiftId").notNull(), // FK to shifts
-  employeeId: int("employeeId").notNull(), // FK to employees
+  shiftId: int("shiftId").notNull().references(() => shifts.id, { onDelete: 'cascade' }), // FK to shifts
+  employeeId: int("employeeId").notNull().references(() => employees.id, { onDelete: 'cascade' }), // FK to employees
   date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
   status: mysqlEnum("status", ["working", "off", "requested_off", "emergency_off"]).notNull(),
-  timeSlotId: int("timeSlotId"), // FK to workTimeSlots, nullable
+  timeSlotId: int("timeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
   generatedBy: mysqlEnum("generatedBy", ["manual", "ai"]).default("manual").notNull(), // Track if shift was manually created or AI-generated
   isChanged: boolean("isChanged").default(false).notNull(),
-  previousTimeSlotId: int("previousTimeSlotId"), // FK to workTimeSlots, nullable
+  previousTimeSlotId: int("previousTimeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -184,8 +184,8 @@ export type InsertShiftDetail = typeof shiftDetails.$inferInsert;
  */
 export const leaveRequests = mysqlTable("leaveRequests", {
   id: int("id").autoincrement().primaryKey(),
-  employeeId: int("employeeId").notNull(), // FK to employees
-  shiftId: int("shiftId"), // FK to shifts (nullable - not assigned until shift is created)
+  employeeId: int("employeeId").notNull().references(() => employees.id, { onDelete: 'cascade' }), // FK to employees
+  shiftId: int("shiftId").references(() => shifts.id, { onDelete: 'set null' }), // FK to shifts (nullable - not assigned until shift is created)
   requestDate: varchar("requestDate", { length: 10 }), // YYYY-MM-DD format (deprecated, use startDate/endDate)
   startDate: varchar("startDate", { length: 10 }).notNull(), // YYYY-MM-DD format
   endDate: varchar("endDate", { length: 10 }).notNull(), // YYYY-MM-DD format
@@ -208,11 +208,11 @@ export type InsertLeaveRequest = typeof leaveRequests.$inferInsert;
  */
 export const changeProposals = mysqlTable("changeProposals", {
   id: int("id").autoincrement().primaryKey(),
-  employeeId: int("employeeId").notNull(), // FK to employees
-  shiftId: int("shiftId").notNull(), // FK to shifts
+  employeeId: int("employeeId").notNull().references(() => employees.id, { onDelete: 'cascade' }), // FK to employees
+  shiftId: int("shiftId").notNull().references(() => shifts.id, { onDelete: 'cascade' }), // FK to shifts
   proposalDate: varchar("proposalDate", { length: 10 }).notNull(), // YYYY-MM-DD format
-  currentTimeSlotId: int("currentTimeSlotId"), // FK to workTimeSlots, nullable
-  proposedTimeSlotId: int("proposedTimeSlotId"), // FK to workTimeSlots, nullable
+  currentTimeSlotId: int("currentTimeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
+  proposedTimeSlotId: int("proposedTimeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
   reason: text("reason").notNull(),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   submittedAt: timestamp("submittedAt").defaultNow().notNull(),
@@ -244,7 +244,7 @@ export type InsertEmergencyNotification = typeof emergencyNotifications.$inferIn
  */
 export const shiftFeedback = mysqlTable("shiftFeedback", {
   id: int("id").autoincrement().primaryKey(),
-  shiftId: int("shiftId").notNull(), // FK to shifts
+  shiftId: int("shiftId").notNull().references(() => shifts.id, { onDelete: 'cascade' }), // FK to shifts
   feedbackDate: varchar("feedbackDate", { length: 10 }).notNull(), // YYYY-MM-DD format
   rating: int("rating").notNull(), // 1-5
   comment: text("comment"),

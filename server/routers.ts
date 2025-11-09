@@ -285,6 +285,39 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
+
+        // ステータス変更がある場合、遷移ルールを検証
+        if (data.status) {
+          const currentShift = await db.getShiftById(id);
+          if (!currentShift) {
+            throw new Error("Shift not found");
+          }
+
+          // ステータス遷移ルール
+          const allowedTransitions: Record<string, string[]> = {
+            'draft': ['tentative'],
+            'tentative': ['tentative_revised', 'confirmed'],
+            'tentative_revised': ['confirmed'],
+            'confirmed': ['actual'],
+            'actual': ['archived'],
+            'archived': [], // 変更不可
+          };
+
+          const currentStatus = currentShift.status;
+          const newStatus = data.status;
+
+          // 同じステータスへの更新は許可
+          if (currentStatus !== newStatus) {
+            const allowed = allowedTransitions[currentStatus] || [];
+            if (!allowed.includes(newStatus)) {
+              throw new Error(
+                `Invalid status transition: ${currentStatus} → ${newStatus}. ` +
+                `Allowed transitions from ${currentStatus}: ${allowed.join(', ') || 'none'}`
+              );
+            }
+          }
+        }
+
         return await db.updateShift(id, data);
       }),
     delete: protectedProcedure
@@ -420,6 +453,36 @@ export const appRouter = router({
         reason: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
+        // シフトIDが指定されている場合、締切を検証
+        if (input.shiftId) {
+          const shift = await db.getShiftById(input.shiftId);
+          if (!shift) {
+            throw new Error("Shift not found");
+          }
+
+          // 通常の希望休締切チェック
+          if (!input.isAdditional && shift.leaveRequestDeadline) {
+            const deadline = new Date(shift.leaveRequestDeadline);
+            const now = new Date();
+            if (now > deadline) {
+              throw new Error(
+                `希望休の締切を過ぎています。締切: ${deadline.toLocaleString('ja-JP')}`
+              );
+            }
+          }
+
+          // 追加希望休締切チェック（仮確定後）
+          if (input.isAdditional && shift.additionalRequestDeadline) {
+            const deadline = new Date(shift.additionalRequestDeadline);
+            const now = new Date();
+            if (now > deadline) {
+              throw new Error(
+                `追加希望休の締切を過ぎています。締切: ${deadline.toLocaleString('ja-JP')}`
+              );
+            }
+          }
+        }
+
         return await db.createLeaveRequest({
           ...input,
           requestDate: input.startDate, // fallback for backward compatibility
