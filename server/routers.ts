@@ -532,9 +532,13 @@ export const appRouter = router({
           )
         );
 
+        // 承認後、すぐにシフトに反映
+        const appliedCount = await db.applyApprovedLeaveRequestsToShift(input.shiftId);
+
         return {
           approved: pendingRequests.length,
-          total: allRequests.length
+          total: allRequests.length,
+          appliedToShift: appliedCount,
         };
       }),
     // 希望休提出状況を取得
@@ -641,6 +645,161 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         return await db.deleteEmergencyNotification(input.id);
+      }),
+  }),
+
+  // Employee Notifications (職員向け通知)
+  employeeNotifications: router({
+    getForEmployee: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        limit: z.number().optional().default(10),
+      }))
+      .query(async ({ input }) => {
+        const { employeeId, limit } = input;
+        const notifications: Array<{
+          id: string;
+          type: 'deadline' | 'reminder' | 'approval' | 'rejection' | 'shift_published';
+          title: string;
+          message: string;
+          priority: 'low' | 'medium' | 'high';
+          createdAt: string;
+          relatedShiftId?: number;
+          daysUntilDeadline?: number;
+        }> = [];
+
+        // 現在日時
+        const now = new Date();
+
+        // 1. 希望休の承認・却下通知を取得
+        const allLeaveRequests = await db.getLeaveRequestsByEmployee(employeeId);
+        const recentLeaveRequests = allLeaveRequests
+          .filter(req => {
+            const submittedAt = new Date(req.submittedAt);
+            const daysSinceSubmit = (now.getTime() - submittedAt.getTime()) / (1000 * 60 * 60 * 24);
+            return daysSinceSubmit <= 7; // 過去7日以内
+          })
+          .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+        for (const req of recentLeaveRequests) {
+          if (req.status === 'approved') {
+            notifications.push({
+              id: `leave-approved-${req.id}`,
+              type: 'approval',
+              title: '希望休が承認されました',
+              message: `${req.startDate}${req.startDate !== req.endDate ? `〜${req.endDate}` : ''}の希望休が承認されました。`,
+              priority: 'medium',
+              createdAt: req.submittedAt,
+              relatedShiftId: req.shiftId || undefined,
+            });
+          } else if (req.status === 'rejected') {
+            notifications.push({
+              id: `leave-rejected-${req.id}`,
+              type: 'rejection',
+              title: '希望休が却下されました',
+              message: `${req.startDate}${req.startDate !== req.endDate ? `〜${req.endDate}` : ''}の希望休が却下されました。${req.reason ? `理由: ${req.reason}` : ''}`,
+              priority: 'high',
+              createdAt: req.submittedAt,
+              relatedShiftId: req.shiftId || undefined,
+            });
+          }
+        }
+
+        // 2. 締切が近いシフトの通知
+        const upcomingShifts = await db.getAllShifts();
+        const shiftsWithDeadline = upcomingShifts
+          .filter(shift => shift.leaveRequestDeadline && shift.status !== 'archived')
+          .filter(shift => {
+            const deadline = new Date(shift.leaveRequestDeadline!);
+            return deadline > now; // 未来の締切のみ
+          })
+          .sort((a, b) =>
+            new Date(a.leaveRequestDeadline!).getTime() - new Date(b.leaveRequestDeadline!).getTime()
+          );
+
+        for (const shift of shiftsWithDeadline.slice(0, 2)) { // 最大2件
+          const deadline = new Date(shift.leaveRequestDeadline!);
+          const daysUntilDeadline = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+          if (daysUntilDeadline <= 7) {
+            notifications.push({
+              id: `deadline-${shift.id}`,
+              type: 'deadline',
+              title: `${shift.year}年${shift.month}月分の希望休締切が近づいています`,
+              message: `締切は${deadline.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })}です。あと${daysUntilDeadline}日です。`,
+              priority: daysUntilDeadline <= 3 ? 'high' : 'medium',
+              createdAt: now.toISOString(),
+              relatedShiftId: shift.id,
+              daysUntilDeadline,
+            });
+          }
+        }
+
+        // 3. 確定したシフトの通知
+        const recentConfirmedShifts = upcomingShifts
+          .filter(shift => shift.confirmedAt)
+          .filter(shift => {
+            const confirmedAt = new Date(shift.confirmedAt!);
+            const daysSinceConfirmed = (now.getTime() - confirmedAt.getTime()) / (1000 * 60 * 60 * 24);
+            return daysSinceConfirmed <= 3; // 過去3日以内に確定
+          })
+          .sort((a, b) => new Date(b.confirmedAt!).getTime() - new Date(a.confirmedAt!).getTime());
+
+        for (const shift of recentConfirmedShifts) {
+          notifications.push({
+            id: `shift-confirmed-${shift.id}`,
+            type: 'shift_published',
+            title: `${shift.year}年${shift.month}月のシフトが確定しました`,
+            message: 'シフトが確定しました。ご確認ください。',
+            priority: 'medium',
+            createdAt: shift.confirmedAt!,
+            relatedShiftId: shift.id,
+          });
+        }
+
+        // 日付順にソートして指定件数を返す
+        return notifications
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, limit);
+      }),
+
+    getStats: protectedProcedure
+      .input(z.object({ employeeId: z.number() }))
+      .query(async ({ input }) => {
+        const { employeeId } = input;
+        const now = new Date();
+
+        // 希望休の統計
+        const allLeaveRequests = await db.getLeaveRequestsByEmployee(employeeId);
+        const pendingRequests = allLeaveRequests.filter(req => req.status === 'pending').length;
+        const approvedRequests = allLeaveRequests.filter(req => req.status === 'approved').length;
+        const rejectedRequests = allLeaveRequests.filter(req => req.status === 'rejected').length;
+
+        // 次の締切を取得
+        const upcomingShifts = await db.getAllShifts();
+        const nextDeadlineShift = upcomingShifts
+          .filter(shift => shift.leaveRequestDeadline && shift.status !== 'archived')
+          .filter(shift => new Date(shift.leaveRequestDeadline!) > now)
+          .sort((a, b) =>
+            new Date(a.leaveRequestDeadline!).getTime() - new Date(b.leaveRequestDeadline!).getTime()
+          )[0];
+
+        const upcomingDeadline = nextDeadlineShift ? {
+          shiftId: nextDeadlineShift.id,
+          year: nextDeadlineShift.year,
+          month: nextDeadlineShift.month,
+          deadline: nextDeadlineShift.leaveRequestDeadline!,
+          daysRemaining: Math.ceil(
+            (new Date(nextDeadlineShift.leaveRequestDeadline!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          ),
+        } : null;
+
+        return {
+          pendingRequests,
+          approvedRequests,
+          rejectedRequests,
+          upcomingDeadline,
+        };
       }),
   }),
 

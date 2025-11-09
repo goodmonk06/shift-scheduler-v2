@@ -1,0 +1,1 @@
+ALTER TABLE `shiftDetails` MODIFY COLUMN `generatedBy` enum('manual','ai','leave_request') NOT NULL DEFAULT 'manual';

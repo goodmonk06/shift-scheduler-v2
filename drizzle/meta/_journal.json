@@ -78,6 +78,13 @@
       "when": 1762683929936,
       "tag": "0010_harsh_the_call",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1762688556290,
+      "tag": "0011_illegal_harpoon",
+      "breakpoints": true
     }
   ]
 }

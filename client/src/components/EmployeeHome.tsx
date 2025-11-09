@@ -1,15 +1,17 @@
-import { useState, useMemo } from "react";
-import { Calendar, Clock, Bell, Sparkles, Heart, Sun, Moon, Coffee, X } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Calendar, Clock, Bell, Sparkles, Heart, Sun, Moon, Coffee, X, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { FloatingFlowers, SparkleIcon } from "./DecorativeElements";
+import { employeeNotificationService, type EmployeeNotification, type NotificationStats } from "../services/employeeNotificationService";
 
 interface EmployeeHomeProps {
   employeeName: string;
   hasNotifications?: boolean;
   headerImageUrl?: string;
+  employeeId?: number;
 }
 
 interface DayData {
@@ -29,9 +31,33 @@ interface DayData {
 // 2025年11月の祝日
 const holidays2025Nov = [3, 23, 24]; // 文化の日、勤労感謝の日、振替休日
 
-export function EmployeeHome({ employeeName, hasNotifications = false, headerImageUrl = "https://images.unsplash.com/photo-1709098165904-e9c5f9eec48a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXN0ZWwlMjBmbG93ZXJzJTIwc29mdHxlbnwxfHx8fDE3NjI1MDE0Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080" }: EmployeeHomeProps) {
+export function EmployeeHome({ employeeName, hasNotifications = false, headerImageUrl = "https://images.unsplash.com/photo-1709098165904-e9c5f9eec48a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXN0ZWwlMjBmbG93ZXJzJTIwc29mdHxlbnwxfHx8fDE3NjI1MDE0Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080", employeeId = 1 }: EmployeeHomeProps) {
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [showDayDialog, setShowDayDialog] = useState(false);
+  const [notifications, setNotifications] = useState<EmployeeNotification[]>([]);
+  const [stats, setStats] = useState<NotificationStats | null>(null);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+
+  // 通知データを取得
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        setIsLoadingNotifications(true);
+        const [notificationsData, statsData] = await Promise.all([
+          employeeNotificationService.getNotifications(employeeId, 5),
+          employeeNotificationService.getStats(employeeId),
+        ]);
+        setNotifications(notificationsData);
+        setStats(statsData);
+      } catch (error) {
+        console.error("通知の取得に失敗しました:", error);
+      } finally {
+        setIsLoadingNotifications(false);
+      }
+    }
+
+    loadNotifications();
+  }, [employeeId]);
 
   const today = new Date();
   const currentMonth = today.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
@@ -106,6 +132,36 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
       return "text-blue-600"; // Saturday - blue
     }
     return ""; // Weekdays - default
+  };
+
+  const getNotificationIcon = (type: EmployeeNotification['type']) => {
+    switch (type) {
+      case 'deadline':
+        return <AlertCircle className="w-5 h-5 text-warning" />;
+      case 'reminder':
+        return <Bell className="w-5 h-5 text-blue-600" />;
+      case 'approval':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'rejection':
+        return <XCircle className="w-5 h-5 text-destructive" />;
+      case 'shift_published':
+        return <Calendar className="w-5 h-5 text-purple-600" />;
+      default:
+        return <Bell className="w-5 h-5 text-muted-foreground" />;
+    }
+  };
+
+  const getNotificationBgColor = (priority: EmployeeNotification['priority']) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-gradient-to-br from-warning/20 to-warning/10 border-warning/40';
+      case 'medium':
+        return 'bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/30';
+      case 'low':
+        return 'bg-gradient-to-br from-muted/30 to-muted/10 border-muted/30';
+      default:
+        return 'bg-card border-border';
+    }
   };
 
   return (
@@ -284,19 +340,95 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
             </Card>
           </div>
 
-          {/* Deadline Notice */}
-          <Card className="p-5 bg-gradient-to-br from-warning/20 via-warning/10 to-accent/10 border-2 border-warning/40 shadow-lg">
-            <div className="flex gap-4">
-              <div className="text-4xl animate-bounce">⏰</div>
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-2">
-                  <h4>締切のお知らせ</h4>
-                  <Sparkles className="w-4 h-4 text-warning" />
-                </div>
-                <p className="text-muted-foreground">12月分の希望休は11月15日まで</p>
-              </div>
+          {/* 通知フィード */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2">
+                <Bell className="w-6 h-6 text-primary" />
+                お知らせ
+              </h2>
+              {stats && (stats.pendingRequests > 0 || stats.upcomingDeadline) && (
+                <Badge variant="destructive" className="animate-pulse">
+                  {stats.pendingRequests > 0 ? `未承認${stats.pendingRequests}件` : '締切接近'}
+                </Badge>
+              )}
             </div>
-          </Card>
+
+            {isLoadingNotifications ? (
+              <Card className="p-6 bg-gradient-to-br from-white to-secondary/5 border-2 border-secondary/30">
+                <p className="text-center text-muted-foreground">読み込み中...</p>
+              </Card>
+            ) : notifications.length === 0 ? (
+              <Card className="p-6 bg-gradient-to-br from-white to-secondary/5 border-2 border-secondary/30">
+                <div className="text-center py-4">
+                  <Bell className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">新しいお知らせはありません</p>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {notifications.map((notification) => (
+                  <Card
+                    key={notification.id}
+                    className={`p-4 border-2 shadow-md ${getNotificationBgColor(notification.priority)}`}
+                  >
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h4 className="text-sm leading-tight">{notification.title}</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleString("ja-JP", {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      {notification.priority === 'high' && (
+                        <div className="flex-shrink-0">
+                          <Badge variant="destructive" className="text-xs">重要</Badge>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Deadline Notice - Enhanced with real data */}
+          {stats?.upcomingDeadline && stats.upcomingDeadline.daysRemaining <= 7 && (
+            <Card className="p-5 bg-gradient-to-br from-warning/20 via-warning/10 to-accent/10 border-2 border-warning/40 shadow-lg">
+              <div className="flex gap-4">
+                <div className="text-4xl animate-bounce">⏰</div>
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4>締切のお知らせ</h4>
+                    <Sparkles className="w-4 h-4 text-warning" />
+                    {stats.upcomingDeadline.daysRemaining <= 3 && (
+                      <Badge variant="destructive" className="animate-pulse">
+                        あと{stats.upcomingDeadline.daysRemaining}日
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground">
+                    {stats.upcomingDeadline.year}年{stats.upcomingDeadline.month}月分の希望休は
+                    {new Date(stats.upcomingDeadline.deadline).toLocaleDateString("ja-JP", {
+                      month: "numeric",
+                      day: "numeric",
+                    })}
+                    まで
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 

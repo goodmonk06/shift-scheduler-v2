@@ -48,6 +48,7 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
   const [submittedRequests, setSubmittedRequests] = useState<Map<number, DayRequest>>(() => loadFromStorage('vacation_submitted_requests'));
   
   const [showDayDialog, setShowDayDialog] = useState(false);
+  const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [requestType, setRequestType] = useState<"休" | "有休" | "時間指定">("休");
   const [startHour, setStartHour] = useState("");
@@ -499,113 +500,114 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
           </DialogHeader>
           <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
             {/* Request Type */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Heart className="w-4 h-4 text-accent fill-accent" />
+            <div className="space-y-4">
+              <Label className="flex items-center gap-2 text-base">
+                <Heart className="w-5 h-5 text-accent fill-accent" />
                 休みの種類
               </Label>
-              <RadioGroup value={requestType} onValueChange={(v) => setRequestType(v as typeof requestType)}>
-                <div className="flex items-center space-x-3 p-4 rounded-2xl border-2 hover:border-success hover:bg-success/5 cursor-pointer transition-all">
-                  <RadioGroupItem value="休" id="type-休" />
-                  <Label htmlFor="type-休" className="flex-1 cursor-pointer flex items-center gap-2">
-                    <span className="text-xl">🌸</span>
-                    休
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-3 p-4 rounded-2xl border-2 hover:border-secondary hover:bg-secondary/5 cursor-pointer transition-all">
-                  <RadioGroupItem value="有休" id="type-有休" />
-                  <Label htmlFor="type-有休" className="flex-1 cursor-pointer flex items-center gap-2">
-                    <span className="text-xl">💐</span>
-                    有休
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-3 p-4 rounded-2xl border-2 hover:border-warning hover:bg-warning/5 cursor-pointer transition-all">
-                  <RadioGroupItem value="時間指定" id="type-時間指定" />
-                  <Label htmlFor="type-時間指定" className="flex-1 cursor-pointer flex items-center gap-2">
-                    <span className="text-xl">⏰</span>
-                    時間指定
-                  </Label>
-                </div>
-              </RadioGroup>
+              <div className="grid gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRequestType("休")}
+                  className={`
+                    relative p-6 rounded-2xl transition-all duration-300 text-left
+                    ${requestType === "休"
+                      ? "bg-gradient-to-br from-success/20 to-success/10 border-4 border-success shadow-lg scale-[1.02]"
+                      : "bg-white border-2 border-muted hover:border-success/50 hover:bg-success/5"
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">🌸</span>
+                    <span className={`text-2xl font-bold ${requestType === "休" ? "text-success" : "text-foreground"}`}>
+                      休
+                    </span>
+                    {requestType === "休" && (
+                      <CheckCircle className="w-8 h-8 text-success ml-auto" />
+                    )}
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRequestType("有休")}
+                  className={`
+                    relative p-6 rounded-2xl transition-all duration-300 text-left
+                    ${requestType === "有休"
+                      ? "bg-gradient-to-br from-secondary/20 to-secondary/10 border-4 border-secondary shadow-lg scale-[1.02]"
+                      : "bg-white border-2 border-muted hover:border-secondary/50 hover:bg-secondary/5"
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">💐</span>
+                    <span className={`text-2xl font-bold ${requestType === "有休" ? "text-secondary" : "text-foreground"}`}>
+                      有休
+                    </span>
+                    {requestType === "有休" && (
+                      <CheckCircle className="w-8 h-8 text-secondary ml-auto" />
+                    )}
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequestType("時間指定");
+                    setShowTimeModal(true);
+                  }}
+                  className={`
+                    relative p-6 rounded-2xl transition-all duration-300 text-left
+                    ${requestType === "時間指定"
+                      ? "bg-gradient-to-br from-warning/20 to-warning/10 border-4 border-warning shadow-lg scale-[1.02]"
+                      : "bg-white border-2 border-muted hover:border-warning/50 hover:bg-warning/5"
+                    }
+                  `}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-4xl">⏰</span>
+                    <div className="flex-1">
+                      <span className={`text-2xl font-bold ${requestType === "時間指定" ? "text-warning" : "text-foreground"}`}>
+                        時間指定
+                      </span>
+                      {requestType === "時間指定" && startHour && endHour && (
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          {startHour}:{startMinute} 〜 {endHour}:{endMinute}
+                        </div>
+                      )}
+                    </div>
+                    {requestType === "時間指定" && (
+                      <CheckCircle className="w-8 h-8 text-warning ml-auto" />
+                    )}
+                  </div>
+                </button>
+              </div>
             </div>
 
-            {/* Time Selection */}
-            {requestType === "時間指定" && (
-              <div className="space-y-4 p-4 bg-gradient-to-br from-warning/10 to-accent/5 rounded-2xl border-2 border-warning/30">
-                <Label className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  時間帯
-                </Label>
-                
-                {/* 開始時刻 */}
-                <div className="space-y-2">
+            {/* 時間指定の場合は選択された時間を表示 */}
+            {requestType === "時間指定" && startHour && endHour && (
+              <div className="p-4 bg-gradient-to-br from-warning/10 to-accent/5 rounded-2xl border-2 border-warning/30">
+                <div className="flex items-center justify-between">
                   <Label className="flex items-center gap-2">
-                    <span className="text-xl">🌅</span>
-                    開始時刻
+                    <Clock className="w-4 h-4 text-primary" />
+                    選択された時間帯
                   </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Select value={startHour} onValueChange={(v) => {
-                      setStartHour(v);
-                      if (!startMinute) setStartMinute("00");
-                    }}>
-                      <SelectTrigger className="rounded-xl border-2 h-14 bg-white shadow-sm">
-                        <SelectValue placeholder="時" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {Array.from({ length: 24 }, (_, i) => (
-                          <SelectItem key={i} value={i.toString().padStart(2, "0")}>
-                            {i.toString().padStart(2, "0")}時
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={startMinute} onValueChange={setStartMinute}>
-                      <SelectTrigger className="rounded-xl border-2 h-14 bg-white shadow-sm">
-                        <SelectValue placeholder="分" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="00">00分</SelectItem>
-                        <SelectItem value="15">15分</SelectItem>
-                        <SelectItem value="30">30分</SelectItem>
-                        <SelectItem value="45">45分</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => setShowTimeModal(true)}
+                  >
+                    変更
+                  </Button>
                 </div>
-
-                {/* 終了時刻 */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
+                <div className="mt-3 text-center">
+                  <div className="inline-flex items-center gap-2 p-3 bg-white rounded-xl border-2">
+                    <span className="text-xl">🌅</span>
+                    <span className="text-lg font-semibold">{startHour}:{startMinute}</span>
+                    <span className="text-muted-foreground">〜</span>
                     <span className="text-xl">🌙</span>
-                    終了時刻
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Select value={endHour} onValueChange={(v) => {
-                      setEndHour(v);
-                      if (!endMinute) setEndMinute("00");
-                    }}>
-                      <SelectTrigger className="rounded-xl border-2 h-14 bg-white shadow-sm">
-                        <SelectValue placeholder="時" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[300px]">
-                        {Array.from({ length: 24 }, (_, i) => (
-                          <SelectItem key={i} value={i.toString().padStart(2, "0")}>
-                            {i.toString().padStart(2, "0")}時
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={endMinute} onValueChange={setEndMinute}>
-                      <SelectTrigger className="rounded-xl border-2 h-14 bg-white shadow-sm">
-                        <SelectValue placeholder="分" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="00">00分</SelectItem>
-                        <SelectItem value="15">15分</SelectItem>
-                        <SelectItem value="30">30分</SelectItem>
-                        <SelectItem value="45">45分</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <span className="text-lg font-semibold">{endHour}:{endMinute}</span>
                   </div>
                 </div>
               </div>
@@ -652,6 +654,119 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                 設定する
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Time Selection Modal */}
+      <Dialog open={showTimeModal} onOpenChange={setShowTimeModal}>
+        <DialogContent className="rounded-3xl border-2 border-warning/50 max-w-sm" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-6 h-6 text-warning" />
+              時間帯を選択
+              <span className="text-xl ml-auto">⏰</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {/* 開始時刻 */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-base">
+                <span className="text-2xl">🌅</span>
+                開始時刻
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={startHour} onValueChange={(v) => {
+                  setStartHour(v);
+                  if (!startMinute) setStartMinute("00");
+                }}>
+                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                    <SelectValue placeholder="時" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {Array.from({ length: 15 }, (_, i) => i + 9).map((hour) => (
+                      <SelectItem key={hour} value={hour.toString().padStart(2, "0")}>
+                        {hour.toString().padStart(2, "0")}時
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={startMinute} onValueChange={setStartMinute}>
+                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                    <SelectValue placeholder="分" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="00">00分</SelectItem>
+                    <SelectItem value="30">30分</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* 終了時刻 */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-base">
+                <span className="text-2xl">🌙</span>
+                終了時刻
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Select value={endHour} onValueChange={(v) => {
+                  setEndHour(v);
+                  if (!endMinute) setEndMinute("00");
+                }}>
+                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                    <SelectValue placeholder="時" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {Array.from({ length: 4 }, (_, i) => i + 20).map((hour) => (
+                      <SelectItem key={hour} value={hour.toString().padStart(2, "0")}>
+                        {hour.toString().padStart(2, "0")}時
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={endMinute} onValueChange={setEndMinute}>
+                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                    <SelectValue placeholder="分" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="00">00分</SelectItem>
+                    <SelectItem value="30">30分</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* プレビュー */}
+            {startHour && endHour && (
+              <div className="p-4 bg-gradient-to-br from-warning/20 to-accent/10 rounded-2xl border-2 border-warning/40">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-2">選択時間</p>
+                  <div className="flex items-center justify-center gap-2 text-xl font-semibold">
+                    <span>{startHour}:{startMinute || "00"}</span>
+                    <span className="text-muted-foreground">〜</span>
+                    <span>{endHour}:{endMinute || "00"}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowTimeModal(false)}
+              className="rounded-xl border-2"
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={() => setShowTimeModal(false)}
+              disabled={!startHour || !endHour}
+              className="rounded-xl bg-gradient-to-r from-warning to-warning/80 shadow-lg"
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              決定
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

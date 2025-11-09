@@ -537,3 +537,92 @@ export async function createShiftDetailWithTransaction(tx: any, data: InsertShif
 export async function updateShiftWithTransaction(tx: any, id: number, data: Partial<InsertShift>) {
   return await tx.update(shifts).set(data).where(eq(shifts.id, id));
 }
+
+/**
+ * 承認済みの希望休をシフト詳細に反映
+ * @param shiftId - シフトID
+ * @returns 反映された希望休の件数
+ */
+export async function applyApprovedLeaveRequestsToShift(shiftId: number): Promise<number> {
+  const database = await getDb();
+  if (!database) {
+    throw new Error("Database connection not available");
+  }
+
+  // 指定シフトの承認済み希望休を取得
+  const approvedRequests = await database
+    .select()
+    .from(leaveRequests)
+    .where(
+      and(
+        eq(leaveRequests.shiftId, shiftId),
+        eq(leaveRequests.status, "approved")
+      )
+    );
+
+  if (approvedRequests.length === 0) {
+    return 0;
+  }
+
+  // シフト情報を取得して期間を確認
+  const shift = await getShiftById(shiftId);
+  if (!shift) {
+    throw new Error("Shift not found");
+  }
+
+  let appliedCount = 0;
+
+  // 各希望休をシフト詳細に反映
+  for (const request of approvedRequests) {
+    const startDate = new Date(request.startDate);
+    const endDate = new Date(request.endDate);
+
+    // 日付範囲内の全ての日をループ
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      // シフト期間内かチェック
+      const dateStr = date.toISOString().split('T')[0];
+
+      // 既存のシフト詳細があるかチェック
+      const existing = await database
+        .select()
+        .from(shiftDetails)
+        .where(
+          and(
+            eq(shiftDetails.shiftId, shiftId),
+            eq(shiftDetails.employeeId, request.employeeId),
+            eq(shiftDetails.date, dateStr)
+          )
+        );
+
+      if (existing.length > 0) {
+        // 既存のエントリーがある場合は更新（休みに変更）
+        await database
+          .update(shiftDetails)
+          .set({
+            status: "off",
+            timeSlotId: null,
+            generatedBy: "leave_request",
+            updatedAt: new Date(),
+          })
+          .where(eq(shiftDetails.id, existing[0].id));
+      } else {
+        // 新規作成
+        await database.insert(shiftDetails).values({
+          shiftId,
+          employeeId: request.employeeId,
+          date: dateStr,
+          status: "off",
+          timeSlotId: null,
+          generatedBy: "leave_request",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+
+      appliedCount++;
+    }
+  }
+
+  console.log(`[ApplyLeaveRequests] Applied ${appliedCount} leave days for shift ${shiftId}`);
+  return appliedCount;
+}
