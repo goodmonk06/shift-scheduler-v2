@@ -5,6 +5,8 @@ import { EmployeeLogin } from "./components/EmployeeLogin";
 import { AdminLogin } from "./components/AdminLogin";
 import { VacationProvider } from "./contexts/VacationContext";
 import { authService } from "./services/authService";
+import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner";
 
 /**
  * 本番用のメインアプリケーション
@@ -111,8 +113,14 @@ export default function App() {
       setUser(null);
       setHasNotifications(false);
       setLoginType("employee"); // デフォルトに戻す
+      toast.success("ログアウト完了", {
+        description: "正常にログアウトしました",
+      });
     } catch (error) {
       console.error("ログアウトエラー:", error);
+      toast.error("ログアウトエラー", {
+        description: "ログアウト処理に失敗しました",
+      });
     }
   }
 
@@ -151,14 +159,15 @@ export default function App() {
   return (
     <VacationProvider>
       <div className="min-h-screen bg-background">
+        <Toaster />
         {user.role === "employee" ? (
-          <EmployeeApp 
-            hasNotifications={hasNotifications} 
+          <EmployeeApp
+            hasNotifications={hasNotifications}
             onLogout={handleLogout}
           />
         ) : (
-          <AdminApp 
-            hasNotifications={hasNotifications} 
+          <AdminApp
+            hasNotifications={hasNotifications}
             onNotificationsToggle={() => setHasNotifications(!hasNotifications)}
             onLogout={handleLogout}
           />

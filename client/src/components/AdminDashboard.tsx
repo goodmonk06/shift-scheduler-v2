@@ -5,6 +5,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { dashboardService } from "../services/dashboardService";
 import { notificationService, type EmergencyNotification } from "../services/notificationService";
+import { toast } from "sonner";
 
 type ShiftStatus = "draft" | "tentative" | "tentative_revised" | "confirmed" | "actual" | "archived";
 
@@ -41,6 +42,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps = {}) {
         setRecentNotifications(notificationsData);
       } catch (error) {
         console.error("ダッシュボードデータの取得に失敗しました:", error);
+        toast.error("データ読み込みエラー", {
+          description: "ダッシュボードデータの取得に失敗しました。ページを再読み込みしてください。",
+        });
       } finally {
         setIsLoading(false);
       }

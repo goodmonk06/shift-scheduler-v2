@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { FloatingFlowers, SparkleIcon } from "./DecorativeElements";
 import { employeeNotificationService, type EmployeeNotification, type NotificationStats } from "../services/employeeNotificationService";
+import { toast } from "sonner";
 
 interface EmployeeHomeProps {
   employeeName: string;
@@ -51,6 +52,9 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
         setStats(statsData);
       } catch (error) {
         console.error("通知の取得に失敗しました:", error);
+        toast.error("通知読み込みエラー", {
+          description: "通知データの取得に失敗しました。ページを再読み込みしてください。",
+        });
       } finally {
         setIsLoadingNotifications(false);
       }
