@@ -12,7 +12,10 @@
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "seed": "tsx scripts/seed.ts",
-    "cron:run": "tsx scripts/cron.ts"
+    "cron:run": "tsx scripts/cron.ts",
+    "check-db": "tsx scripts/check-db-status.ts",
+    "clear-db": "tsx scripts/clear-db.ts",
+    "setup-admin": "tsx scripts/setup-admin.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
