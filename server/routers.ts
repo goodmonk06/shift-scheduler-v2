@@ -864,6 +864,112 @@ export const appRouter = router({
       };
     }),
   }),
+
+  // Statistics
+  statistics: router({
+    getMonthlyStats: protectedProcedure
+      .input(z.object({
+        year: z.number(),
+        month: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const { year, month } = input;
+
+        // 対象月のシフトを取得
+        const shifts = await db.getAllShifts();
+        const targetShift = shifts.find(s => s.year === year && s.month === month);
+
+        if (!targetShift) {
+          return {
+            employeeStats: [],
+            timeSlotStats: [],
+            summary: {
+              totalEmployees: 0,
+              totalShifts: 0,
+              totalTimeSlots: 0,
+              avgWorkDays: 0,
+            }
+          };
+        }
+
+        // シフト詳細を取得
+        const shiftDetails = await db.getShiftDetailsByShiftId(targetShift.id);
+        const employees = await db.getAllEmployees();
+        const timeSlots = await db.getAllWorkTimeSlots();
+
+        // 職員ごとの統計を計算
+        const employeeStatsMap = new Map<number, {
+          employeeId: number;
+          employeeName: string;
+          positionGroupId: number | null;
+          workDays: number;
+        }>();
+
+        for (const detail of shiftDetails) {
+          if (detail.status === 'working' && detail.timeSlotId) {
+            const employee = employees.find(e => e.id === detail.employeeId);
+            if (employee) {
+              const stats = employeeStatsMap.get(detail.employeeId) || {
+                employeeId: detail.employeeId,
+                employeeName: employee.name,
+                positionGroupId: employee.positionGroupId,
+                workDays: 0,
+              };
+              stats.workDays++;
+              employeeStatsMap.set(detail.employeeId, stats);
+            }
+          }
+        }
+
+        // 時間枠ごとの統計を計算
+        const timeSlotStatsMap = new Map<number, {
+          timeSlotId: number;
+          timeSlotName: string;
+          startTime: string;
+          endTime: string;
+          shiftCount: number;
+        }>();
+
+        for (const detail of shiftDetails) {
+          if (detail.status === 'working' && detail.timeSlotId) {
+            const timeSlot = timeSlots.find(ts => ts.id === detail.timeSlotId);
+            if (timeSlot) {
+              const stats = timeSlotStatsMap.get(detail.timeSlotId) || {
+                timeSlotId: detail.timeSlotId,
+                timeSlotName: timeSlot.name,
+                startTime: timeSlot.startTime,
+                endTime: timeSlot.endTime,
+                shiftCount: 0,
+              };
+              stats.shiftCount++;
+              timeSlotStatsMap.set(detail.timeSlotId, stats);
+            }
+          }
+        }
+
+        const employeeStats = Array.from(employeeStatsMap.values());
+        const timeSlotStats = Array.from(timeSlotStatsMap.values());
+
+        // サマリーを計算
+        const totalEmployees = employeeStats.length;
+        const totalShifts = timeSlotStats.reduce((sum, ts) => sum + ts.shiftCount, 0);
+        const totalTimeSlots = timeSlotStats.length;
+        const avgWorkDays = totalEmployees > 0
+          ? employeeStats.reduce((sum, e) => sum + e.workDays, 0) / totalEmployees
+          : 0;
+
+        return {
+          employeeStats,
+          timeSlotStats,
+          summary: {
+            totalEmployees,
+            totalShifts,
+            totalTimeSlots,
+            avgWorkDays: Math.round(avgWorkDays * 10) / 10, // 小数点第1位まで
+          }
+        };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

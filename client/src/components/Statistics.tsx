@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarChart3, Users, Calendar, Clock, TrendingUp } from "lucide-react";
 import { Card } from "./ui/card";
 import {
@@ -16,19 +16,29 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
+import { trpc } from "../lib/trpc";
+import { toast } from "sonner";
 
 interface EmployeeStats {
-  employeeId: string;
+  employeeId: number;
   employeeName: string;
-  positionGroupId: string;
+  positionGroupId: number | null;
   workDays: number;
 }
 
 interface TimeSlotStats {
+  timeSlotId: number;
   timeSlotName: string;
   startTime: string;
   endTime: string;
   shiftCount: number;
+}
+
+interface StatsSummary {
+  totalEmployees: number;
+  totalShifts: number;
+  totalTimeSlots: number;
+  avgWorkDays: number;
 }
 
 export function Statistics() {
@@ -37,27 +47,41 @@ export function Statistics() {
 
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [employeeStats, setEmployeeStats] = useState<EmployeeStats[]>([]);
+  const [timeSlotStats, setTimeSlotStats] = useState<TimeSlotStats[]>([]);
+  const [summary, setSummary] = useState<StatsSummary>({
+    totalEmployees: 0,
+    totalShifts: 0,
+    totalTimeSlots: 0,
+    avgWorkDays: 0,
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // モックデータ（後でAPI連携）
-  const mockEmployeeStats: EmployeeStats[] = [
-    { employeeId: "EMP001", employeeName: "山田 太郎", positionGroupId: "POS001", workDays: 22 },
-    { employeeId: "EMP002", employeeName: "佐藤 花子", positionGroupId: "POS001", workDays: 20 },
-    { employeeId: "EMP003", employeeName: "鈴木 一郎", positionGroupId: "POS002", workDays: 15 },
-    { employeeId: "EMP004", employeeName: "田中 美咲", positionGroupId: "POS002", workDays: 18 },
-  ];
+  // APIから統計データを取得
+  useEffect(() => {
+    async function loadStatistics() {
+      try {
+        setIsLoading(true);
+        const data = await trpc.statistics.getMonthlyStats.query({
+          year: selectedYear,
+          month: selectedMonth,
+        });
 
-  const mockTimeSlotStats: TimeSlotStats[] = [
-    { timeSlotName: "早番", startTime: "08:00", endTime: "16:00", shiftCount: 45 },
-    { timeSlotName: "遅番", startTime: "11:00", endTime: "19:00", shiftCount: 38 },
-    { timeSlotName: "夜勤", startTime: "16:00", endTime: "09:00", shiftCount: 25 },
-  ];
+        setEmployeeStats(data.employeeStats);
+        setTimeSlotStats(data.timeSlotStats);
+        setSummary(data.summary);
+      } catch (error) {
+        console.error("統計データの取得に失敗しました:", error);
+        toast.error("統計データの読み込みエラー", {
+          description: "統計データの取得に失敗しました。",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-  // サマリー計算
-  const totalEmployees = mockEmployeeStats.length;
-  const totalShifts = mockTimeSlotStats.reduce((sum, ts) => sum + ts.shiftCount, 0);
-  const totalTimeSlots = mockTimeSlotStats.length;
-  const avgWorkDays =
-    mockEmployeeStats.reduce((sum, e) => sum + e.workDays, 0) / totalEmployees;
+    loadStatistics();
+  }, [selectedYear, selectedMonth]);
 
   return (
     <div className="p-6 space-y-6">
@@ -122,7 +146,9 @@ export function Statistics() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">総職員数</p>
-              <p className="text-2xl text-gray-900">{totalEmployees}名</p>
+              <p className="text-2xl text-gray-900">
+                {isLoading ? "..." : `${summary.totalEmployees}名`}
+              </p>
             </div>
           </div>
         </Card>
@@ -134,7 +160,9 @@ export function Statistics() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">総シフト数</p>
-              <p className="text-2xl text-gray-900">{totalShifts}件</p>
+              <p className="text-2xl text-gray-900">
+                {isLoading ? "..." : `${summary.totalShifts}件`}
+              </p>
             </div>
           </div>
         </Card>
@@ -146,7 +174,9 @@ export function Statistics() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">勤務時間枠数</p>
-              <p className="text-2xl text-gray-900">{totalTimeSlots}種類</p>
+              <p className="text-2xl text-gray-900">
+                {isLoading ? "..." : `${summary.totalTimeSlots}種類`}
+              </p>
             </div>
           </div>
         </Card>
@@ -158,7 +188,9 @@ export function Statistics() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">平均勤務日数</p>
-              <p className="text-2xl text-gray-900">{avgWorkDays.toFixed(1)}日</p>
+              <p className="text-2xl text-gray-900">
+                {isLoading ? "..." : `${summary.avgWorkDays.toFixed(1)}日`}
+              </p>
             </div>
           </div>
         </Card>
@@ -182,18 +214,26 @@ export function Statistics() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockEmployeeStats.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  読み込み中...
+                </TableCell>
+              </TableRow>
+            ) : employeeStats.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   データがありません
                 </TableCell>
               </TableRow>
             ) : (
-              mockEmployeeStats.map((stat) => (
+              employeeStats.map((stat) => (
                 <TableRow key={stat.employeeId}>
                   <TableCell>{stat.employeeName}</TableCell>
                   <TableCell className="text-muted-foreground">{stat.employeeId}</TableCell>
-                  <TableCell className="text-muted-foreground">{stat.positionGroupId}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {stat.positionGroupId || "-"}
+                  </TableCell>
                   <TableCell className="text-right">{stat.workDays}日</TableCell>
                 </TableRow>
               ))
@@ -220,15 +260,21 @@ export function Statistics() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockTimeSlotStats.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  読み込み中...
+                </TableCell>
+              </TableRow>
+            ) : timeSlotStats.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   データがありません
                 </TableCell>
               </TableRow>
             ) : (
-              mockTimeSlotStats.map((stat, index) => (
-                <TableRow key={index}>
+              timeSlotStats.map((stat) => (
+                <TableRow key={stat.timeSlotId}>
                   <TableCell>{stat.timeSlotName}</TableCell>
                   <TableCell className="text-muted-foreground">{stat.startTime}</TableCell>
                   <TableCell className="text-muted-foreground">{stat.endTime}</TableCell>
