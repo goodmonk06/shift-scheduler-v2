@@ -7,6 +7,8 @@ import { VacationProvider } from "./contexts/VacationContext";
 import { authService } from "./services/authService";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import { ErrorBoundary } from "./components/ui/error-boundary";
+import { LoadingScreen } from "./components/ui/loading-spinner";
 
 /**
  * 本番用のメインアプリケーション
@@ -126,14 +128,7 @@ export default function App() {
 
   // ローディング中
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">読み込み中...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="読み込み中..." />;
   }
 
   // 未ログイン: ログイン画面を表示
@@ -157,22 +152,24 @@ export default function App() {
 
   // ログイン済み: 権限に応じた画面を表示
   return (
-    <VacationProvider>
-      <div className="min-h-screen bg-background">
-        <Toaster />
-        {user.role === "employee" ? (
-          <EmployeeApp
-            hasNotifications={hasNotifications}
-            onLogout={handleLogout}
-          />
-        ) : (
-          <AdminApp
-            hasNotifications={hasNotifications}
-            onNotificationsToggle={() => setHasNotifications(!hasNotifications)}
-            onLogout={handleLogout}
-          />
-        )}
-      </div>
-    </VacationProvider>
+    <ErrorBoundary>
+      <VacationProvider>
+        <div className="min-h-screen bg-background">
+          <Toaster />
+          {user.role === "employee" ? (
+            <EmployeeApp
+              hasNotifications={hasNotifications}
+              onLogout={handleLogout}
+            />
+          ) : (
+            <AdminApp
+              hasNotifications={hasNotifications}
+              onNotificationsToggle={() => setHasNotifications(!hasNotifications)}
+              onLogout={handleLogout}
+            />
+          )}
+        </div>
+      </VacationProvider>
+    </ErrorBoundary>
   );
 }
