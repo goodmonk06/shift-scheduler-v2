@@ -16,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
 
 interface EmployeeStats {
@@ -62,10 +61,26 @@ export function Statistics() {
     async function loadStatistics() {
       try {
         setIsLoading(true);
-        const data = await trpc.statistics.getMonthlyStats.query({
-          year: selectedYear,
-          month: selectedMonth,
-        });
+
+        // tRPC経由でAPIを呼び出し
+        const response = await fetch(
+          `/api/trpc/statistics.getMonthlyStats?input=${encodeURIComponent(
+            JSON.stringify({ year: selectedYear, month: selectedMonth })
+          )}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('統計データの取得に失敗しました');
+        }
+
+        const result = await response.json();
+        const data = result.result.data;
 
         setEmployeeStats(data.employeeStats);
         setTimeSlotStats(data.timeSlotStats);

@@ -356,6 +356,10 @@ export async function getShiftDetails(shiftId: number) {
   return await db.select().from(shiftDetails).where(eq(shiftDetails.shiftId, shiftId));
 }
 
+export async function getShiftDetailsByShiftId(shiftId: number) {
+  return await getShiftDetails(shiftId);
+}
+
 export async function createShiftDetail(data: InsertShiftDetail) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
