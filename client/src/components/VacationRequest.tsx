@@ -585,8 +585,8 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                         時間指定
                       </span>
                       {requestType === "時間指定" && startHour && endHour && (
-                        <div className="mt-2 text-sm text-muted-foreground">
-                          {startHour}:{startMinute} 〜 {endHour}:{endMinute}
+                        <div className="mt-2 text-lg font-medium text-[#2B3A55]">
+                          {startHour}:{startMinute} - {endHour}:{endMinute}
                         </div>
                       )}
                     </div>
@@ -597,35 +597,6 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                 </button>
               </div>
             </div>
-
-            {/* 時間指定の場合は選択された時間を表示 */}
-            {requestType === "時間指定" && startHour && endHour && (
-              <div className="p-4 bg-gradient-to-br from-warning/10 to-accent/5 rounded-2xl border-2 border-warning/30">
-                <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" />
-                    選択された時間帯
-                  </Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8"
-                    onClick={() => setShowTimeModal(true)}
-                  >
-                    変更
-                  </Button>
-                </div>
-                <div className="mt-3 text-center">
-                  <div className="inline-flex items-center gap-2 p-3 bg-white rounded-xl border-2">
-                    <span className="text-xl">🌅</span>
-                    <span className="text-lg font-semibold">{startHour}:{startMinute}</span>
-                    <span className="text-muted-foreground">〜</span>
-                    <span className="text-xl">🌙</span>
-                    <span className="text-lg font-semibold">{endHour}:{endMinute}</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Reason */}
             <div className="space-y-3">
@@ -674,7 +645,7 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
 
       {/* Time Selection Modal */}
       <Dialog open={showTimeModal} onOpenChange={setShowTimeModal}>
-        <DialogContent className="rounded-3xl border-2 border-accent/50 max-w-sm" aria-describedby={undefined}>
+        <DialogContent className="rounded-3xl border-2 border-accent/50 max-w-sm bg-gradient-to-br from-white to-accent/5" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Clock className="w-7 h-7 text-accent" />
@@ -690,44 +661,65 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                 開始時刻
               </Label>
               <div className="grid grid-cols-2 gap-3">
-                <Select
-                  value={startHour}
-                  onValueChange={(v) => {
-                    setStartHour(v);
-                    if (!startMinute) setStartMinute("00");
-                  }}
-                  defaultValue="09"
-                >
-                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
-                    <SelectValue placeholder="時" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[180px]" position="popper" sideOffset={5}>
-                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                      <SelectItem
-                        key={hour}
-                        value={hour.toString().padStart(2, "0")}
-                        className="text-xl py-3 h-[60px]"
-                      >
-                        {hour.toString().padStart(2, "0")}時
+                <div className="relative">
+                  <Select
+                    value={startHour}
+                    onValueChange={(v) => {
+                      setStartHour(v);
+                      if (!startMinute) setStartMinute("00");
+                    }}
+                    defaultValue="09"
+                  >
+                    <SelectTrigger className="rounded-2xl border-2 border-accent/30 h-20 bg-gradient-to-br from-white to-accent/10 shadow-md text-3xl font-bold hover:border-accent/60 transition-all">
+                      <SelectValue placeholder="時" />
+                    </SelectTrigger>
+                    <SelectContent
+                      className="max-h-[180px] rounded-2xl border-2 border-accent/30 bg-white/95 backdrop-blur-sm"
+                      position="popper"
+                      sideOffset={5}
+                    >
+                      <div className="relative">
+                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent pointer-events-none z-10" />
+                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
+                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                          <SelectItem
+                            key={hour}
+                            value={hour.toString().padStart(2, "0")}
+                            className="text-2xl py-4 h-[60px] justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all"
+                          >
+                            <span className="font-bold">{hour.toString().padStart(2, "0")}</span>
+                            <span className="text-lg ml-1">時</span>
+                          </SelectItem>
+                        ))}
+                      </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="relative">
+                  <Select
+                    value={startMinute}
+                    onValueChange={setStartMinute}
+                    defaultValue="00"
+                  >
+                    <SelectTrigger className="rounded-2xl border-2 border-accent/30 h-20 bg-gradient-to-br from-white to-accent/10 shadow-md text-3xl font-bold hover:border-accent/60 transition-all">
+                      <SelectValue placeholder="分" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-2 border-accent/30 bg-white/95 backdrop-blur-sm">
+                      <SelectItem value="00" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">00</span><span className="text-lg ml-1">分</span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={startMinute}
-                  onValueChange={setStartMinute}
-                  defaultValue="00"
-                >
-                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
-                    <SelectValue placeholder="分" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="00" className="text-xl py-3">00分</SelectItem>
-                    <SelectItem value="15" className="text-xl py-3">15分</SelectItem>
-                    <SelectItem value="30" className="text-xl py-3">30分</SelectItem>
-                    <SelectItem value="45" className="text-xl py-3">45分</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <SelectItem value="15" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">15</span><span className="text-lg ml-1">分</span>
+                      </SelectItem>
+                      <SelectItem value="30" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">30</span><span className="text-lg ml-1">分</span>
+                      </SelectItem>
+                      <SelectItem value="45" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">45</span><span className="text-lg ml-1">分</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -738,73 +730,99 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                 終了時刻
               </Label>
               <div className="grid grid-cols-2 gap-3">
-                <Select
-                  value={endHour}
-                  onValueChange={(v) => {
-                    setEndHour(v);
-                    if (!endMinute) setEndMinute("00");
-                  }}
-                  defaultValue="12"
-                >
-                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
-                    <SelectValue placeholder="時" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[180px]" position="popper" sideOffset={5}>
-                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                      <SelectItem
-                        key={hour}
-                        value={hour.toString().padStart(2, "0")}
-                        className="text-xl py-3 h-[60px]"
-                      >
-                        {hour.toString().padStart(2, "0")}時
+                <div className="relative">
+                  <Select
+                    value={endHour}
+                    onValueChange={(v) => {
+                      setEndHour(v);
+                      if (!endMinute) setEndMinute("00");
+                    }}
+                    defaultValue="12"
+                  >
+                    <SelectTrigger className="rounded-2xl border-2 border-secondary/30 h-20 bg-gradient-to-br from-white to-secondary/10 shadow-md text-3xl font-bold hover:border-secondary/60 transition-all">
+                      <SelectValue placeholder="時" />
+                    </SelectTrigger>
+                    <SelectContent
+                      className="max-h-[180px] rounded-2xl border-2 border-secondary/30 bg-white/95 backdrop-blur-sm"
+                      position="popper"
+                      sideOffset={5}
+                    >
+                      <div className="relative">
+                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent pointer-events-none z-10" />
+                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
+                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                          <SelectItem
+                            key={hour}
+                            value={hour.toString().padStart(2, "0")}
+                            className="text-2xl py-4 h-[60px] justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all"
+                          >
+                            <span className="font-bold">{hour.toString().padStart(2, "0")}</span>
+                            <span className="text-lg ml-1">時</span>
+                          </SelectItem>
+                        ))}
+                      </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="relative">
+                  <Select
+                    value={endMinute}
+                    onValueChange={setEndMinute}
+                    defaultValue="00"
+                  >
+                    <SelectTrigger className="rounded-2xl border-2 border-secondary/30 h-20 bg-gradient-to-br from-white to-secondary/10 shadow-md text-3xl font-bold hover:border-secondary/60 transition-all">
+                      <SelectValue placeholder="分" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-2 border-secondary/30 bg-white/95 backdrop-blur-sm">
+                      <SelectItem value="00" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">00</span><span className="text-lg ml-1">分</span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={endMinute}
-                  onValueChange={setEndMinute}
-                  defaultValue="00"
-                >
-                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
-                    <SelectValue placeholder="分" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="00" className="text-xl py-3">00分</SelectItem>
-                    <SelectItem value="15" className="text-xl py-3">15分</SelectItem>
-                    <SelectItem value="30" className="text-xl py-3">30分</SelectItem>
-                    <SelectItem value="45" className="text-xl py-3">45分</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <SelectItem value="15" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">15</span><span className="text-lg ml-1">分</span>
+                      </SelectItem>
+                      <SelectItem value="30" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">30</span><span className="text-lg ml-1">分</span>
+                      </SelectItem>
+                      <SelectItem value="45" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
+                        <span className="font-bold">45</span><span className="text-lg ml-1">分</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
             {/* プレビュー */}
             {startHour && endHour && (
-              <div className="p-5 bg-gradient-to-br from-accent/30 to-secondary/20 rounded-2xl border-2 border-accent/50">
-                <div className="text-center">
-                  <p className="text-base text-muted-foreground mb-2 font-medium">選択時間</p>
-                  <div className="flex items-center justify-center gap-3 text-2xl font-bold">
-                    <span className="text-[#2B3A55]">{startHour}:{startMinute || "00"}</span>
-                    <span className="text-muted-foreground">〜</span>
-                    <span className="text-[#2B3A55]">{endHour}:{endMinute || "00"}</span>
+              <div className="relative overflow-hidden p-5 bg-gradient-to-br from-accent/30 via-secondary/20 to-accent/20 rounded-2xl border-2 border-accent/50 shadow-lg">
+                <div className="absolute top-0 right-0 text-6xl opacity-10">⏰</div>
+                <div className="relative text-center">
+                  <p className="text-sm text-muted-foreground mb-3 font-medium">選択中の時間</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm">
+                      <span className="text-2xl font-bold text-[#2B3A55]">{startHour}:{startMinute}</span>
+                    </div>
+                    <span className="text-xl text-muted-foreground">→</span>
+                    <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm">
+                      <span className="text-2xl font-bold text-[#2B3A55]">{endHour}:{endMinute}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => setShowTimeModal(false)}
-              className="rounded-xl border-2 text-base h-12"
+              className="rounded-2xl border-2 text-base h-12 hover:bg-muted/50 transition-all"
             >
               キャンセル
             </Button>
             <Button
               onClick={() => setShowTimeModal(false)}
               disabled={!startHour || !endHour}
-              className="rounded-xl bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 shadow-lg text-base h-12"
+              className="rounded-2xl bg-gradient-to-r from-accent via-accent/90 to-secondary/80 hover:from-accent/90 hover:via-accent/80 hover:to-secondary/70 shadow-lg text-base h-12 font-semibold transition-all"
             >
               <Clock className="w-5 h-5 mr-2" />
               決定
