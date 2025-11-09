@@ -1,124 +1,167 @@
-import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
+import { useState, useEffect } from "react";
 import { EmployeeApp } from "./EmployeeApp";
 import { AdminApp } from "./AdminApp";
 import { EmployeeLogin } from "./components/EmployeeLogin";
 import { AdminLogin } from "./components/AdminLogin";
 import { VacationProvider } from "./contexts/VacationContext";
-import { ShiftEditor } from "./components/ShiftEditor";
+import { authService } from "./services/authService";
 
 /**
- * デモ用のメインアプリケーション
- * 実際の実装では、ログイン画面と各画面は別のルート/URLになります
+ * 本番用のメインアプリケーション
  * 
- * 画面構成:
- * 1. 職員ログイン画面 (/employee/login)
- * 2. 職員画面 (/employee)
- * 3. 管理者ログイン画面 (/admin/login)
- * 4. 管理者画面 (/)
- * 5. シフト作成画面 (開発用)
+ * ログインフロー:
+ * 1. 未ログイン -> ログイン画面を表示
+ * 2. ログイン成功 -> ユーザー権限に応じて職員画面 or 管理者画面を表示
+ * 3. ログアウト -> ログイン画面に戻る
  * 
- * 職員側エンジニアに渡すファイル:
- * - EmployeeLogin.tsx (ログイン画面)
- * - EmployeeApp.tsx (メインアプリ)
- * - components/EmployeeHome.tsx
- * - components/VacationRequest.tsx
- * - components/ShiftView.tsx
- * - components/EmergencyFAB.tsx
- * - components/DecorativeElements.tsx
+ * ルーティング:
+ * - / : ログイン画面（未ログイン時）
+ * - /employee : 職員画面（職員ログイン後）
+ * - /admin : 管理者画面（管理者ログイン後）
  * 
- * 管理者側エンジニアに渡すファイル:
- * - AdminLogin.tsx (ログイン画面)
- * - AdminApp.tsx (メインアプリ)
- * - components/AdminDashboard.tsx
- * - components/ShiftEditor.tsx
+ * 認証状態管理:
+ * - authService を使用してログイン状態を管理
+ * - トークンはlocalStorageまたはcookieに保存
+ * - ページリロード時も認証状態を維持
  */
 
-type ViewType = "employee-login" | "employee-app" | "admin-login" | "admin-app" | "shift-editor";
+type UserRole = "employee" | "admin" | null;
+
+interface User {
+  id: number;
+  name: string;
+  role: UserRole;
+  email?: string;
+}
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<ViewType>("employee-login");
-  // 管理者からの通知（シフト仮確定など）があるかどうか
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loginType, setLoginType] = useState<"employee" | "admin">("employee");
   const [hasNotifications, setHasNotifications] = useState(false);
 
+  // 初期化: 認証状態を確認
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  async function checkAuthStatus() {
+    try {
+      const currentUser = await authService.getCurrentUser();
+      if (currentUser) {
+        // role を employee | admin に正規化
+        const normalizedRole = currentUser.role === 'user' ? 'employee' : currentUser.role as UserRole;
+        setUser({
+          ...currentUser,
+          role: normalizedRole,
+        });
+      }
+    } catch (error) {
+      console.error("認証状態の確認に失敗しました:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleEmployeeLogin(identifier: string, password: string) {
+    try {
+      // 職員は employeeId または email でログイン
+      const response = await authService.loginAsEmployee(identifier);
+
+      if (response.success && response.user) {
+        setUser({
+          id: response.user.id,
+          name: response.user.name,
+          role: "employee",
+          email: response.user.email,
+        });
+      }
+
+      // 通知の確認（オプション）
+      // const notifications = await notificationService.getUnread();
+      // setHasNotifications(notifications.length > 0);
+    } catch (error) {
+      console.error("ログインエラー:", error);
+      throw error; // EmployeeLoginコンポーネントでエラー表示
+    }
+  }
+
+  async function handleAdminLogin(email: string, password: string) {
+    try {
+      const response = await authService.loginAsAdmin(email);
+
+      if (response.success && response.user) {
+        setUser({
+          id: response.user.id,
+          name: response.user.name,
+          role: "admin",
+          email: response.user.email,
+        });
+      }
+    } catch (error) {
+      console.error("ログインエラー:", error);
+      throw error; // AdminLoginコンポーネントでエラー表示
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await authService.logout();
+      setUser(null);
+      setHasNotifications(false);
+      setLoginType("employee"); // デフォルトに戻す
+    } catch (error) {
+      console.error("ログアウトエラー:", error);
+    }
+  }
+
+  // ローディング中
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 未ログイン: ログイン画面を表示
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        {loginType === "employee" ? (
+          <EmployeeLogin 
+            onLoginSuccess={handleEmployeeLogin}
+            onSwitchToAdmin={() => setLoginType("admin")}
+          />
+        ) : (
+          <AdminLogin 
+            onLoginSuccess={handleAdminLogin}
+            onSwitchToEmployee={() => setLoginType("employee")}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ログイン済み: 権限に応じた画面を表示
   return (
     <VacationProvider>
       <div className="min-h-screen bg-background">
-        {/* Top Mode Switcher - デモ用のみ */}
-        <div className="border-b bg-card/50 backdrop-blur fixed top-0 left-0 right-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-3">
-            <Tabs 
-              value={currentView} 
-              onValueChange={(v) => setCurrentView(v as ViewType)}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-5 rounded-xl h-auto p-1">
-                <TabsTrigger 
-                  value="employee-login" 
-                  className="rounded-xl py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white"
-                >
-                  <span className="hidden sm:inline">👤 </span>職員ログイン
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="employee-app" 
-                  className="rounded-xl py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-secondary data-[state=active]:to-accent data-[state=active]:text-white"
-                >
-                  <span className="hidden sm:inline">📱 </span>職員画面
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="admin-login" 
-                  className="rounded-xl py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white"
-                >
-                  <span className="hidden sm:inline">🔐 </span>管理者ログイン
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="admin-app" 
-                  className="rounded-xl py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/80 data-[state=active]:text-white"
-                >
-                  <span className="hidden sm:inline">👔 </span>管理者画面
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="shift-editor" 
-                  className="rounded-xl py-2 text-xs sm:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white"
-                >
-                  <span className="hidden sm:inline">✨ </span>シフト作成
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="pt-20">
-          {currentView === "employee-login" && (
-            <EmployeeLogin 
-              onLoginSuccess={() => setCurrentView("employee-app")}
-              onSwitchToAdmin={() => setCurrentView("admin-login")}
-            />
-          )}
-          
-          {currentView === "employee-app" && (
-            <EmployeeApp hasNotifications={hasNotifications} />
-          )}
-          
-          {currentView === "admin-login" && (
-            <AdminLogin 
-              onLoginSuccess={() => setCurrentView("admin-app")}
-              onSwitchToEmployee={() => setCurrentView("employee-login")}
-            />
-          )}
-          
-          {currentView === "admin-app" && (
-            <AdminApp 
-              hasNotifications={hasNotifications} 
-              onNotificationsToggle={() => setHasNotifications(!hasNotifications)}
-            />
-          )}
-          
-          {currentView === "shift-editor" && (
-            <ShiftEditor />
-          )}
-        </div>
+        {user.role === "employee" ? (
+          <EmployeeApp 
+            hasNotifications={hasNotifications} 
+            onLogout={handleLogout}
+          />
+        ) : (
+          <AdminApp 
+            hasNotifications={hasNotifications} 
+            onNotificationsToggle={() => setHasNotifications(!hasNotifications)}
+            onLogout={handleLogout}
+          />
+        )}
       </div>
     </VacationProvider>
   );
