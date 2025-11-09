@@ -51,11 +51,15 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [requestType, setRequestType] = useState<"休" | "有休" | "時間指定">("休");
-  const [startHour, setStartHour] = useState("");
-  const [startMinute, setStartMinute] = useState("");
-  const [endHour, setEndHour] = useState("");
-  const [endMinute, setEndMinute] = useState("");
+  const [startHour, setStartHour] = useState("09");
+  const [startMinute, setStartMinute] = useState("00");
+  const [endHour, setEndHour] = useState("12");
+  const [endMinute, setEndMinute] = useState("00");
   const [reason, setReason] = useState("");
+
+  // 時間選択のスクロール位置を制御するためのref
+  const startHourSelectRef = useState<HTMLButtonElement | null>(null);
+  const endHourSelectRef = useState<HTMLButtonElement | null>(null);
 
   // 来月（12月）のカレンダーを表示
   const today = new Date();
@@ -108,24 +112,24 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
         setStartHour(h);
         setStartMinute(m);
       } else {
-        setStartHour("");
-        setStartMinute("");
+        setStartHour("09");
+        setStartMinute("00");
       }
       if (existing.endTime) {
         const [h, m] = existing.endTime.split(":");
         setEndHour(h);
         setEndMinute(m);
       } else {
-        setEndHour("");
-        setEndMinute("");
+        setEndHour("12");
+        setEndMinute("00");
       }
       setReason(existing.reason || "");
     } else {
       setRequestType("休");
-      setStartHour("");
-      setStartMinute("");
-      setEndHour("");
-      setEndMinute("");
+      setStartHour("09");
+      setStartMinute("00");
+      setEndHour("12");
+      setEndMinute("00");
       setReason("");
     }
     
@@ -135,11 +139,21 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
   const handleSaveDay = () => {
     if (selectedDay === null) return;
 
-    const startTime = requestType === "時間指定" && startHour && startMinute 
-      ? `${startHour}:${startMinute}` 
+    // 時間指定の場合のバリデーション
+    if (requestType === "時間指定") {
+      if (!startHour || !startMinute || !endHour || !endMinute) {
+        toast.error("時間を設定してください", {
+          description: "開始時刻と終了時刻の両方を選択してください。",
+        });
+        return;
+      }
+    }
+
+    const startTime = requestType === "時間指定" && startHour && startMinute
+      ? `${startHour}:${startMinute}`
       : undefined;
-    const endTime = requestType === "時間指定" && endHour && endMinute 
-      ? `${endHour}:${endMinute}` 
+    const endTime = requestType === "時間指定" && endHour && endMinute
+      ? `${endHour}:${endMinute}`
       : undefined;
 
     const newRequest: DayRequest = {
@@ -512,14 +526,14 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                   className={`
                     relative p-6 rounded-2xl transition-all duration-300 text-left
                     ${requestType === "休"
-                      ? "bg-gradient-to-br from-success/20 to-success/10 border-4 border-success shadow-lg scale-[1.02]"
+                      ? "bg-gradient-to-br from-success/30 to-success/15 border-4 border-success shadow-lg scale-[1.02]"
                       : "bg-white border-2 border-muted hover:border-success/50 hover:bg-success/5"
                     }
                   `}
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-4xl">🌸</span>
-                    <span className={`text-2xl font-bold ${requestType === "休" ? "text-success" : "text-foreground"}`}>
+                    <span className={`text-2xl font-bold ${requestType === "休" ? "text-[#2B3A55]" : "text-foreground"}`}>
                       休
                     </span>
                     {requestType === "休" && (
@@ -534,18 +548,18 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                   className={`
                     relative p-6 rounded-2xl transition-all duration-300 text-left
                     ${requestType === "有休"
-                      ? "bg-gradient-to-br from-secondary/20 to-secondary/10 border-4 border-secondary shadow-lg scale-[1.02]"
+                      ? "bg-gradient-to-br from-secondary/40 to-secondary/20 border-4 border-secondary shadow-lg scale-[1.02]"
                       : "bg-white border-2 border-muted hover:border-secondary/50 hover:bg-secondary/5"
                     }
                   `}
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-4xl">💐</span>
-                    <span className={`text-2xl font-bold ${requestType === "有休" ? "text-secondary" : "text-foreground"}`}>
+                    <span className={`text-2xl font-bold ${requestType === "有休" ? "text-[#2B3A55]" : "text-foreground"}`}>
                       有休
                     </span>
                     {requestType === "有休" && (
-                      <CheckCircle className="w-8 h-8 text-secondary ml-auto" />
+                      <CheckCircle className="w-8 h-8 text-[#2B3A55] ml-auto" />
                     )}
                   </div>
                 </button>
@@ -559,15 +573,15 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                   className={`
                     relative p-6 rounded-2xl transition-all duration-300 text-left
                     ${requestType === "時間指定"
-                      ? "bg-gradient-to-br from-warning/20 to-warning/10 border-4 border-warning shadow-lg scale-[1.02]"
-                      : "bg-white border-2 border-muted hover:border-warning/50 hover:bg-warning/5"
+                      ? "bg-gradient-to-br from-accent/40 to-accent/20 border-4 border-accent shadow-lg scale-[1.02]"
+                      : "bg-white border-2 border-muted hover:border-accent/50 hover:bg-accent/5"
                     }
                   `}
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-4xl">⏰</span>
                     <div className="flex-1">
-                      <span className={`text-2xl font-bold ${requestType === "時間指定" ? "text-warning" : "text-foreground"}`}>
+                      <span className={`text-2xl font-bold ${requestType === "時間指定" ? "text-[#2B3A55]" : "text-foreground"}`}>
                         時間指定
                       </span>
                       {requestType === "時間指定" && startHour && endHour && (
@@ -577,7 +591,7 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                       )}
                     </div>
                     {requestType === "時間指定" && (
-                      <CheckCircle className="w-8 h-8 text-warning ml-auto" />
+                      <CheckCircle className="w-8 h-8 text-[#2B3A55] ml-auto" />
                     )}
                   </div>
                 </button>
@@ -660,44 +674,58 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
 
       {/* Time Selection Modal */}
       <Dialog open={showTimeModal} onOpenChange={setShowTimeModal}>
-        <DialogContent className="rounded-3xl border-2 border-warning/50 max-w-sm" aria-describedby={undefined}>
+        <DialogContent className="rounded-3xl border-2 border-accent/50 max-w-sm" aria-describedby={undefined}>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="w-6 h-6 text-warning" />
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Clock className="w-7 h-7 text-accent" />
               時間帯を選択
-              <span className="text-xl ml-auto">⏰</span>
+              <span className="text-2xl ml-auto">⏰</span>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* 開始時刻 */}
             <div className="space-y-3">
-              <Label className="flex items-center gap-2 text-base">
-                <span className="text-2xl">🌅</span>
+              <Label className="flex items-center gap-2 text-lg font-semibold">
+                <span className="text-3xl">🌅</span>
                 開始時刻
               </Label>
               <div className="grid grid-cols-2 gap-3">
-                <Select value={startHour} onValueChange={(v) => {
-                  setStartHour(v);
-                  if (!startMinute) setStartMinute("00");
-                }}>
-                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                <Select
+                  value={startHour}
+                  onValueChange={(v) => {
+                    setStartHour(v);
+                    if (!startMinute) setStartMinute("00");
+                  }}
+                  defaultValue="09"
+                >
+                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
                     <SelectValue placeholder="時" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {Array.from({ length: 15 }, (_, i) => i + 9).map((hour) => (
-                      <SelectItem key={hour} value={hour.toString().padStart(2, "0")}>
+                  <SelectContent className="max-h-[180px]" position="popper" sideOffset={5}>
+                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                      <SelectItem
+                        key={hour}
+                        value={hour.toString().padStart(2, "0")}
+                        className="text-xl py-3 h-[60px]"
+                      >
                         {hour.toString().padStart(2, "0")}時
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={startMinute} onValueChange={setStartMinute}>
-                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                <Select
+                  value={startMinute}
+                  onValueChange={setStartMinute}
+                  defaultValue="00"
+                >
+                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
                     <SelectValue placeholder="分" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="00">00分</SelectItem>
-                    <SelectItem value="30">30分</SelectItem>
+                    <SelectItem value="00" className="text-xl py-3">00分</SelectItem>
+                    <SelectItem value="15" className="text-xl py-3">15分</SelectItem>
+                    <SelectItem value="30" className="text-xl py-3">30分</SelectItem>
+                    <SelectItem value="45" className="text-xl py-3">45分</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -705,33 +733,47 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
 
             {/* 終了時刻 */}
             <div className="space-y-3">
-              <Label className="flex items-center gap-2 text-base">
-                <span className="text-2xl">🌙</span>
+              <Label className="flex items-center gap-2 text-lg font-semibold">
+                <span className="text-3xl">🌙</span>
                 終了時刻
               </Label>
               <div className="grid grid-cols-2 gap-3">
-                <Select value={endHour} onValueChange={(v) => {
-                  setEndHour(v);
-                  if (!endMinute) setEndMinute("00");
-                }}>
-                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                <Select
+                  value={endHour}
+                  onValueChange={(v) => {
+                    setEndHour(v);
+                    if (!endMinute) setEndMinute("00");
+                  }}
+                  defaultValue="12"
+                >
+                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
                     <SelectValue placeholder="時" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {Array.from({ length: 4 }, (_, i) => i + 20).map((hour) => (
-                      <SelectItem key={hour} value={hour.toString().padStart(2, "0")}>
+                  <SelectContent className="max-h-[180px]" position="popper" sideOffset={5}>
+                    {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
+                      <SelectItem
+                        key={hour}
+                        value={hour.toString().padStart(2, "0")}
+                        className="text-xl py-3 h-[60px]"
+                      >
                         {hour.toString().padStart(2, "0")}時
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={endMinute} onValueChange={setEndMinute}>
-                  <SelectTrigger className="rounded-xl border-2 h-16 bg-white shadow-sm text-lg">
+                <Select
+                  value={endMinute}
+                  onValueChange={setEndMinute}
+                  defaultValue="00"
+                >
+                  <SelectTrigger className="rounded-xl border-2 h-20 bg-white shadow-sm text-2xl font-bold">
                     <SelectValue placeholder="分" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="00">00分</SelectItem>
-                    <SelectItem value="30">30分</SelectItem>
+                    <SelectItem value="00" className="text-xl py-3">00分</SelectItem>
+                    <SelectItem value="15" className="text-xl py-3">15分</SelectItem>
+                    <SelectItem value="30" className="text-xl py-3">30分</SelectItem>
+                    <SelectItem value="45" className="text-xl py-3">45分</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -739,13 +781,13 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
 
             {/* プレビュー */}
             {startHour && endHour && (
-              <div className="p-4 bg-gradient-to-br from-warning/20 to-accent/10 rounded-2xl border-2 border-warning/40">
+              <div className="p-5 bg-gradient-to-br from-accent/30 to-secondary/20 rounded-2xl border-2 border-accent/50">
                 <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">選択時間</p>
-                  <div className="flex items-center justify-center gap-2 text-xl font-semibold">
-                    <span>{startHour}:{startMinute || "00"}</span>
+                  <p className="text-base text-muted-foreground mb-2 font-medium">選択時間</p>
+                  <div className="flex items-center justify-center gap-3 text-2xl font-bold">
+                    <span className="text-[#2B3A55]">{startHour}:{startMinute || "00"}</span>
                     <span className="text-muted-foreground">〜</span>
-                    <span>{endHour}:{endMinute || "00"}</span>
+                    <span className="text-[#2B3A55]">{endHour}:{endMinute || "00"}</span>
                   </div>
                 </div>
               </div>
@@ -755,16 +797,16 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
             <Button
               variant="outline"
               onClick={() => setShowTimeModal(false)}
-              className="rounded-xl border-2"
+              className="rounded-xl border-2 text-base h-12"
             >
               キャンセル
             </Button>
             <Button
               onClick={() => setShowTimeModal(false)}
               disabled={!startHour || !endHour}
-              className="rounded-xl bg-gradient-to-r from-warning to-warning/80 shadow-lg"
+              className="rounded-xl bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 shadow-lg text-base h-12"
             >
-              <Clock className="w-4 h-4 mr-2" />
+              <Clock className="w-5 h-5 mr-2" />
               決定
             </Button>
           </DialogFooter>
