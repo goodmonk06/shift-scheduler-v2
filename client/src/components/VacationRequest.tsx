@@ -645,7 +645,7 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
 
       {/* Time Selection Modal */}
       <Dialog open={showTimeModal} onOpenChange={setShowTimeModal}>
-        <DialogContent className="rounded-3xl border-2 border-accent/50 max-w-sm bg-gradient-to-br from-white to-accent/5" aria-describedby={undefined}>
+        <DialogContent className="rounded-3xl border-2 border-accent/50 max-w-sm bg-gradient-to-br from-white to-accent/5 shadow-2xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Clock className="w-7 h-7 text-accent" />
@@ -674,21 +674,21 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                       <SelectValue placeholder="時" />
                     </SelectTrigger>
                     <SelectContent
-                      className="max-h-[180px] rounded-2xl border-2 border-accent/30 bg-white/95 backdrop-blur-sm"
+                      className="max-h-[240px] rounded-2xl border-2 border-accent/30 bg-white/95 backdrop-blur-sm"
                       position="popper"
                       sideOffset={5}
                     >
-                      <div className="relative">
-                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent pointer-events-none z-10" />
-                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
+                      <div className="relative py-2">
+                        <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none z-10" />
+                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
                         {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
                           <SelectItem
                             key={hour}
                             value={hour.toString().padStart(2, "0")}
-                            className="text-2xl py-4 h-[60px] justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all"
+                            className="text-xl py-3 h-[50px] justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all cursor-pointer mx-1 rounded-lg"
                           >
                             <span className="font-bold">{hour.toString().padStart(2, "0")}</span>
-                            <span className="text-lg ml-1">時</span>
+                            <span className="text-base ml-1">時</span>
                           </SelectItem>
                         ))}
                       </div>
@@ -743,21 +743,21 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                       <SelectValue placeholder="時" />
                     </SelectTrigger>
                     <SelectContent
-                      className="max-h-[180px] rounded-2xl border-2 border-secondary/30 bg-white/95 backdrop-blur-sm"
+                      className="max-h-[240px] rounded-2xl border-2 border-secondary/30 bg-white/95 backdrop-blur-sm"
                       position="popper"
                       sideOffset={5}
                     >
-                      <div className="relative">
-                        <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-white to-transparent pointer-events-none z-10" />
-                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none z-10" />
+                      <div className="relative py-2">
+                        <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none z-10" />
+                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
                         {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
                           <SelectItem
                             key={hour}
                             value={hour.toString().padStart(2, "0")}
-                            className="text-2xl py-4 h-[60px] justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all"
+                            className="text-xl py-3 h-[50px] justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all cursor-pointer mx-1 rounded-lg"
                           >
                             <span className="font-bold">{hour.toString().padStart(2, "0")}</span>
-                            <span className="text-lg ml-1">時</span>
+                            <span className="text-base ml-1">時</span>
                           </SelectItem>
                         ))}
                       </div>
