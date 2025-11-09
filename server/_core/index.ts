@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { simpleLogin, simpleLogout, getSimpleAuthUser } from "../simpleAuth";
 import { adminLogin, adminLogout, getAdminAuthUser } from "../adminAuth";
+import serverRouter from "../routes/server";
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (reason, promise) => {
@@ -68,6 +69,10 @@ async function startServer() {
   app.post("/api/admin-auth/login", adminLogin);
   app.post("/api/admin-auth/logout", adminLogout);
   app.get("/api/admin-auth/me", getAdminAuthUser);
+
+  // Server management routes
+  app.use("/api/server", serverRouter);
+
   // tRPC API
   app.use(
     "/api/trpc",

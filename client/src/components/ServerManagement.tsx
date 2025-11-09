@@ -38,20 +38,30 @@ export function ServerManagement() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // TODO: APIエンドポイントから実際のデータを取得
-      // const response = await fetch('/api/server/stats');
-      // const data = await response.json();
+      // APIエンドポイントから実際のデータを取得
+      const response = await fetch('/api/server/stats');
 
-      // モックデータ（実装時にAPIから取得）
-      const mockData: ServerStats = {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: ServerStats = await response.json();
+
+      setStats(data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Failed to fetch server stats:", error);
+
+      // エラー時はフォールバック（モックデータ）
+      const fallbackData: ServerStats = {
         storage: {
-          used: 298, // MB
-          total: 1024, // 1GB
+          used: 298,
+          total: 1024,
           percentage: 29.1,
         },
         memory: {
-          used: 492, // MB
-          total: 1024, // 1GB
+          used: 492,
+          total: 1024,
           percentage: 48.0,
         },
         database: {
@@ -66,10 +76,8 @@ export function ServerManagement() {
         },
       };
 
-      setStats(mockData);
+      setStats(fallbackData);
       setLastUpdated(new Date());
-    } catch (error) {
-      console.error("Failed to fetch server stats:", error);
     } finally {
       setLoading(false);
     }
