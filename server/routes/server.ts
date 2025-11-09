@@ -5,6 +5,11 @@ import rateLimit from "express-rate-limit";
 
 const router = Router();
 
+// キャッシュ: 5分間隔で更新
+let cachedStats: ServerStats | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5分
+
 // レート制限: 1分間に最大10リクエスト
 const statsLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1分
@@ -35,6 +40,46 @@ interface ServerStats {
     ipWhitelistEnabled: boolean;
     lastPasswordChange: string;
   };
+}
+
+/**
+ * ストレージ使用量を推定（データベースサイズから計算）
+ */
+async function getStorageEstimate(db: any) {
+  try {
+    // テーブルサイズを取得（データ + インデックス）
+    const sizeResult = await db.execute(`
+      SELECT
+        SUM(data_length + index_length) / 1024 / 1024 AS size_mb
+      FROM information_schema.tables
+      WHERE table_schema = 'defaultdb'
+    `);
+
+    // 実データサイズ（MB）
+    const dataSizeMB = Math.round(sizeResult[0]?.size_mb || 0);
+
+    // システムオーバーヘッドを考慮（実データの約3倍）
+    // ログ、バックアップ、システムテーブルなどを含む
+    const estimatedUsedMB = Math.max(dataSizeMB * 3, 100); // 最小100MB
+
+    const totalMB = 1024; // 1GB
+
+    return {
+      used: estimatedUsedMB,
+      total: totalMB,
+      percentage: Math.min((estimatedUsedMB / totalMB) * 100, 100),
+      dataSize: dataSizeMB, // 実データサイズ（参考用）
+    };
+  } catch (error) {
+    console.error("[StorageEstimate] Error:", error);
+    // エラー時は保守的な値を返す
+    return {
+      used: 300,
+      total: 1024,
+      percentage: 29.3,
+      dataSize: 100,
+    };
+  }
 }
 
 /**
@@ -95,9 +140,17 @@ async function getDatabaseStats(db: any) {
  */
 router.get("/stats", statsLimiter, async (req, res) => {
   const startTime = Date.now();
+  const now = Date.now();
 
   try {
-    console.log("[ServerStats] Fetching server statistics...");
+    // キャッシュが有効な場合は返す
+    if (cachedStats && (now - cacheTimestamp) < CACHE_DURATION) {
+      const cacheAge = Math.round((now - cacheTimestamp) / 1000);
+      console.log(`[ServerStats] Returning cached data (age: ${cacheAge}s)`);
+      return res.json(cachedStats);
+    }
+
+    console.log("[ServerStats] Fetching fresh server statistics...");
 
     const db = await getDb();
     if (!db) {
@@ -105,17 +158,20 @@ router.get("/stats", statsLimiter, async (req, res) => {
       return res.status(500).json({ error: "Database connection failed" });
     }
 
-    // データベース統計を取得
-    const databaseStats = await getDatabaseStats(db);
+    // ストレージ推定とデータベース統計を並列取得
+    const [storageEstimate, databaseStats] = await Promise.all([
+      getStorageEstimate(db),
+      getDatabaseStats(db),
+    ]);
 
     const stats: ServerStats = {
-      // ストレージ: 固定値（Aivenの現在の値）
+      // ストレージ: データベースサイズから推定
       storage: {
-        used: 298, // MB
-        total: 1024, // 1GB
-        percentage: 29.1,
+        used: storageEstimate.used,
+        total: storageEstimate.total,
+        percentage: Number(storageEstimate.percentage.toFixed(1)),
       },
-      // メモリ: 固定値（Aivenの現在の値）
+      // メモリ: 固定値（推定困難）
       memory: {
         used: 492, // MB
         total: 1024, // 1GB
@@ -131,8 +187,12 @@ router.get("/stats", statsLimiter, async (req, res) => {
       },
     };
 
+    // キャッシュを更新
+    cachedStats = stats;
+    cacheTimestamp = now;
+
     const duration = Date.now() - startTime;
-    console.log(`[ServerStats] Fetched successfully in ${duration}ms`);
+    console.log(`[ServerStats] Fetched successfully in ${duration}ms (data size: ${storageEstimate.dataSize}MB, estimated: ${storageEstimate.used}MB)`);
 
     res.json(stats);
   } catch (error) {
