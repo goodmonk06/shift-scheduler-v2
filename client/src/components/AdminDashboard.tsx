@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { Users, Calendar, Bell, Archive, Sparkles, Home } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { dashboardService } from "../services/dashboardService";
 
-type ShiftStatus = "draft" | "tentative" | "confirmed" | "archived";
+type ShiftStatus = "draft" | "tentative" | "tentative_revised" | "confirmed" | "actual" | "archived";
 
 interface EmergencyNotification {
   id: string;
@@ -17,20 +19,36 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps = {}) {
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalEmployees: 0,
+    currentShift: null as {
+      id: number;
+      year: number;
+      month: number;
+      status: string;
+      leaveRequestDeadline: string | null;
+    } | null,
+    emergencyNotifications: 0,
+    archivedShifts: 0,
+  });
 
-  // モックデータ（後でAPI連携）
-  const stats = {
-    totalEmployees: 24,
-    currentShift: {
-      year: currentYear,
-      month: currentMonth,
-      status: "confirmed" as ShiftStatus,
-    },
-    emergencyNotifications: 3,
-    archivedShifts: 12,
-  };
+  // APIからダッシュボード統計を取得
+  useEffect(() => {
+    async function loadDashboardStats() {
+      try {
+        setIsLoading(true);
+        const data = await dashboardService.getStats();
+        setStats(data);
+      } catch (error) {
+        console.error("ダッシュボード統計の取得に失敗しました:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadDashboardStats();
+  }, []);
 
   const recentNotifications: EmergencyNotification[] = [
     {
@@ -54,30 +72,40 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps = {}) {
   ];
 
   // ステータスのラベル
-  const getStatusLabel = (status: ShiftStatus) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case "draft":
         return "下書き";
       case "tentative":
         return "仮確定";
+      case "tentative_revised":
+        return "仮確定(修正版)";
       case "confirmed":
         return "確定";
+      case "actual":
+        return "実績";
       case "archived":
         return "アーカイブ";
+      default:
+        return status;
     }
   };
 
   // ステータスのバッジvariant
-  const getStatusBadgeVariant = (status: ShiftStatus): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case "draft":
         return "outline";
       case "tentative":
+      case "tentative_revised":
         return "secondary";
       case "confirmed":
+      case "actual":
         return "default";
       case "archived":
         return "destructive";
+      default:
+        return "outline";
     }
   };
 
@@ -117,14 +145,20 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps = {}) {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">今月のシフト</p>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-lg text-gray-900">
-                  {stats.currentShift.year}年{stats.currentShift.month}月
-                </p>
-                <Badge variant={getStatusBadgeVariant(stats.currentShift.status)} className="text-xs">
-                  {getStatusLabel(stats.currentShift.status)}
-                </Badge>
-              </div>
+              {isLoading ? (
+                <p className="text-lg text-gray-900">読み込み中...</p>
+              ) : stats.currentShift ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-lg text-gray-900">
+                    {stats.currentShift.year}年{stats.currentShift.month}月
+                  </p>
+                  <Badge variant={getStatusBadgeVariant(stats.currentShift.status)} className="text-xs">
+                    {getStatusLabel(stats.currentShift.status)}
+                  </Badge>
+                </div>
+              ) : (
+                <p className="text-lg text-muted-foreground">未作成</p>
+              )}
             </div>
           </div>
         </Card>

@@ -518,6 +518,50 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await db.updateLeaveRequest(input.id, { status: "rejected" });
       }),
+    // 一括承認（締切後に全員分を承認）
+    approveAllForShift: protectedProcedure
+      .input(z.object({ shiftId: z.number() }))
+      .mutation(async ({ input }) => {
+        const allRequests = await db.getLeaveRequestsByShift(input.shiftId);
+        const pendingRequests = allRequests.filter(req => req.status === "pending");
+
+        // すべてのpending状態の希望休を承認
+        await Promise.all(
+          pendingRequests.map(req =>
+            db.updateLeaveRequest(req.id, { status: "approved" })
+          )
+        );
+
+        return {
+          approved: pendingRequests.length,
+          total: allRequests.length
+        };
+      }),
+    // 希望休提出状況を取得
+    getSubmissionStatus: protectedProcedure
+      .input(z.object({ shiftId: z.number() }))
+      .query(async ({ input }) => {
+        const allEmployees = await db.getAllEmployees();
+        const requests = await db.getLeaveRequestsByShift(input.shiftId);
+
+        // 提出した職員のID
+        const submittedEmployeeIds = new Set(requests.map(r => r.employeeId));
+
+        // 未提出の職員リスト
+        const notSubmitted = allEmployees.filter(emp => !submittedEmployeeIds.has(emp.id));
+
+        return {
+          total: allEmployees.length,
+          submitted: submittedEmployeeIds.size,
+          notSubmitted: notSubmitted.map(emp => ({
+            id: emp.id,
+            name: emp.name,
+            email: emp.email
+          })),
+          pendingApproval: requests.filter(r => r.status === "pending").length,
+          approved: requests.filter(r => r.status === "approved").length
+        };
+      }),
   }),
 
   // Change Proposals
@@ -612,6 +656,45 @@ export const appRouter = router({
           createdBy: ctx.user.id,
         });
       }),
+  }),
+
+  // Dashboard Statistics
+  dashboard: router({
+    getStats: protectedProcedure.query(async () => {
+      const [
+        employees,
+        shifts,
+        emergencyNotifications
+      ] = await Promise.all([
+        db.getAllEmployees(),
+        db.getAllShifts(),
+        db.getEmergencyNotifications()
+      ]);
+
+      // 今月のシフトを取得
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const currentShift = shifts.find(
+        s => s.year === currentYear && s.month === currentMonth
+      );
+
+      // アーカイブ済みシフトのカウント
+      const archivedShifts = shifts.filter(s => s.status === "archived").length;
+
+      return {
+        totalEmployees: employees.length,
+        currentShift: currentShift ? {
+          id: currentShift.id,
+          year: currentShift.year,
+          month: currentShift.month,
+          status: currentShift.status,
+          leaveRequestDeadline: currentShift.leaveRequestDeadline,
+        } : null,
+        emergencyNotifications: emergencyNotifications.length,
+        archivedShifts,
+      };
+    }),
   }),
 });
 
