@@ -4,15 +4,9 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { dashboardService } from "../services/dashboardService";
+import { notificationService, type EmergencyNotification } from "../services/notificationService";
 
 type ShiftStatus = "draft" | "tentative" | "tentative_revised" | "confirmed" | "actual" | "archived";
-
-interface EmergencyNotification {
-  id: string;
-  title: string;
-  message: string;
-  createdAt: string;
-}
 
 interface AdminDashboardProps {
   onNavigate?: (view: string) => void;
@@ -32,44 +26,28 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps = {}) {
     emergencyNotifications: 0,
     archivedShifts: 0,
   });
+  const [recentNotifications, setRecentNotifications] = useState<EmergencyNotification[]>([]);
 
-  // APIからダッシュボード統計を取得
+  // APIからダッシュボード統計と通知を取得
   useEffect(() => {
-    async function loadDashboardStats() {
+    async function loadDashboardData() {
       try {
         setIsLoading(true);
-        const data = await dashboardService.getStats();
-        setStats(data);
+        const [statsData, notificationsData] = await Promise.all([
+          dashboardService.getStats(),
+          notificationService.getRecentNotifications(5),
+        ]);
+        setStats(statsData);
+        setRecentNotifications(notificationsData);
       } catch (error) {
-        console.error("ダッシュボード統計の取得に失敗しました:", error);
+        console.error("ダッシュボードデータの取得に失敗しました:", error);
       } finally {
         setIsLoading(false);
       }
     }
 
-    loadDashboardStats();
+    loadDashboardData();
   }, []);
-
-  const recentNotifications: EmergencyNotification[] = [
-    {
-      id: "1",
-      title: "明日のシフト変更について",
-      message: "山田さんが体調不良のため、明日の早番を佐藤さんに変更しました。",
-      createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    },
-    {
-      id: "2",
-      title: "来週のシフト確定のお知らせ",
-      message: "来週（11月11日〜17日）のシフトが確定しました。",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    },
-    {
-      id: "3",
-      title: "緊急連絡：欠員対応",
-      message: "本日の夜勤に欠員が発生しました。代替職員の手配をお願いします。",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    },
-  ];
 
   // ステータスのラベル
   const getStatusLabel = (status: string) => {

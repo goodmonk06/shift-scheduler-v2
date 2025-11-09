@@ -620,6 +620,15 @@ export const appRouter = router({
     list: protectedProcedure.query(async () => {
       return await db.getEmergencyNotifications();
     }),
+    getRecent: protectedProcedure
+      .input(z.object({ limit: z.number().optional().default(5) }))
+      .query(async ({ input }) => {
+        const allNotifications = await db.getEmergencyNotifications();
+        // 最新のものから指定された件数を取得
+        return allNotifications
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, input.limit);
+      }),
     create: protectedProcedure
       .input(z.object({
         title: z.string(),
