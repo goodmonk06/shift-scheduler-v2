@@ -7,13 +7,12 @@ import { Label } from "./ui/label";
 import { toast } from "sonner";
 
 interface EmployeeLoginProps {
-  onLoginSuccess: (email: string, password: string) => void | Promise<void>;
+  onLoginSuccess: (employeeId: string) => void | Promise<void>;
   onSwitchToAdmin?: () => void;
 }
 
 export function EmployeeLogin({ onLoginSuccess, onSwitchToAdmin }: EmployeeLoginProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
   const [loading, setLoading] = useState(false);
 
   // デフォルトカラー（固定値）
@@ -26,16 +25,9 @@ export function EmployeeLogin({ onLoginSuccess, onSwitchToAdmin }: EmployeeLogin
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.trim()) {
+    if (!employeeId.trim()) {
       toast.error("入力エラー", {
-        description: "メールアドレスを入力してください",
-      });
-      return;
-    }
-
-    if (!password.trim()) {
-      toast.error("入力エラー", {
-        description: "パスワードを入力してください",
+        description: "職員IDを入力してください",
       });
       return;
     }
@@ -43,7 +35,7 @@ export function EmployeeLogin({ onLoginSuccess, onSwitchToAdmin }: EmployeeLogin
     setLoading(true);
 
     try {
-      await onLoginSuccess(email.trim(), password);
+      await onLoginSuccess(employeeId.trim());
       toast.success("ログイン成功", {
         description: "職員画面へようこそ！",
       });
@@ -115,56 +107,35 @@ export function EmployeeLogin({ onLoginSuccess, onSwitchToAdmin }: EmployeeLogin
               <Sparkles className="w-5 h-5" style={{ color: defaultColors.accent }} />
             </div>
             <p className="text-muted-foreground">
-              メールアドレスとパスワードでログイン
+              職員IDでログイン
             </p>
           </div>
         </div>
 
         {/* Login Card */}
-        <Card 
+        <Card
           className="p-8 bg-white/95 backdrop-blur-sm border-2 shadow-2xl rounded-3xl"
           style={{ borderColor: `${defaultColors.secondary}4D` }}
         >
           <form onSubmit={handleLogin} className="space-y-6">
-            {/* Email Field */}
+            {/* Employee ID Field */}
             <div className="space-y-3">
-              <Label htmlFor="email" className="flex items-center gap-2" style={{ color: defaultColors.primary }}>
+              <Label htmlFor="employeeId" className="flex items-center gap-2" style={{ color: defaultColors.primary }}>
                 <User className="w-4 h-4" style={{ color: defaultColors.secondary }} />
-                メールアドレス
+                職員ID
               </Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="例: email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-14 rounded-2xl border-2 px-4"
+                id="employeeId"
+                type="text"
+                placeholder="例: EMP00001"
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                className="h-14 rounded-2xl border-2 px-4 text-lg"
                 style={{
                   borderColor: `${defaultColors.secondary}4D`,
                   '--tw-ring-color': defaultColors.secondary,
                 } as React.CSSProperties}
                 autoFocus
-                disabled={loading}
-              />
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-3">
-              <Label htmlFor="password" className="flex items-center gap-2" style={{ color: defaultColors.primary }}>
-                <User className="w-4 h-4" style={{ color: defaultColors.secondary }} />
-                パスワード
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="パスワードを入力"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-14 rounded-2xl border-2 px-4"
-                style={{
-                  borderColor: `${defaultColors.secondary}4D`,
-                  '--tw-ring-color': defaultColors.secondary,
-                } as React.CSSProperties}
                 disabled={loading}
               />
             </div>
@@ -215,12 +186,12 @@ export function EmployeeLogin({ onLoginSuccess, onSwitchToAdmin }: EmployeeLogin
             <div className="flex gap-3">
               <div className="text-2xl">💡</div>
               <div className="space-y-1">
-                <h4 className="text-sm">デモ用ログイン</h4>
+                <h4 className="text-sm font-medium">職員IDについて</h4>
                 <p className="text-xs text-muted-foreground">
-                  任意の文字列を入力してログインできます
+                  職員IDは管理者から発行された固有のIDです
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  例: <code className="px-1.5 py-0.5 rounded bg-muted">EMP00001</code>
+                  例: <code className="px-1.5 py-0.5 rounded bg-muted">EMP00001</code> または <code className="px-1.5 py-0.5 rounded bg-muted">yamada@example.com</code>
                 </p>
               </div>
             </div>

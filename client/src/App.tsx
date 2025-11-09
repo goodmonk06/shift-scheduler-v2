@@ -63,9 +63,9 @@ export default function App() {
     }
   }
 
-  async function handleEmployeeLogin(identifier: string, password: string) {
+  async function handleEmployeeLogin(identifier: string) {
     try {
-      // 職員は employeeId または email でログイン
+      // 職員は employeeId または email でログイン（パスワード不要）
       const response = await authService.loginAsEmployee(identifier);
 
       if (response.success && response.user) {
@@ -86,8 +86,9 @@ export default function App() {
     }
   }
 
-  async function handleAdminLogin(email: string, password: string) {
+  async function handleAdminLogin(email: string) {
     try {
+      // 管理者はメールアドレスでログイン（パスワード不要）
       const response = await authService.loginAsAdmin(email);
 
       if (response.success && response.user) {

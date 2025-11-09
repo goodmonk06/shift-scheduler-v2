@@ -7,13 +7,12 @@ import { Label } from "./ui/label";
 import { toast } from "sonner";
 
 interface AdminLoginProps {
-  onLoginSuccess: (email: string, password: string) => void | Promise<void>;
+  onLoginSuccess: (email: string) => void | Promise<void>;
   onSwitchToEmployee?: () => void;
 }
 
 export function AdminLogin({ onLoginSuccess, onSwitchToEmployee }: AdminLoginProps) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   // デフォルトカラー（固定値）
@@ -28,14 +27,7 @@ export function AdminLogin({ onLoginSuccess, onSwitchToEmployee }: AdminLoginPro
 
     if (!email.trim()) {
       toast.error("入力エラー", {
-        description: "メールアドレスを入力してください",
-      });
-      return;
-    }
-
-    if (!password.trim()) {
-      toast.error("入力エラー", {
-        description: "パスワードを入力してください",
+        description: "管理者IDを入力してください",
       });
       return;
     }
@@ -43,7 +35,7 @@ export function AdminLogin({ onLoginSuccess, onSwitchToEmployee }: AdminLoginPro
     setLoading(true);
 
     try {
-      await onLoginSuccess(email.trim(), password);
+      await onLoginSuccess(email.trim());
       toast.success("ログイン成功", {
         description: "管理者画面へようこそ！",
       });
@@ -115,56 +107,35 @@ export function AdminLogin({ onLoginSuccess, onSwitchToEmployee }: AdminLoginPro
               <Sparkles className="w-5 h-5" style={{ color: defaultColors.warning }} />
             </div>
             <p className="text-muted-foreground">
-              管理者権限でシステムにアクセス
+              管理者IDでログイン
             </p>
           </div>
         </div>
 
         {/* Login Card */}
-        <Card 
+        <Card
           className="p-8 bg-white/95 backdrop-blur-sm border-2 shadow-2xl rounded-3xl"
           style={{ borderColor: `${defaultColors.primary}4D` }}
         >
           <form onSubmit={handleLogin} className="space-y-6">
-            {/* Email Field */}
+            {/* Admin ID Field */}
             <div className="space-y-3">
               <Label htmlFor="email" className="flex items-center gap-2" style={{ color: defaultColors.primary }}>
                 <Mail className="w-4 h-4" style={{ color: defaultColors.primary }} />
-                管理者メールアドレス
+                管理者ID（メールアドレス）
               </Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                 placeholder="admin@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-14 rounded-2xl border-2 px-4"
+                className="h-14 rounded-2xl border-2 px-4 text-lg"
                 style={{
                   borderColor: `${defaultColors.primary}4D`,
                   '--tw-ring-color': defaultColors.primary,
                 } as React.CSSProperties}
                 autoFocus
-                disabled={loading}
-              />
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-3">
-              <Label htmlFor="password" className="flex items-center gap-2" style={{ color: defaultColors.primary }}>
-                <Shield className="w-4 h-4" style={{ color: defaultColors.primary }} />
-                パスワード
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="パスワードを入力"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-14 rounded-2xl border-2 px-4"
-                style={{
-                  borderColor: `${defaultColors.primary}4D`,
-                  '--tw-ring-color': defaultColors.primary,
-                } as React.CSSProperties}
                 disabled={loading}
               />
             </div>
