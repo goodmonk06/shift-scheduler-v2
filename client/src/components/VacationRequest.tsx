@@ -489,15 +489,15 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
 
       {/* Day Configuration Dialog */}
       <Dialog open={showDayDialog} onOpenChange={setShowDayDialog}>
-        <DialogContent className="rounded-3xl border-2 border-secondary/30" aria-describedby={undefined}>
-          <DialogHeader>
+        <DialogContent className="rounded-3xl border-2 border-secondary/30 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
             <DialogTitle className="flex items-center gap-2">
               <span className="text-2xl">📅</span>
               {nextMonthName}{selectedDay}日の設定
               <Sparkles className="w-5 h-5 text-accent ml-auto" />
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+          <div className="space-y-4 sm:space-y-6 py-2 sm:py-4">
             {/* Request Type */}
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
@@ -626,30 +626,32 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
               />
             </div>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="sticky bottom-0 bg-background border-t pt-4 gap-2 flex-col sm:flex-row">
             {(requests.has(selectedDay || 0) || submittedRequests.has(selectedDay || 0)) && (
               <Button
                 variant="outline"
                 onClick={handleRemoveDay}
-                className="rounded-xl text-destructive hover:text-destructive border-2"
+                className="rounded-xl text-destructive hover:text-destructive border-2 w-full sm:w-auto"
               >
                 🗑️ 削除
               </Button>
             )}
-            <Button
-              variant="outline"
-              onClick={() => setShowDayDialog(false)}
-              className="rounded-xl border-2"
-            >
-              キャンセル
-            </Button>
-            <Button
-              onClick={handleSaveDay}
-              className="rounded-xl bg-gradient-to-r from-primary to-primary/80 shadow-lg"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              設定する
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => setShowDayDialog(false)}
+                className="rounded-xl border-2 flex-1 sm:flex-none"
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleSaveDay}
+                className="rounded-xl bg-gradient-to-r from-primary to-primary/80 shadow-lg flex-1 sm:flex-none"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                設定する
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
