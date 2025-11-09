@@ -18,12 +18,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import { toast } from "sonner";
 import type { ShiftData, ShiftAssignment, AIGenerationConfig, Employee } from "../types/shiftTypes";
 import type { ShiftStatus } from "../types/api";
 import { ShiftCalendarView } from "./ShiftCalendarView";
 import { ShiftTableView } from "./ShiftTableView";
 import { getStatusLabel, getStatusBadgeVariant, getDaysInMonth } from "../utils/shiftHelpers";
+import { useToast } from "../hooks/useToast";
+import { LoadingInline } from "./ui/loading-spinner";
 
 interface ShiftEditorProps {
   shiftId?: string;
@@ -31,6 +32,7 @@ interface ShiftEditorProps {
 }
 
 export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
+  const toast = useToast();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 

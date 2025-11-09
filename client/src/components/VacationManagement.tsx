@@ -6,15 +6,19 @@ import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { VacationRequestCard } from "./VacationRequestCard";
 import { useVacation } from "../contexts/VacationContext";
-import { toast } from "sonner";
 import { leaveRequestService, type SubmissionStatus } from "../services/leaveRequestService";
 import { formatDeadline } from "../utils/vacationManagementHelpers";
 import { StatsCards } from "./vacation/StatsCards";
 import { RequestDetailDialog } from "./vacation/RequestDetailDialog";
 import { DeadlineSettingDialog } from "./vacation/DeadlineSettingDialog";
 import { SubmissionStatusDialog } from "./vacation/SubmissionStatusDialog";
+import { useMutation } from "../hooks/useAsync";
+import { useToast } from "../hooks/useToast";
+import { LoadingInline } from "./ui/loading-spinner";
+import { EmptyState } from "./ui/error-state";
 
 export function VacationManagement() {
+  const toast = useToast();
   const { vacationRequests, approveRequest, rejectRequest, deadline, setDeadline } = useVacation();
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
@@ -24,8 +28,6 @@ export function VacationManagement() {
   const [tempDeadlineTime, setTempDeadlineTime] = useState("");
   const [showAdditionalOnly, setShowAdditionalOnly] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus | null>(null);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
 
   // 現在のシフトIDを取得（仮で1を使用、実際にはpropsやcontextから取得）
   const currentShiftId = 1;
@@ -91,52 +93,52 @@ export function VacationManagement() {
   };
 
 
-  // 提出状況を取得
-  const loadSubmissionStatus = async () => {
-    try {
-      setIsLoadingStatus(true);
+  // 提出状況を取得 - useMutationに移行
+  const { mutate: loadSubmissionStatus, isLoading: isLoadingStatus } = useMutation(
+    async () => {
       const status = await leaveRequestService.getSubmissionStatus(currentShiftId);
       setSubmissionStatus(status);
       setShowSubmissionStatusDialog(true);
-    } catch (error) {
-      console.error("提出状況の取得に失敗しました:", error);
-      toast.error("提出状況の取得に失敗しました");
-    } finally {
-      setIsLoadingStatus(false);
+      return status;
+    },
+    {
+      onError: () => toast.error("提出状況の取得に失敗しました"),
     }
-  };
+  );
 
-  // 一括承認
-  const handleBulkApproval = async () => {
-    if (new Date() < deadline) {
-      toast.error("締切前は一括承認できません", {
-        description: "締切後に実行してください",
-      });
-      return;
-    }
+  // 一括承認 - useMutationに移行
+  const { mutate: handleBulkApproval, isLoading: isApproving } = useMutation(
+    async () => {
+      if (new Date() < deadline) {
+        throw new Error("締切前は一括承認できません");
+      }
 
-    if (pendingRequests.length === 0) {
-      toast.info("承認待ちの申請がありません");
-      return;
-    }
+      if (pendingRequests.length === 0) {
+        throw new Error("承認待ちの申請がありません");
+      }
 
-    try {
-      setIsApproving(true);
       const result = await leaveRequestService.approveAllForShift(currentShiftId);
-
-      toast.success(`${result.approved}件の希望休を承認しました`, {
-        description: `全${result.total}件中、承認待ちの${result.approved}件を承認しました`,
-      });
-
-      // ページをリロードして最新データを取得
-      window.location.reload();
-    } catch (error) {
-      console.error("一括承認に失敗しました:", error);
-      toast.error("一括承認に失敗しました");
-    } finally {
-      setIsApproving(false);
+      return result;
+    },
+    {
+      onSuccess: (result) => {
+        toast.success(`${result.approved}件の希望休を承認しました`, {
+          description: `全${result.total}件中、承認待ちの${result.approved}件を承認しました`,
+        });
+        // ページをリロードして最新データを取得
+        window.location.reload();
+      },
+      onError: (error: Error) => {
+        if (error.message === "締切前は一括承認できません") {
+          toast.error(error.message, { description: "締切後に実行してください" });
+        } else if (error.message === "承認待ちの申請がありません") {
+          toast.info(error.message);
+        } else {
+          toast.error("一括承認に失敗しました");
+        }
+      },
     }
-  };
+  );
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -152,22 +154,34 @@ export function VacationManagement() {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
-              onClick={loadSubmissionStatus}
+              onClick={() => loadSubmissionStatus()}
               variant="outline"
               className="rounded-xl border-2 bg-gradient-to-br from-blue-500/5 to-blue-500/5 hover:from-blue-500/10 hover:to-blue-500/10"
               disabled={isLoadingStatus}
             >
-              <Users className="w-4 h-4 mr-2" />
-              {isLoadingStatus ? "読み込み中..." : "提出状況"}
+              {isLoadingStatus ? (
+                <LoadingInline message="読み込み中..." size="sm" />
+              ) : (
+                <>
+                  <Users className="w-4 h-4 mr-2" />
+                  提出状況
+                </>
+              )}
             </Button>
             <Button
-              onClick={handleBulkApproval}
+              onClick={() => handleBulkApproval()}
               variant="outline"
               className="rounded-xl border-2 bg-gradient-to-br from-success/5 to-success/5 hover:from-success/10 hover:to-success/10"
               disabled={isApproving || new Date() < deadline}
             >
-              <CheckCheck className="w-4 h-4 mr-2" />
-              {isApproving ? "承認中..." : "一括承認"}
+              {isApproving ? (
+                <LoadingInline message="承認中..." size="sm" />
+              ) : (
+                <>
+                  <CheckCheck className="w-4 h-4 mr-2" />
+                  一括承認
+                </>
+              )}
             </Button>
             <Button
               onClick={openDeadlineDialog}

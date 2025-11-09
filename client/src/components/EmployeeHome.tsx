@@ -1,47 +1,47 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Calendar, Clock, Bell, Sparkles, Heart } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { FloatingFlowers, SparkleIcon } from "./DecorativeElements";
 import { employeeNotificationService, type EmployeeNotification, type NotificationStats } from "../services/employeeNotificationService";
-import { toast } from "sonner";
 import { NotificationListCard } from "./employee/NotificationListCard";
 import { DayDetailsDialog } from "./employee/DayDetailsDialog";
 import { holidays2025Nov, shiftTimes, facilityEvents, DEFAULT_HEADER_IMAGE_URL } from "../constants/employeeHomeConstants";
 import { getDayNumberColor } from "../utils/employeeHomeUtils";
 import type { DayData, EmployeeHomeProps } from "../types/employeeHomeTypes";
+import { useAsync } from "../hooks/useAsync";
+import { useToast } from "../hooks/useToast";
+import { CalendarSkeleton } from "./ui/loading-skeleton";
+import { ErrorState } from "./ui/error-state";
 
 export function EmployeeHome({ employeeName, hasNotifications = false, headerImageUrl = DEFAULT_HEADER_IMAGE_URL, employeeId = 1 }: EmployeeHomeProps) {
+  const toast = useToast();
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [showDayDialog, setShowDayDialog] = useState(false);
-  const [notifications, setNotifications] = useState<EmployeeNotification[]>([]);
-  const [stats, setStats] = useState<NotificationStats | null>(null);
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
-  // 通知データを取得
-  useEffect(() => {
-    async function loadNotifications() {
-      try {
-        setIsLoadingNotifications(true);
-        const [notificationsData, statsData] = await Promise.all([
-          employeeNotificationService.getNotifications(employeeId, 5),
-          employeeNotificationService.getStats(employeeId),
-        ]);
-        setNotifications(notificationsData);
-        setStats(statsData);
-      } catch (error) {
-        console.error("通知の取得に失敗しました:", error);
-        toast.error("通知読み込みエラー", {
-          description: "通知データの取得に失敗しました。ページを再読み込みしてください。",
-        });
-      } finally {
-        setIsLoadingNotifications(false);
-      }
+  // 通知データを取得 - useAsyncに移行
+  const {
+    data: notificationsData,
+    isLoading: isLoadingNotifications,
+    isError: hasNotificationError,
+    error: notificationError,
+    refetch: refetchNotifications,
+  } = useAsync(
+    async () => {
+      const [notifications, stats] = await Promise.all([
+        employeeNotificationService.getNotifications(employeeId, 5),
+        employeeNotificationService.getStats(employeeId),
+      ]);
+      return { notifications, stats };
+    },
+    {
+      onError: () => toast.error("通知データの取得に失敗しました"),
     }
+  );
 
-    loadNotifications();
-  }, [employeeId]);
+  const notifications = notificationsData?.notifications || [];
+  const stats = notificationsData?.stats || null;
 
   const today = new Date();
   const currentMonth = today.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
@@ -85,6 +85,22 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     setSelectedDay(dayData);
     setShowDayDialog(true);
   };
+
+  // エラー状態の表示
+  if (hasNotificationError) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-md mx-auto pt-20">
+          <ErrorState
+            type="network"
+            error={notificationError}
+            onRetry={refetchNotifications}
+            showDetails={true}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">

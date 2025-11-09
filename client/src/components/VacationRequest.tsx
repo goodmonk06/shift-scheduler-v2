@@ -9,14 +9,16 @@ import { VacationCalendar } from "./VacationCalendar";
 import { VacationDayDialog } from "./VacationDayDialog";
 import { VacationTimePicker } from "./VacationTimePicker";
 import { useVacation } from "../contexts/VacationContext";
-import { toast } from "sonner";
 import type { VacationRequestProps, DayRequest } from "../types/vacationTypes";
 import { loadFromStorage, formatTimeText, getRequestTypeConfig } from "../utils/vacationHelpers";
+import { useToast } from "../hooks/useToast";
+import { LoadingInline } from "./ui/loading-spinner";
 
 export function VacationRequest({
   onUnsavedChangesChange,
   headerImageUrl = "https://images.unsplash.com/photo-1709098165904-e9c5f9eec48a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXN0ZWwlMjBmbG93ZXJzJTIwc29mdHxlbnwxfHx8fDE3NjI1MDE0Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080"
 }: VacationRequestProps) {
+  const toast = useToast();
   const { addVacationRequest, deadline } = useVacation();
 
   // 編集中の希望休（未提出）

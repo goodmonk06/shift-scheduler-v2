@@ -2,13 +2,16 @@ import { useState } from "react";
 import { Users, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
-import { toast } from "sonner";
 import { StaffTable } from "./StaffTable";
 import { StaffFormDialog } from "./StaffFormDialog";
 import type { Employee, PositionGroup, EmployeeFormData } from "../types/staffManagementTypes";
 import { validateEmployeeForm, getInitialFormData, generateEmployeeId } from "../utils/staffManagementHelpers";
+import { useToast } from "../hooks/useToast";
+import { EmptyState } from "./ui/error-state";
 
 export function StaffManagement() {
+  const toast = useToast();
+
   // モックデータ（後でAPI連携）
   const [employees, setEmployees] = useState<Employee[]>([
     {

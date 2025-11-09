@@ -6,13 +6,14 @@
 
 ### ✅ 完了
 - [x] App.tsx - ErrorBoundary適用、LoadingScreen使用
+- [x] EmployeeHome.tsx - useAsync導入、ErrorState使用
+- [x] VacationManagement.tsx - useMutation導入、LoadingInline使用
+- [x] ShiftEditor.tsx - useToast導入
+- [x] StaffManagement.tsx - useToast導入
+- [x] VacationRequest.tsx - useToast導入
 
 ### 🔄 優先度: 高
-- [ ] EmployeeHome.tsx - 職員ホーム画面
-- [ ] VacationManagement.tsx - 希望休管理
-- [ ] ShiftEditor.tsx - シフト編集
-- [ ] StaffManagement.tsx - 職員管理
-- [ ] VacationRequest.tsx - 希望休申請
+- すべて完了!
 
 ### 🔄 優先度: 中
 - [ ] ShiftView.tsx - シフト確認
@@ -227,10 +228,10 @@ if (data.length === 0) {
 ## 📊 進捗トラッキング
 
 ```
-完了: 1 / 15 コンポーネント (6.7%)
-高優先度: 0 / 5
-中優先度: 0 / 5
-低優先度: 0 / 5
+完了: 6 / 15 コンポーネント (40%)
+高優先度: 5 / 5 (100%)
+中優先度: 0 / 5 (0%)
+低優先度: 0 / 5 (0%)
 ```
 
 ## 🚀 次のアクション
