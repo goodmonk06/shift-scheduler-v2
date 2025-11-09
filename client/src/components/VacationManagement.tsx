@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Calendar, Clock, Check, X, User, Filter, Sparkles, Settings } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Clock, Check, X, User, Filter, Sparkles, Settings, Users, CheckCheck, AlertCircle } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -10,15 +10,23 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useVacation } from "../contexts/VacationContext";
 import { toast } from "sonner";
+import { leaveRequestService, type SubmissionStatus } from "../services/leaveRequestService";
 
 export function VacationManagement() {
   const { vacationRequests, approveRequest, rejectRequest, deadline, setDeadline } = useVacation();
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showDeadlineDialog, setShowDeadlineDialog] = useState(false);
+  const [showSubmissionStatusDialog, setShowSubmissionStatusDialog] = useState(false);
   const [tempDeadlineDate, setTempDeadlineDate] = useState("");
   const [tempDeadlineTime, setTempDeadlineTime] = useState("");
   const [showAdditionalOnly, setShowAdditionalOnly] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+
+  // 現在のシフトIDを取得（仮で1を使用、実際にはpropsやcontextから取得）
+  const currentShiftId = 1;
 
   // TODO: バックエンドのデータに isAdditionalRequest フラグを追加する必要がある
   const pendingRequests = vacationRequests.filter((req) => req.status === "pending");
@@ -184,6 +192,53 @@ export function VacationManagement() {
     });
   };
 
+  // 提出状況を取得
+  const loadSubmissionStatus = async () => {
+    try {
+      setIsLoadingStatus(true);
+      const status = await leaveRequestService.getSubmissionStatus(currentShiftId);
+      setSubmissionStatus(status);
+      setShowSubmissionStatusDialog(true);
+    } catch (error) {
+      console.error("提出状況の取得に失敗しました:", error);
+      toast.error("提出状況の取得に失敗しました");
+    } finally {
+      setIsLoadingStatus(false);
+    }
+  };
+
+  // 一括承認
+  const handleBulkApproval = async () => {
+    if (new Date() < deadline) {
+      toast.error("締切前は一括承認できません", {
+        description: "締切後に実行してください",
+      });
+      return;
+    }
+
+    if (pendingRequests.length === 0) {
+      toast.info("承認待ちの申請がありません");
+      return;
+    }
+
+    try {
+      setIsApproving(true);
+      const result = await leaveRequestService.approveAllForShift(currentShiftId);
+
+      toast.success(`${result.approved}件の希望休を承認しました`, {
+        description: `全${result.total}件中、承認待ちの${result.approved}件を承認しました`,
+      });
+
+      // ページをリロードして最新データを取得
+      window.location.reload();
+    } catch (error) {
+      console.error("一括承認に失敗しました:", error);
+      toast.error("一括承認に失敗しました");
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -196,14 +251,34 @@ export function VacationManagement() {
             </h1>
             <p className="text-muted-foreground">職員からの希望休申請を確認・承認</p>
           </div>
-          <Button
-            onClick={openDeadlineDialog}
-            variant="outline"
-            className="rounded-xl border-2 bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            締切設定
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={loadSubmissionStatus}
+              variant="outline"
+              className="rounded-xl border-2 bg-gradient-to-br from-blue-500/5 to-blue-500/5 hover:from-blue-500/10 hover:to-blue-500/10"
+              disabled={isLoadingStatus}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              {isLoadingStatus ? "読み込み中..." : "提出状況"}
+            </Button>
+            <Button
+              onClick={handleBulkApproval}
+              variant="outline"
+              className="rounded-xl border-2 bg-gradient-to-br from-success/5 to-success/5 hover:from-success/10 hover:to-success/10"
+              disabled={isApproving || new Date() < deadline}
+            >
+              <CheckCheck className="w-4 h-4 mr-2" />
+              {isApproving ? "承認中..." : "一括承認"}
+            </Button>
+            <Button
+              onClick={openDeadlineDialog}
+              variant="outline"
+              className="rounded-xl border-2 bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              締切設定
+            </Button>
+          </div>
         </div>
 
         {/* Deadline Info */}
@@ -469,7 +544,7 @@ export function VacationManagement() {
               <Sparkles className="w-5 h-5 text-accent ml-auto" />
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4">
             <Card className="p-4 bg-gradient-to-br from-warning/10 to-warning/5 border-2 border-warning/30">
               <div className="flex gap-3">
@@ -547,6 +622,112 @@ export function VacationManagement() {
             >
               <Sparkles className="w-4 h-4 mr-2" />
               設定する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submission Status Dialog */}
+      <Dialog open={showSubmissionStatusDialog} onOpenChange={setShowSubmissionStatusDialog}>
+        <DialogContent className="max-w-2xl rounded-3xl border-2 border-secondary/30 max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              希望休提出状況
+              <Sparkles className="w-5 h-5 text-accent ml-auto" />
+            </DialogTitle>
+          </DialogHeader>
+
+          {submissionStatus && (
+            <div className="space-y-6 py-4">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="p-4 bg-gradient-to-br from-success/10 to-success/5 border-success/20">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">提出済</p>
+                    <h3 className="text-success">
+                      {submissionStatus.submitted} / {submissionStatus.total}名
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      ({Math.round((submissionStatus.submitted / submissionStatus.total) * 100)}%)
+                    </p>
+                  </div>
+                </Card>
+
+                <Card className="p-4 bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">未提出</p>
+                    <h3 className="text-warning">
+                      {submissionStatus.notSubmitted.length}名
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      ({Math.round((submissionStatus.notSubmitted.length / submissionStatus.total) * 100)}%)
+                    </p>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Not Submitted List */}
+              {submissionStatus.notSubmitted.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-warning" />
+                    未提出の職員 ({submissionStatus.notSubmitted.length}名)
+                  </h4>
+                  <div className="space-y-2">
+                    {submissionStatus.notSubmitted.map((employee) => (
+                      <Card key={employee.id} className="p-4 bg-gradient-to-br from-warning/5 to-warning/5 border-warning/10">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="bg-gradient-to-br from-warning/20 to-warning/30">
+                            <AvatarFallback className="text-warning">
+                              {employee.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <h4 className="text-sm">{employee.name}</h4>
+                            <p className="text-xs text-muted-foreground">{employee.email}</p>
+                          </div>
+                          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                            未提出
+                          </Badge>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <div className="text-6xl mb-4">✨</div>
+                  <h3 className="text-muted-foreground">全員提出済みです！</h3>
+                </Card>
+              )}
+
+              {/* Approval Status */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">承認待ち</p>
+                    <h3 className="text-blue-700">{submissionStatus.pendingApproval}件</h3>
+                  </div>
+                </Card>
+
+                <Card className="p-4 bg-gradient-to-br from-success/10 to-success/5 border-success/20">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">承認済</p>
+                    <h3 className="text-success">{submissionStatus.approved}件</h3>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="sticky bottom-0 bg-background border-t pt-4 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowSubmissionStatusDialog(false)}
+              className="rounded-xl border-2"
+            >
+              閉じる
             </Button>
           </DialogFooter>
         </DialogContent>
