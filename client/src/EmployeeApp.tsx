@@ -13,9 +13,10 @@ type EmployeeView = "home" | "vacation" | "shift" | "settings";
 
 interface EmployeeAppProps {
   hasNotifications?: boolean;
+  onLogout?: () => void;
 }
 
-export function EmployeeApp({ hasNotifications = false }: EmployeeAppProps) {
+export function EmployeeApp({ hasNotifications = false, onLogout }: EmployeeAppProps) {
   const [employeeView, setEmployeeView] = useState<EmployeeView>("home");
   // 未保存の変更があるかどうか（VacationRequestから受け取る）
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -144,6 +145,7 @@ export function EmployeeApp({ hasNotifications = false }: EmployeeAppProps) {
             onThemeChange={setSelectedTheme}
             onImageChange={setSelectedImage}
             onFontSizeChange={setSelectedFontSize}
+            onLogout={onLogout}
           />
         );
       default:

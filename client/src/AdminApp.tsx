@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { 
-  Home, Users, Sparkles, Calendar, 
+import {
+  Home, Users, Sparkles, Calendar,
   Briefcase, Clock, Settings, UsersRound,
   FileText, Bell, Archive, BarChart3,
-  RefreshCw
+  RefreshCw, LogOut
 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { ScrollArea } from "./components/ui/scroll-area";
@@ -238,6 +238,22 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
                 アーカイブ
               </Button>
             </div>
+
+            {onLogout && (
+              <>
+                <Separator className="my-3" />
+                <div className="space-y-1">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={onLogout}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    ログアウト
+                  </Button>
+                </div>
+              </>
+            )}
           </nav>
         </ScrollArea>
       </aside>

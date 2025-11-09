@@ -148,16 +148,18 @@ interface SettingsProps {
   onThemeChange: (themeId: string) => void;
   onImageChange: (imageId: string) => void;
   onFontSizeChange: (sizeId: string) => void;
+  onLogout?: () => void;
 }
 
-export function Settings({ selectedTheme, selectedImage, selectedFontSize, onThemeChange, onImageChange, onFontSizeChange }: SettingsProps) {
+export function Settings({ selectedTheme, selectedImage, selectedFontSize, onThemeChange, onImageChange, onFontSizeChange, onLogout }: SettingsProps) {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
-    // ログアウト処理（実際の実装ではバックエンドと連携）
-    console.log("ログアウト処理");
     setShowLogout(false);
+    if (onLogout) {
+      onLogout();
+    }
   };
 
   return (
