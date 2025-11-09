@@ -12,6 +12,7 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { SparkleIcon } from "./DecorativeElements";
 import { useVacation } from "../contexts/VacationContext";
 import { toast } from "sonner";
+import Picker from "react-mobile-picker";
 
 interface VacationRequestProps {
   onUnsavedChangesChange: (hasChanges: boolean, count: number) => void;
@@ -57,9 +58,21 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
   const [endMinute, setEndMinute] = useState("00");
   const [reason, setReason] = useState("");
 
-  // 時間選択のスクロール位置を制御するためのref
-  const startHourSelectRef = useState<HTMLButtonElement | null>(null);
-  const endHourSelectRef = useState<HTMLButtonElement | null>(null);
+  // ホイールピッカー用のstate
+  const [pickerValue, setPickerValue] = useState({
+    startHour: "09",
+    startMinute: "00",
+    endHour: "12",
+    endMinute: "00",
+  });
+
+  // ホイールピッカーの選択肢を生成
+  const pickerSelections = {
+    startHour: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0")),
+    startMinute: ["00", "15", "30", "45"],
+    endHour: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0")),
+    endMinute: ["00", "15", "30", "45"],
+  };
 
   // 来月（12月）のカレンダーを表示
   const today = new Date();
@@ -644,7 +657,18 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
       </Dialog>
 
       {/* Time Selection Modal */}
-      <Dialog open={showTimeModal} onOpenChange={setShowTimeModal}>
+      <Dialog open={showTimeModal} onOpenChange={(open) => {
+        if (open) {
+          // モーダルを開く時、現在の値をpickerValueに同期
+          setPickerValue({
+            startHour,
+            startMinute,
+            endHour,
+            endMinute,
+          });
+        }
+        setShowTimeModal(open);
+      }}>
         <DialogContent className="rounded-3xl border-2 border-accent/50 max-w-sm bg-gradient-to-br from-white to-accent/5 shadow-2xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
@@ -654,162 +678,77 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            {/* 開始時刻 */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2 text-lg font-semibold">
-                <span className="text-3xl">🌅</span>
-                開始時刻
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <Select
-                    value={startHour}
-                    onValueChange={(v) => {
-                      setStartHour(v);
-                      if (!startMinute) setStartMinute("00");
-                    }}
-                    defaultValue="09"
-                  >
-                    <SelectTrigger className="rounded-2xl border-2 border-accent/30 h-20 bg-gradient-to-br from-white to-accent/10 shadow-md text-3xl font-bold hover:border-accent/60 transition-all">
-                      <SelectValue placeholder="時" />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="max-h-[240px] rounded-2xl border-2 border-accent/30 bg-white/95 backdrop-blur-sm"
-                      position="popper"
-                      sideOffset={5}
-                    >
-                      <div className="relative py-2">
-                        <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none z-10" />
-                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
-                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                          <SelectItem
-                            key={hour}
-                            value={hour.toString().padStart(2, "0")}
-                            className="text-xl py-3 h-[50px] justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all cursor-pointer mx-1 rounded-lg"
-                          >
-                            <span className="font-bold">{hour.toString().padStart(2, "0")}</span>
-                            <span className="text-base ml-1">時</span>
-                          </SelectItem>
-                        ))}
-                      </div>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="relative">
-                  <Select
-                    value={startMinute}
-                    onValueChange={setStartMinute}
-                    defaultValue="00"
-                  >
-                    <SelectTrigger className="rounded-2xl border-2 border-accent/30 h-20 bg-gradient-to-br from-white to-accent/10 shadow-md text-3xl font-bold hover:border-accent/60 transition-all">
-                      <SelectValue placeholder="分" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-2 border-accent/30 bg-white/95 backdrop-blur-sm">
-                      <SelectItem value="00" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">00</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                      <SelectItem value="15" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">15</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                      <SelectItem value="30" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">30</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                      <SelectItem value="45" className="text-2xl py-4 justify-center hover:bg-accent/20 data-[state=checked]:bg-accent/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">45</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* ホイールピッカー */}
+            <div className="relative">
+              <div className="mb-4 text-center">
+                <Label className="text-lg font-semibold text-[#2B3A55]">
+                  時間をスクロールして選択 ⏰
+                </Label>
               </div>
-            </div>
 
-            {/* 終了時刻 */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2 text-lg font-semibold">
-                <span className="text-3xl">🌙</span>
-                終了時刻
-              </Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <Select
-                    value={endHour}
-                    onValueChange={(v) => {
-                      setEndHour(v);
-                      if (!endMinute) setEndMinute("00");
-                    }}
-                    defaultValue="12"
-                  >
-                    <SelectTrigger className="rounded-2xl border-2 border-secondary/30 h-20 bg-gradient-to-br from-white to-secondary/10 shadow-md text-3xl font-bold hover:border-secondary/60 transition-all">
-                      <SelectValue placeholder="時" />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="max-h-[240px] rounded-2xl border-2 border-secondary/30 bg-white/95 backdrop-blur-sm"
-                      position="popper"
-                      sideOffset={5}
-                    >
-                      <div className="relative py-2">
-                        <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-white via-white/80 to-transparent pointer-events-none z-10" />
-                        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none z-10" />
-                        {Array.from({ length: 24 }, (_, i) => i).map((hour) => (
-                          <SelectItem
-                            key={hour}
-                            value={hour.toString().padStart(2, "0")}
-                            className="text-xl py-3 h-[50px] justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all cursor-pointer mx-1 rounded-lg"
-                          >
-                            <span className="font-bold">{hour.toString().padStart(2, "0")}</span>
-                            <span className="text-base ml-1">時</span>
-                          </SelectItem>
-                        ))}
-                      </div>
-                    </SelectContent>
-                  </Select>
+              {/* ホイールピッカーコンテナ */}
+              <div className="relative rounded-3xl border-2 border-accent/30 bg-gradient-to-br from-white to-accent/5 p-4 shadow-xl overflow-hidden">
+                {/* 中央のハイライトバー */}
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-14 bg-gradient-to-r from-accent/20 via-secondary/20 to-accent/20 border-y-2 border-accent/40 pointer-events-none z-10" />
+
+                <Picker
+                  value={pickerValue}
+                  onChange={setPickerValue}
+                  wheelMode="natural"
+                  height={200}
+                  itemHeight={50}
+                >
+                  {Object.keys(pickerSelections).map((name) => (
+                    <Picker.Column key={name} name={name}>
+                      {pickerSelections[name as keyof typeof pickerSelections].map((option) => (
+                        <Picker.Item key={option} value={option}>
+                          {({ selected }) => (
+                            <div className={`flex items-center justify-center h-[50px] transition-all ${
+                              selected
+                                ? 'text-[#2B3A55] font-bold text-3xl scale-110'
+                                : 'text-muted-foreground text-xl opacity-60'
+                            }`}>
+                              {name.includes('Hour') ? `${option}時` : `${option}分`}
+                            </div>
+                          )}
+                        </Picker.Item>
+                      ))}
+                    </Picker.Column>
+                  ))}
+                </Picker>
+              </div>
+
+              {/* ラベル表示 */}
+              <div className="grid grid-cols-4 gap-2 mt-3 text-center text-sm font-medium text-muted-foreground">
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-lg">🌅</span>
+                  <span>開始</span>
                 </div>
-                <div className="relative">
-                  <Select
-                    value={endMinute}
-                    onValueChange={setEndMinute}
-                    defaultValue="00"
-                  >
-                    <SelectTrigger className="rounded-2xl border-2 border-secondary/30 h-20 bg-gradient-to-br from-white to-secondary/10 shadow-md text-3xl font-bold hover:border-secondary/60 transition-all">
-                      <SelectValue placeholder="分" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-2 border-secondary/30 bg-white/95 backdrop-blur-sm">
-                      <SelectItem value="00" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">00</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                      <SelectItem value="15" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">15</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                      <SelectItem value="30" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">30</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                      <SelectItem value="45" className="text-2xl py-4 justify-center hover:bg-secondary/20 data-[state=checked]:bg-secondary/30 data-[state=checked]:text-[#2B3A55] transition-all">
-                        <span className="font-bold">45</span><span className="text-lg ml-1">分</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div></div>
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-lg">🌙</span>
+                  <span>終了</span>
                 </div>
+                <div></div>
               </div>
             </div>
 
             {/* プレビュー */}
-            {startHour && endHour && (
-              <div className="relative overflow-hidden p-5 bg-gradient-to-br from-accent/30 via-secondary/20 to-accent/20 rounded-2xl border-2 border-accent/50 shadow-lg">
-                <div className="absolute top-0 right-0 text-6xl opacity-10">⏰</div>
-                <div className="relative text-center">
-                  <p className="text-sm text-muted-foreground mb-3 font-medium">選択中の時間</p>
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm">
-                      <span className="text-2xl font-bold text-[#2B3A55]">{startHour}:{startMinute}</span>
-                    </div>
-                    <span className="text-xl text-muted-foreground">→</span>
-                    <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm">
-                      <span className="text-2xl font-bold text-[#2B3A55]">{endHour}:{endMinute}</span>
-                    </div>
+            <div className="relative overflow-hidden p-5 bg-gradient-to-br from-accent/30 via-secondary/20 to-accent/20 rounded-2xl border-2 border-accent/50 shadow-lg">
+              <div className="absolute top-0 right-0 text-6xl opacity-10">⏰</div>
+              <div className="relative text-center">
+                <p className="text-sm text-muted-foreground mb-3 font-medium">選択中の時間</p>
+                <div className="flex items-center justify-center gap-3">
+                  <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm">
+                    <span className="text-2xl font-bold text-[#2B3A55]">{pickerValue.startHour}:{pickerValue.startMinute}</span>
+                  </div>
+                  <span className="text-xl text-muted-foreground">→</span>
+                  <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm">
+                    <span className="text-2xl font-bold text-[#2B3A55]">{pickerValue.endHour}:{pickerValue.endMinute}</span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
           <DialogFooter className="gap-2">
             <Button
@@ -820,8 +759,13 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
               キャンセル
             </Button>
             <Button
-              onClick={() => setShowTimeModal(false)}
-              disabled={!startHour || !endHour}
+              onClick={() => {
+                setStartHour(pickerValue.startHour);
+                setStartMinute(pickerValue.startMinute);
+                setEndHour(pickerValue.endHour);
+                setEndMinute(pickerValue.endMinute);
+                setShowTimeModal(false);
+              }}
               className="rounded-2xl bg-gradient-to-r from-accent via-accent/90 to-secondary/80 hover:from-accent/90 hover:via-accent/80 hover:to-secondary/70 shadow-lg text-base h-12 font-semibold transition-all"
             >
               <Clock className="w-5 h-5 mr-2" />
