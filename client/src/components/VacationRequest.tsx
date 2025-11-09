@@ -750,11 +750,11 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
               </div>
             </div>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-3 pt-2">
             <Button
               variant="outline"
               onClick={() => setShowTimeModal(false)}
-              className="rounded-2xl border-2 text-base h-12 hover:bg-muted/50 transition-all"
+              className="rounded-2xl border-2 text-lg h-14 hover:bg-muted/50 transition-all font-semibold flex-1"
             >
               キャンセル
             </Button>
@@ -766,9 +766,9 @@ export function VacationRequest({ onUnsavedChangesChange, headerImageUrl = "http
                 setEndMinute(pickerValue.endMinute);
                 setShowTimeModal(false);
               }}
-              className="rounded-2xl bg-gradient-to-r from-accent via-accent/90 to-secondary/80 hover:from-accent/90 hover:via-accent/80 hover:to-secondary/70 shadow-lg text-base h-12 font-semibold transition-all"
+              className="rounded-2xl bg-gradient-to-r from-accent via-accent/90 to-secondary/80 hover:from-accent/90 hover:via-accent/80 hover:to-secondary/70 shadow-lg text-lg h-14 font-bold transition-all flex-1"
             >
-              <Clock className="w-5 h-5 mr-2" />
+              <Clock className="w-6 h-6 mr-2" />
               決定
             </Button>
           </DialogFooter>
