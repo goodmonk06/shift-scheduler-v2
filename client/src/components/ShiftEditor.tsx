@@ -79,7 +79,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     updatedAt: new Date().toISOString(),
   });
 
-  const [viewMode, setViewMode] = useState<"calendar" | "table">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "table">("table");
   const [viewYear, setViewYear] = useState(currentYear);
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
@@ -1041,9 +1041,8 @@ ${aiConfig.customInstructions || "なし"}
         </Card>
         
         <Card className="rounded-2xl overflow-hidden">
-          <ScrollArea className="w-full h-[600px]">
-            <div className="min-w-max">
-            <Table>
+          <div className="w-full h-[600px] overflow-auto">
+            <Table className="min-w-max">
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="sticky left-0 z-20 bg-muted/50 min-w-[120px] border-r">
@@ -1159,7 +1158,7 @@ ${aiConfig.customInstructions || "なし"}
               </TableBody>
             </Table>
           </div>
-        </ScrollArea>
+        </Card>
         
         {/* 凡例 */}
         <div className="p-4 border-t bg-muted/20">
@@ -1194,7 +1193,6 @@ ${aiConfig.customInstructions || "なし"}
             </div>
           </div>
         </div>
-        </Card>
       </div>
     );
   };
