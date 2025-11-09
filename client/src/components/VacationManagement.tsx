@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Calendar, Clock, Check, X, User, Filter, Sparkles, Settings, Users, CheckCheck, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Calendar, Clock, Check, X, User, Sparkles, Settings, Users, CheckCheck, AlertCircle } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { VacationRequestCard } from "./VacationRequestCard";
 import { useVacation } from "../contexts/VacationContext";
 import { toast } from "sonner";
 import { leaveRequestService, type SubmissionStatus } from "../services/leaveRequestService";
+import { getTypeConfig, formatDate, formatDeadline } from "../utils/vacationManagementHelpers";
 
 export function VacationManagement() {
   const { vacationRequests, approveRequest, rejectRequest, deadline, setDeadline } = useVacation();
@@ -56,100 +58,6 @@ export function VacationManagement() {
 
   const selectedRequestData = vacationRequests.find((req) => req.id === selectedRequest);
 
-  const getTypeConfig = (type: "休" | "有休" | "時間指定") => {
-    const configs = {
-      "休": { emoji: "🌸", color: "bg-success/10 text-success border-success/20", label: "休" },
-      "有休": { emoji: "💐", color: "bg-secondary/10 text-primary border-secondary/20", label: "有休" },
-      "時間指定": { emoji: "⏰", color: "bg-warning/10 text-warning border-warning/20", label: "時間指定" },
-    };
-    return configs[type];
-  };
-
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat("ja-JP", {
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-  };
-
-  const RequestCard = ({ request }: { request: typeof vacationRequests[0] }) => {
-    const statusConfig = {
-      pending: { label: "未承認", color: "bg-warning", icon: Clock },
-      approved: { label: "承認済", color: "bg-success", icon: Check },
-      rejected: { label: "却下", color: "bg-destructive", icon: X },
-    };
-
-    const config = statusConfig[request.status];
-    const StatusIcon = config.icon;
-
-    return (
-      <Card
-        className="p-5 hover:shadow-lg transition-all cursor-pointer border-2"
-        onClick={() => openDetail(request.id)}
-      >
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <Avatar className="bg-gradient-to-br from-primary/20 to-secondary/20">
-                <AvatarFallback className="text-primary">
-                  {request.staffName.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <h4>{request.staffName}</h4>
-                <p className="text-muted-foreground">{request.month}</p>
-              </div>
-            </div>
-            <Badge className={`${config.color} flex items-center gap-1`}>
-              <StatusIcon className="w-3 h-3" />
-              {config.label}
-            </Badge>
-          </div>
-
-          {/* Request Summary */}
-          <div className="flex flex-wrap gap-2">
-            {request.requests.slice(0, 3).map((req, index) => {
-              const typeConfig = getTypeConfig(req.type);
-              const monthPart = request.month.split("年")[1]?.replace("月", "/") || "";
-              return (
-                <Badge
-                  key={index}
-                  variant="outline"
-                  className={`${typeConfig.color} border-2`}
-                >
-                  <span className="mr-1">{typeConfig.emoji}</span>
-                  {monthPart}
-                  {req.day}
-                  {req.type === "時間指定" && ` ${req.startTime}~`}
-                </Badge>
-              );
-            })}
-            {request.requests.length > 3 && (
-              <Badge variant="outline" className="border-2">
-                他 {request.requests.length - 3}件
-              </Badge>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-2 border-t">
-            <span className="text-muted-foreground flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {formatDate(request.submittedAt)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Sparkles className="w-4 h-4 text-accent" />
-              {request.requests.length}件の申請
-            </span>
-          </div>
-        </div>
-      </Card>
-    );
-  };
-
   const openDeadlineDialog = () => {
     const dateStr = deadline.toISOString().split('T')[0];
     const timeStr = `${deadline.getHours().toString().padStart(2, '0')}:${deadline.getMinutes().toString().padStart(2, '0')}`;
@@ -182,15 +90,6 @@ export function VacationManagement() {
     });
   };
 
-  const formatDeadline = () => {
-    return deadline.toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
 
   // 提出状況を取得
   const loadSubmissionStatus = async () => {
@@ -384,7 +283,7 @@ export function VacationManagement() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pendingRequests.map((request) => (
-                  <RequestCard key={request.id} request={request} />
+                  <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
                 ))}
               </div>
             )}
@@ -399,7 +298,7 @@ export function VacationManagement() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {approvedRequests.map((request) => (
-                  <RequestCard key={request.id} request={request} />
+                  <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
                 ))}
               </div>
             )}
@@ -414,7 +313,7 @@ export function VacationManagement() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {rejectedRequests.map((request) => (
-                  <RequestCard key={request.id} request={request} />
+                  <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
                 ))}
               </div>
             )}
