@@ -111,3 +111,4 @@ MIT
 ## サポート
 
 問題が発生した場合は、[Issues](https://github.com/YOUR_USERNAME/shift-scheduler-v2/issues) で報告してください。
+# Force rebuild
