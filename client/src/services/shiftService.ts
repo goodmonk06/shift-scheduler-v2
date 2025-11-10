@@ -247,8 +247,11 @@ class ShiftServiceProduction implements ShiftService {
 
   async getAllShifts(): Promise<Shift[]> {
     try {
-      return await trpcClient.shifts.list.query();
-    } catch {
+      const result = await trpcClient.shifts.list.query();
+      // tRPC client returns data directly, but ensure it's an array
+      return Array.isArray(result) ? result : [];
+    } catch (error) {
+      console.error('Failed to fetch shifts:', error);
       return [];
     }
   }
