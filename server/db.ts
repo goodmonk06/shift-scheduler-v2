@@ -333,7 +333,11 @@ export async function createShift(data: InsertShift) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(shifts).values(data);
-  return result;
+  // INSERTの結果からIDを取得して、作成されたシフトを返す
+  const insertId = Number(result.insertId);
+  const created = await getShiftById(insertId);
+  if (!created) throw new Error("Failed to retrieve created shift");
+  return created;
 }
 
 export async function updateShift(id: number, data: Partial<InsertShift>) {
