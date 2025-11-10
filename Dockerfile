@@ -1,5 +1,5 @@
 # Multi-stage build for production deployment
-# Force rebuild by changing this: v3
+# Force rebuild by changing this: v4 - clean dist before build
 FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -20,6 +20,8 @@ COPY . .
 
 # Build both client and server
 RUN echo "=== Starting build ===" && \
+    rm -rf dist build .vite && \
+    echo "=== Cleaned old build dirs ===" && \
     pnpm build && \
     echo "=== Build completed ==="
 
