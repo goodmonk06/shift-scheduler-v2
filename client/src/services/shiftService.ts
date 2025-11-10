@@ -269,9 +269,13 @@ class ShiftServiceProduction implements ShiftService {
 // エクスポート
 // ===========================
 
-export const shiftService: ShiftService =
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new ShiftServiceMock()
-    : new ShiftServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const shiftService: ShiftService = useMock
+  ? new ShiftServiceMock()
+  : new ShiftServiceProduction();
 
 export { ShiftServiceMock, ShiftServiceProduction };
