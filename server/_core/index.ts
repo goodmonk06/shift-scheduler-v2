@@ -101,6 +101,28 @@ async function startServer() {
   console.log(`[ENV] NODE_ENV=${process.env.NODE_ENV}`);
   console.log(`[ENV] All env vars:`, Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('KEY')));
 
+  // Debug: Log directory structure to diagnose build output location
+  console.log(`[DEBUG] process.cwd() = ${process.cwd()}`);
+  console.log(`[DEBUG] __dirname would be = ${import.meta.dirname}`);
+  try {
+    const fs = await import('fs');
+    const cwdContents = fs.readdirSync(process.cwd());
+    console.log(`[DEBUG] Contents of cwd:`, cwdContents);
+
+    // Check if build or dist directories exist
+    ['build', 'dist', 'client'].forEach(dir => {
+      const dirPath = `${process.cwd()}/${dir}`;
+      if (fs.existsSync(dirPath)) {
+        const contents = fs.readdirSync(dirPath).slice(0, 10);
+        console.log(`[DEBUG] Contents of ${dir}/:`, contents);
+      } else {
+        console.log(`[DEBUG] ${dir}/ does not exist`);
+      }
+    });
+  } catch (e) {
+    console.error(`[DEBUG] Error reading directory:`, e);
+  }
+
   server.listen(port, host, () => {
     console.log(`Server running on http://${host}:${port}/`);
     console.log(`[Server] Listening on port ${port}, expecting Railway to connect`);
