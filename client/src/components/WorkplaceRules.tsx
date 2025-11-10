@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Settings, Save, Briefcase, Users } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -17,11 +17,13 @@ interface WorkplaceRule {
 
 export function WorkplaceRules() {
   const toast = useToast();
-  // モックデータ（後でAPI連携）
+  const [activeTab, setActiveTab] = useState<"fulltime" | "parttime">("fulltime");
+
+  // ルールデータ（localStorageから読み込み）
   const [rules, setRules] = useState<Record<"fulltime" | "parttime", WorkplaceRule>>({
     fulltime: {
       employmentType: "fulltime",
-      maxConsecutiveWorkDays: 5,
+      maxConsecutiveWorkDays: 6,
       minRestDaysPerWeek: 2,
       maxNightShiftsPerWeek: 3,
       minRestHoursBetweenShifts: 11,
@@ -35,7 +37,17 @@ export function WorkplaceRules() {
     },
   });
 
-  const [activeTab, setActiveTab] = useState<"fulltime" | "parttime">("fulltime");
+  // localStorageから読み込み
+  useEffect(() => {
+    const saved = localStorage.getItem('workplaceRules');
+    if (saved) {
+      try {
+        setRules(JSON.parse(saved));
+      } catch (error) {
+        console.error('Failed to load workplace rules:', error);
+      }
+    }
+  }, []);
 
   // フォームの状態を更新
   const handleInputChange = (
@@ -58,10 +70,7 @@ export function WorkplaceRules() {
     const rule = rules[employmentType];
 
     // バリデーション
-    if (
-      rule.maxConsecutiveWorkDays < 1 ||
-      rule.maxConsecutiveWorkDays > 14
-    ) {
+    if (rule.maxConsecutiveWorkDays < 1 || rule.maxConsecutiveWorkDays > 14) {
       toast.error("最大連続勤務日数は1〜14日の範囲で設定してください");
       return;
     }
@@ -73,15 +82,13 @@ export function WorkplaceRules() {
       toast.error("週の最大夜勤回数は0〜7回の範囲で設定してください");
       return;
     }
-    if (
-      rule.minRestHoursBetweenShifts < 8 ||
-      rule.minRestHoursBetweenShifts > 24
-    ) {
+    if (rule.minRestHoursBetweenShifts < 8 || rule.minRestHoursBetweenShifts > 24) {
       toast.error("シフト間最低休憩時間は8〜24時間の範囲で設定してください");
       return;
     }
 
-    // ここでAPI呼び出し: trpc.workplaceRules.create または update
+    // localStorageに保存
+    localStorage.setItem('workplaceRules', JSON.stringify(rules));
     toast.success(
       `${employmentType === "fulltime" ? "正社員" : "パート"}のルールを保存しました`
     );

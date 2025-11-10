@@ -5,6 +5,7 @@ import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { FloatingFlowers, SparkleIcon } from "./DecorativeElements";
 import { employeeNotificationService, type EmployeeNotification, type NotificationStats } from "../services/employeeNotificationService";
+import { shiftDetailService, type EmployeeShiftData } from "../services/shiftDetailService";
 import { NotificationListCard } from "./employee/NotificationListCard";
 import { DayDetailsDialog } from "./employee/DayDetailsDialog";
 import { holidays2025Nov, shiftTimes, facilityEvents, DEFAULT_HEADER_IMAGE_URL } from "../constants/employeeHomeConstants";
@@ -20,7 +21,13 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [showDayDialog, setShowDayDialog] = useState(false);
 
-  // 通知データを取得 - useAsyncに移行
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
+  const currentMonthString = today.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
+
+  // 通知データを取得
   const {
     data: notificationsData,
     isLoading: isLoadingNotifications,
@@ -40,46 +47,92 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     }
   );
 
+  // シフトデータを取得
+  const {
+    data: shiftData,
+    isLoading: isLoadingShift,
+    isError: hasShiftError,
+    error: shiftError,
+    refetch: refetchShift,
+  } = useAsync(
+    async () => {
+      return await shiftDetailService.getEmployeeMonthlyShift(employeeId, currentYear, currentMonth);
+    },
+    {
+      onError: () => toast.error("シフトデータの取得に失敗しました"),
+    }
+  );
+
   const notifications = notificationsData?.notifications || [];
   const stats = notificationsData?.stats || null;
+  const employeeShiftData = shiftData || [];
 
-  const today = new Date();
-  const currentMonth = today.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
-  const currentDay = today.getDate();
-  
-  // Mock data
-  const nextShift = {
-    date: "11月10日",
-    type: "早番",
-    time: "8:00 - 17:00"
-  };
+  // 当月のシフト表示（曜日情報付き）
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const firstDayOfWeek = new Date(currentYear, currentMonth - 1, 1).getDay();
 
-  // 当月のシフト表示（曜日情報付き)
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  // シフトデータをMapに変換（日付でアクセス）
+  const shiftDataMap = useMemo(() => {
+    const map = new Map<string, EmployeeShiftData>();
+    employeeShiftData.forEach(shift => {
+      map.set(shift.date, shift);
+    });
+    return map;
+  }, [employeeShiftData]);
 
-  // useMemoでシフトデータを固定し、再レンダリング時に変化しないようにする
+  // 月の日付データを生成
   const monthDays: DayData[] = useMemo(() => {
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const dayOfWeek = (firstDayOfWeek + i) % 7;
-      const shiftType = (["早番", "遅番", "夜勤"] as const)[Math.floor(Math.random() * 3)];
-      const hasShift = Math.random() > 0.3;
+      const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const shiftInfo = shiftDataMap.get(dateStr);
+
+      const hasShift = shiftInfo?.status === 'working';
+      const shiftType = shiftInfo?.timeSlot?.name || '早番';
+      const shiftTime = shiftInfo?.timeSlot
+        ? `${shiftInfo.timeSlot.startTime}〜${shiftInfo.timeSlot.endTime}`
+        : undefined;
       const isHoliday = holidays2025Nov.includes(day);
-      
+
       return {
         day,
         hasShift,
-        shiftType,
-        shiftTime: hasShift ? shiftTimes[shiftType] : undefined,
+        shiftType: shiftType as '早番' | '遅番' | '夜勤',
+        shiftTime,
         dayOfWeek,
         isHoliday,
         event: facilityEvents.get(day),
       };
     });
-  }, [daysInMonth, firstDayOfWeek]);
+  }, [daysInMonth, firstDayOfWeek, currentYear, currentMonth, shiftDataMap]);
+
+  // 次の出勤予定を計算
+  const nextShift = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const futureShifts = monthDays.filter(dayData => {
+      if (!dayData.hasShift) return false;
+      const shiftDate = new Date(currentYear, currentMonth - 1, dayData.day);
+      return shiftDate >= today;
+    });
+
+    if (futureShifts.length === 0) {
+      return {
+        date: "予定なし",
+        type: "",
+        time: "",
+      };
+    }
+
+    const nextShiftDay = futureShifts[0];
+    return {
+      date: `${currentMonth}月${nextShiftDay.day}日`,
+      type: nextShiftDay.shiftType,
+      time: nextShiftDay.shiftTime || "",
+    };
+  }, [monthDays, currentYear, currentMonth]);
 
   const handleDayClick = (dayData: DayData) => {
     setSelectedDay(dayData);
@@ -87,16 +140,30 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
   };
 
   // エラー状態の表示
-  if (hasNotificationError) {
+  if (hasNotificationError || hasShiftError) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-md mx-auto pt-20">
           <ErrorState
             type="network"
-            error={notificationError}
-            onRetry={refetchNotifications}
+            error={notificationError || shiftError}
+            onRetry={() => {
+              refetchNotifications();
+              refetchShift();
+            }}
             showDetails={true}
           />
+        </div>
+      </div>
+    );
+  }
+
+  // ローディング状態
+  if (isLoadingNotifications || isLoadingShift) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-md mx-auto pt-20">
+          <CalendarSkeleton />
         </div>
       </div>
     );
@@ -177,7 +244,7 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2">
                 <Calendar className="w-6 h-6 text-primary" />
-                {currentMonth}
+                {currentMonthString}
               </h2>
               <Badge variant="outline" className="bg-gradient-to-r from-secondary/20 to-accent/20">
                 今月のシフト

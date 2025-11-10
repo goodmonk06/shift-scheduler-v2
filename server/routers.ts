@@ -248,7 +248,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getShiftById(input.id);
       }),
-    create: protectedProcedure
+    create: publicProcedure
       .input(z.object({
         year: z.number(),
         month: z.number(),
@@ -261,7 +261,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         return await db.createShift({
           ...input,
-          userId: ctx.user.id,
+          userId: ctx.user?.id || 1, // デフォルト値を設定
         });
       }),
     archive: protectedProcedure

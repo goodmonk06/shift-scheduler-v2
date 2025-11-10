@@ -30,6 +30,16 @@ export interface ShiftService {
    * 全シフト一覧を取得
    */
   getAllShifts(): Promise<Shift[]>;
+
+  /**
+   * 新しいシフトを作成
+   */
+  createShift(params: { year: number; month: number; name: string }): Promise<Shift>;
+
+  /**
+   * シフトを削除
+   */
+  deleteShift(id: number): Promise<void>;
 }
 
 // ===========================
@@ -108,6 +118,41 @@ class ShiftServiceMock implements ShiftService {
 
   async getAllShifts(): Promise<Shift[]> {
     return this.getStoredShifts();
+  }
+
+  async createShift(params: { year: number; month: number; name: string }): Promise<Shift> {
+    const shifts = this.getStoredShifts();
+    const newShift: Shift = {
+      id: Date.now(),
+      year: params.year,
+      month: params.month,
+      name: params.name,
+      status: 'draft',
+      userId: 1,
+      generatedBy: 'manual',
+      tentativePublishedAt: null,
+      confirmedAt: null,
+      isArchived: false,
+      archivedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      leaveRequestDeadline: null,
+    };
+
+    const updatedShifts = [newShift, ...shifts];
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(this.SHIFTS_KEY, JSON.stringify(updatedShifts));
+    }
+
+    return newShift;
+  }
+
+  async deleteShift(id: number): Promise<void> {
+    const shifts = this.getStoredShifts();
+    const updatedShifts = shifts.filter(s => s.id !== id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(this.SHIFTS_KEY, JSON.stringify(updatedShifts));
+    }
   }
 }
 
@@ -200,9 +245,6 @@ class ShiftServiceProduction implements ShiftService {
   }
 
   async getAllShifts(): Promise<Shift[]> {
-    // TODO: バックエンド側で実装
-    // ✅ 実装例:
-    /*
     try {
       const response = await this.fetchApi<Shift[]>(
         '/api/trpc/shifts.list',
@@ -212,8 +254,27 @@ class ShiftServiceProduction implements ShiftService {
     } catch {
       return [];
     }
-    */
-    throw new Error('Not implemented - バックエンド側で実装してください');
+  }
+
+  async createShift(params: { year: number; month: number; name: string }): Promise<Shift> {
+    const response = await this.fetchApi<Shift>(
+      '/api/trpc/shifts.create',
+      {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }
+    );
+    return response.data;
+  }
+
+  async deleteShift(id: number): Promise<void> {
+    await this.fetchApi<void>(
+      '/api/trpc/shifts.delete',
+      {
+        method: 'POST',
+        body: JSON.stringify({ id }),
+      }
+    );
   }
 }
 

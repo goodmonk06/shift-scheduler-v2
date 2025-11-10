@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Sparkles, Plus, Pencil, Trash2, Calendar as CalendarIcon, X, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, Plus, Pencil, Trash2, Calendar as CalendarIcon, X, Save, Loader2 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -37,17 +37,10 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { useToast } from "../hooks/useToast";
+import { shiftService } from "../services/shiftService";
+import type { Shift as ApiShift } from "../types/api";
 
 type ShiftStatus = "draft" | "tentative" | "confirmed" | "archived";
-
-interface Shift {
-  id: string;
-  year: number;
-  month: number;
-  status: ShiftStatus;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface ShiftListProps {
   onEditShift?: (shiftId: string) => void;
@@ -58,47 +51,53 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 
-  // モックデータ（後でAPI連携）
-  const [shifts, setShifts] = useState<Shift[]>([
-    {
-      id: "1",
-      year: currentYear,
-      month: currentMonth,
-      status: "draft",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      year: currentYear,
-      month: currentMonth - 1 > 0 ? currentMonth - 1 : 12,
-      status: "confirmed",
-      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-  ]);
+  const [shifts, setShifts] = useState<ApiShift[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deletingShiftId, setDeletingShiftId] = useState<string | null>(null);
+  const [deletingShiftId, setDeletingShiftId] = useState<number | null>(null);
+
+  // シフト一覧を読み込む
+  useEffect(() => {
+    loadShifts();
+  }, []);
+
+  const loadShifts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await shiftService.getAllShifts();
+      setShifts(data);
+    } catch (error) {
+      console.error('Failed to load shifts:', error);
+      toast.error('シフトの読み込みに失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // フォームの状態
   const [formData, setFormData] = useState({
     year: currentYear,
     month: currentMonth,
+    name: '',
   });
 
   // 新規作成ダイアログを開く
   const handleCreate = () => {
+    const defaultName = `${currentYear}年${currentMonth}月シフト`;
     setFormData({
       year: currentYear,
       month: currentMonth,
+      name: defaultName,
     });
     setIsDialogOpen(true);
   };
 
   // 保存処理
-  const handleSave = () => {
+  const handleSave = async () => {
     // 既に同じ年月のシフトがあるかチェック
     const existing = shifts.find(
       (s) => s.year === formData.year && s.month === formData.month
@@ -108,22 +107,27 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
       return;
     }
 
-    // 新規作成
-    const newShift: Shift = {
-      id: Date.now().toString(),
-      year: formData.year,
-      month: formData.month,
-      status: "draft",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setShifts([newShift, ...shifts]);
-    toast.success("シフトを作成しました");
-    setIsDialogOpen(false);
+    try {
+      setIsSaving(true);
+      await shiftService.createShift({
+        year: formData.year,
+        month: formData.month,
+        name: formData.name,
+      });
+      toast.success("シフトを作成しました");
+      setIsDialogOpen(false);
+      // リロード
+      await loadShifts();
+    } catch (error) {
+      console.error('Failed to create shift:', error);
+      toast.error("シフトの作成に失敗しました");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // 削除確認ダイアログを開く
-  const handleDeleteClick = (shift: Shift) => {
+  const handleDeleteClick = (shift: ApiShift) => {
     if (shift.status === "confirmed" || shift.status === "archived") {
       toast.error("確定済みまたはアーカイブ済みのシフトは削除できません");
       return;
@@ -133,19 +137,29 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
   };
 
   // 削除処理
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingShiftId) {
-      setShifts(shifts.filter((s) => s.id !== deletingShiftId));
-      toast.success("シフトを削除しました");
-      setIsDeleteDialogOpen(false);
-      setDeletingShiftId(null);
+      try {
+        setIsDeleting(true);
+        await shiftService.deleteShift(deletingShiftId);
+        toast.success("シフトを削除しました");
+        setIsDeleteDialogOpen(false);
+        setDeletingShiftId(null);
+        // リロード
+        await loadShifts();
+      } catch (error) {
+        console.error('Failed to delete shift:', error);
+        toast.error("シフトの削除に失敗しました");
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
   // 編集画面へ遷移
-  const handleEdit = (shiftId: string) => {
+  const handleEdit = (shiftId: number) => {
     if (onEditShift) {
-      onEditShift(shiftId);
+      onEditShift(shiftId.toString());
     } else {
       toast.info("シフト編集画面へ遷移します");
     }
@@ -213,7 +227,16 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {shifts.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    読み込み中...
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : shifts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   シフトが登録されていません
@@ -283,9 +306,14 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
                 <label className="text-sm">年</label>
                 <Select
                   value={formData.year.toString()}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, year: parseInt(value) })
-                  }
+                  onValueChange={(value) => {
+                    const year = parseInt(value);
+                    setFormData({
+                      ...formData,
+                      year,
+                      name: `${year}年${formData.month}月シフト`
+                    });
+                  }}
                 >
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
@@ -306,9 +334,14 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
                 <label className="text-sm">月</label>
                 <Select
                   value={formData.month.toString()}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, month: parseInt(value) })
-                  }
+                  onValueChange={(value) => {
+                    const month = parseInt(value);
+                    setFormData({
+                      ...formData,
+                      month,
+                      name: `${formData.year}年${month}月シフト`
+                    });
+                  }}
                 >
                   <SelectTrigger className="rounded-xl">
                     <SelectValue />
@@ -330,13 +363,23 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
               variant="outline"
               onClick={() => setIsDialogOpen(false)}
               className="rounded-xl"
+              disabled={isSaving}
             >
               <X className="w-4 h-4 mr-2" />
               キャンセル
             </Button>
-            <Button onClick={handleSave} className="rounded-xl">
-              <Save className="w-4 h-4 mr-2" />
-              作成
+            <Button onClick={handleSave} className="rounded-xl" disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  作成中...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  作成
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -352,12 +395,22 @@ export function ShiftList({ onEditShift }: ShiftListProps = {}) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">キャンセル</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl" disabled={isDeleting}>
+              キャンセル
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="rounded-xl bg-red-600 hover:bg-red-700"
+              disabled={isDeleting}
             >
-              削除
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                '削除'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

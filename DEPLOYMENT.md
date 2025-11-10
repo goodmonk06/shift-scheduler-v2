@@ -1,278 +1,158 @@
-# 本番環境デプロイガイド
+# Railway デプロイメントガイド
 
-## 🚀 Railwayへのデプロイ手順
+このドキュメントでは、シフトスケジューラーアプリケーションをRailwayにデプロイする手順を説明します。
 
-### 前提条件
-- ✅ Railwayアカウント作成済み
-- ✅ Aiven MySQL データベース設定済み
-- ✅ OpenAI APIキー取得済み（後のフェーズで設定）
-- ✅ GitHubリポジトリ作成済み（推奨）
+## 前提条件
 
----
+- [Railway](https://railway.app/) アカウント
+- GitHubアカウント
+- MySQLデータベース（Railway MySQL Pluginを使用）
 
-## 📋 デプロイ手順
+## デプロイ手順
 
-### 1. Railwayプロジェクト作成
+### 1. Railwayプロジェクトの作成
 
-1. [Railway](https://railway.app)にログイン
+1. Railway（https://railway.app/）にログイン
 2. 「New Project」をクリック
-3. 「Deploy from GitHub repo」を選択（またはCLIでデプロイ）
+3. 「Deploy from GitHub repo」を選択
+4. リポジトリを選択（事前にGitHubにpushしておく必要があります）
 
-### 2. 環境変数の設定
+### 2. MySQLデータベースの追加
 
-Railwayプロジェクトの「Variables」タブで以下を設定:
+1. Railwayプロジェクトの画面で「New」→「Database」→「Add MySQL」をクリック
+2. MySQLプラグインが自動的に作成されます
+3. 接続情報（DATABASE_URL）が自動的に環境変数に設定されます
 
-#### 必須環境変数
+### 3. 環境変数の設定
+
+Railwayプロジェクトの「Variables」タブで以下の環境変数を設定します：
 
 ```bash
-# Node環境
+# 必須環境変数
 NODE_ENV=production
-PORT=3000
+DATABASE_URL=<自動設定されたMySQL接続URL>
+JWT_SECRET=<ランダムな文字列を生成>
+SESSION_SECRET=<ランダムな文字列を生成>
 
-# データベース（Aiven MySQL）
-DATABASE_URL=mysql://avnadmin:AVNS_DFbwqth2Tnib2XE-Mbo@shift-scheduler-kinyu000-c42a.i.aivencloud.com:21789/defaultdb?ssl-mode=REQUIRED
-
-# JWT認証
-JWT_SECRET=1Ggzey4jtDqOoP1Dx4B46yjFlAKuCppQRt4vCsWxyukEY+woKu92c3fCzzI41RlJ
-
-# AI（後のフェーズで設定）
-LLM_PROVIDER=openai
-OPENAI_API_KEY=(後で設定)
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o-mini
-```
-
-#### オプション環境変数
-
-```bash
-# OAuth（未使用）
-OAUTH_SERVER_URL=
-
-# Storage（未使用）
-AWS_REGION=auto
-S3_BUCKET=
-S3_ENDPOINT=
-S3_ACCESS_KEY_ID=
-S3_SECRET_ACCESS_KEY=
-
-# メール通知（未使用）
-RESEND_API_KEY=
-SMTP_HOST=
+# オプション環境変数
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=no-reply@example.com
-
-# Web Push（未使用）
-VAPID_PUBLIC_KEY=
-VAPID_PRIVATE_KEY=
-VAPID_SUBJECT=mailto:admin@example.com
-
-# 監視（未使用）
-SENTRY_DSN=
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
 ```
 
-### 3. ビルド設定
+#### JWT_SECRET と SESSION_SECRET の生成方法
 
-**Build Command**:
+ターミナルで以下のコマンドを実行して、セキュアなランダム文字列を生成できます：
+
 ```bash
-pnpm install && pnpm build
+openssl rand -base64 32
 ```
 
-**Start Command**:
+### 4. データベースの初期化
+
+デプロイ後、以下のコマンドでデータベーステーブルを作成します：
+
+1. Railwayのプロジェクト画面で、アプリケーションサービスを選択
+2. 「Settings」タブの「Deploy」セクションで「Custom Start Command」を一時的に変更：
+
 ```bash
-pnpm start
+pnpm db:push && pnpm start
 ```
 
-### 4. デプロイ実行
+3. デプロイが完了したら、元の `pnpm start` に戻します
 
-#### オプションA: GitHub連携（推奨）
+### 5. 管理者アカウントの作成
 
-1. GitHubにコードをプッシュ
+デプロイ後、以下の手順で管理者アカウントを作成します：
+
+1. Railway CLIをインストール（ローカルマシン）：
 ```bash
-git add .
-git commit -m "Phase 3: API実装完了 - 本番デプロイ準備"
-git push origin main
+npm install -g @railway/cli
 ```
 
-2. Railwayが自動的にビルド＆デプロイ
-
-#### オプションB: Railway CLI
-
+2. Railwayにログイン：
 ```bash
-# Railway CLI インストール
-npm i -g @railway/cli
-
-# ログイン
 railway login
+```
 
-# プロジェクトにリンク
+3. プロジェクトにリンク：
+```bash
 railway link
-
-# デプロイ
-railway up
 ```
 
----
-
-## ✅ デプロイ後の確認
-
-### 1. ヘルスチェック
-
-デプロイ完了後、以下をブラウザで確認:
-
-```
-https://your-app.railway.app
-```
-
-### 2. API動作確認
-
-#### 管理者ログインテスト
+4. 管理者作成スクリプトを実行：
 ```bash
-curl -X POST https://your-app.railway.app/api/admin-auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com"}' \
-  -c cookies.txt
+railway run pnpm setup-admin
 ```
 
-#### 現在のユーザー取得
-```bash
-curl https://your-app.railway.app/api/admin-auth/me \
-  -b cookies.txt
-```
+### 6. ドメインの設定
 
-### 3. データベース接続確認
+1. Railwayプロジェクトの「Settings」タブを開く
+2. 「Domains」セクションで「Generate Domain」をクリック
+3. カスタムドメインを使用する場合は「Custom Domain」を追加
 
-Railwayのログで以下を確認:
-```
-[Server] Listening on port 3000
-[Database] Connected to Aiven MySQL
-```
+## ビルド設定
 
----
+プロジェクトには以下のRailway設定ファイルが含まれています：
 
-## 🔧 トラブルシューティング
+- `railway.json`: Railway用の基本設定
+- `nixpacks.toml`: Nixpacksビルドシステムの設定
 
-### ビルドエラー
+これらのファイルにより、以下が自動的に実行されます：
 
-**問題**: `vite build` が失敗する
-**解決**:
-```bash
-# ローカルで確認
-pnpm build
+1. `pnpm install` - 依存関係のインストール
+2. `pnpm build` - アプリケーションのビルド
+3. `pnpm start` - 本番サーバーの起動
 
-# node_modulesをクリーン
-rm -rf node_modules pnpm-lock.yaml
-pnpm install
-pnpm build
-```
+## トラブルシューティング
+
+### ビルドが失敗する場合
+
+1. ログを確認：Railwayの「Deployments」タブでビルドログを確認
+2. 依存関係の確認：`package.json`のdevDependenciesとdependenciesが正しく設定されているか確認
+3. Node.jsバージョン：`nixpacks.toml`でNode.js 20を使用しています
 
 ### データベース接続エラー
 
-**問題**: `Failed to connect to database`
-**解決**:
-1. `DATABASE_URL` 環境変数を確認
-2. Aivenのファイアウォール設定を確認
-3. SSL接続設定を確認（`ssl-mode=REQUIRED`）
+1. `DATABASE_URL`環境変数が正しく設定されているか確認
+2. MySQLプラグインが起動しているか確認
+3. Railway内部ネットワークで接続されているか確認
 
-### ポート設定エラー
+### アプリケーションが起動しない
 
-**問題**: `EADDRINUSE: address already in use`
-**解決**:
-- Railwayは自動的にポートを割り当てます
-- `PORT` 環境変数を削除するか、Railway推奨値を使用
+1. ポート設定：Railwayは自動的に`PORT`環境変数を設定します
+2. ログ確認：「View Logs」でエラーメッセージを確認
+3. 環境変数：すべての必須環境変数が設定されているか確認
 
----
+## 本番環境の確認
 
-## 📊 Phase 3 デプロイチェックリスト
+デプロイが成功したら、以下を確認します：
 
-### ビルド前
-- [x] TypeScriptエラー確認（一部既知のエラーあり - 動作に影響なし）
-- [x] vite.config.ts 設定確認
-- [x] index.html パス修正
-- [x] ビルドテスト成功
+1. Railwayで生成されたドメインにアクセス
+2. 管理者アカウントでログイン
+3. シフト作成・編集機能の動作確認
+4. 職員用ページの表示確認
 
-### Railwayデプロイ前
-- [x] 環境変数一覧作成
-- [x] データベースURL確認
-- [x] JWT_SECRET確認
-- [ ] OpenAI APIキー設定（後のフェーズ）
+## 継続的デプロイメント
 
-### デプロイ後
-- [ ] アプリケーション起動確認
-- [ ] データベース接続確認
-- [ ] 認証API動作確認
-- [ ] フロントエンド表示確認
+GitHubリポジトリにプッシュすると、Railwayが自動的に：
 
----
+1. 変更を検知
+2. ビルドを実行
+3. デプロイを実行
 
-## 🎯 次のフェーズ（Phase 4）
+手動デプロイが必要な場合は、Railwayの「Deployments」タブから「Deploy Now」をクリックします。
 
-### AI統合
-1. OpenAI APIキー設定
-2. AI自動生成機能テスト
-3. プロンプト/レスポンス保存確認
+## セキュリティ
 
-### フロントエンド統合
-1. VacationServiceProduction 実装
-2. ShiftServiceProduction 実装
-3. エラーハンドリング実装
+- すべての環境変数は暗号化されて保存されます
+- HTTPS通信が自動的に有効化されます
+- データベース接続はRailway内部ネットワークで行われます
 
-### E2Eテスト
-1. 職員ログイン → 希望休作成フロー
-2. 管理者ログイン → シフト作成 → AI生成フロー
-3. 仮確定 → 追加希望 → 本確定フロー
+## サポート
 
----
+問題が発生した場合は、以下を確認してください：
 
-## 📝 本番環境情報
-
-### アプリケーション
-- **Platform**: Railway
-- **Node.js**: v20.x (推奨)
-- **Package Manager**: pnpm
-
-### データベース
-- **Provider**: Aiven MySQL
-- **Version**: MySQL 8.x
-- **Connection**: SSL required
-- **Host**: shift-scheduler-kinyu000-c42a.i.aivencloud.com
-- **Port**: 21789
-
-### API
-- **AI Provider**: OpenAI
-- **Model**: gpt-4o-mini
-- **Authentication**: JWT (Cookie-based)
-
----
-
-## 🔒 セキュリティ
-
-### 本番環境での注意事項
-
-1. **JWT_SECRET**: 本番用の強力なシークレットを使用
-2. **DATABASE_URL**: 環境変数で管理（コードにハードコードしない）
-3. **OPENAI_API_KEY**: 安全に保管
-4. **HTTPS**: Railway は自動的にHTTPSを提供
-
-### Cookie設定
-```typescript
-// 本番環境では secure: true
-secure: process.env.NODE_ENV === "production"
-sameSite: "lax"
-httpOnly: true
-```
-
----
-
-## 📚 参考リンク
-
-- [Railway Documentation](https://docs.railway.app/)
-- [Aiven MySQL Documentation](https://aiven.io/docs/products/mysql)
-- [OpenAI API Documentation](https://platform.openai.com/docs)
-
----
-
-**作成日時**: 2025-11-09
-**Phase**: 3 - API実装完了、本番デプロイ準備完了
-**次のフェーズ**: Phase 4 - AI統合＆フロントエンド統合
+- [Railway ドキュメント](https://docs.railway.app/)
+- [Railway コミュニティフォーラム](https://help.railway.app/)
