@@ -3,7 +3,6 @@ import { MessageSquare, Edit3 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { toast } from "sonner";
 import { ShiftCard } from "./ShiftCard";
 import { AdditionalRequestDialog } from "./AdditionalRequestDialog";
 import { ActualReportDialog } from "./ActualReportDialog";
@@ -16,8 +15,10 @@ import {
   actualReportDeadline,
 } from "../constants/shiftViewConstants";
 import type { ShiftDay } from "../types/shiftViewTypes";
+import { useToast } from "../hooks/useToast";
 
 export function ShiftView() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState("tentative");
   const [showAdditionalRequestDialog, setShowAdditionalRequestDialog] = useState(false);
   const [showActualReportDialog, setShowActualReportDialog] = useState(false);

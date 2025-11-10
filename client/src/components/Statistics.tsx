@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 interface EmployeeStats {
   employeeId: number;
@@ -41,6 +41,7 @@ interface StatsSummary {
 }
 
 export function Statistics() {
+  const toast = useToast();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 

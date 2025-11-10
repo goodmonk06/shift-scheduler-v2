@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 type ProposalStatus = "pending" | "approved" | "rejected";
 
@@ -40,6 +40,7 @@ interface ChangeProposal {
 }
 
 export function ChangeProposals() {
+  const toast = useToast();
   // モックデータ（後でAPI連携）
   const [proposals, setProposals] = useState<ChangeProposal[]>([
     {

@@ -36,7 +36,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 type ShiftStatus = "draft" | "tentative" | "confirmed" | "archived";
 
@@ -54,6 +54,7 @@ interface ShiftListProps {
 }
 
 export function ShiftList({ onEditShift }: ShiftListProps = {}) {
+  const toast = useToast();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
 

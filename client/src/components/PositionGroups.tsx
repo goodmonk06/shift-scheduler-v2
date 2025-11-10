@@ -38,7 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 interface PositionGroup {
   id: string;
@@ -49,6 +49,7 @@ interface PositionGroup {
 }
 
 export function PositionGroups() {
+  const toast = useToast();
   // モックデータ（後でAPI連携）
   const [positionGroups, setPositionGroups] = useState<PositionGroup[]>([
     {

@@ -5,7 +5,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { dashboardService } from "../services/dashboardService";
 import { notificationService, type EmergencyNotification } from "../services/notificationService";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 type ShiftStatus = "draft" | "tentative" | "tentative_revised" | "confirmed" | "actual" | "archived";
 
@@ -14,6 +14,7 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onNavigate }: AdminDashboardProps = {}) {
+  const toast = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEmployees: 0,

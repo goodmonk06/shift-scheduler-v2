@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { Separator } from "./ui/separator";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 type ShiftStatus = "draft" | "tentative" | "confirmed" | "archived";
 
@@ -37,6 +37,7 @@ interface Shift {
 }
 
 export function ShiftArchive() {
+  const toast = useToast();
   const currentYear = new Date().getFullYear();
 
   // モックデータ（後でAPI連携）

@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 interface EmergencyNotification {
   id: string;
@@ -33,6 +33,7 @@ interface EmergencyNotification {
 }
 
 export function EmergencyNotifications() {
+  const toast = useToast();
   // モックデータ（後でAPI連携）
   const [notifications, setNotifications] = useState<EmergencyNotification[]>([
     {

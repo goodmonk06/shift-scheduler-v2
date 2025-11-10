@@ -4,7 +4,7 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 interface AdminLoginProps {
   onLoginSuccess: (email: string) => void | Promise<void>;
@@ -12,6 +12,7 @@ interface AdminLoginProps {
 }
 
 export function AdminLogin({ onLoginSuccess, onSwitchToEmployee }: AdminLoginProps) {
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 

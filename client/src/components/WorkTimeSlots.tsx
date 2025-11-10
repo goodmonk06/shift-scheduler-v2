@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 interface WorkTimeSlot {
   id: string;
@@ -46,6 +46,7 @@ interface WorkTimeSlot {
 }
 
 export function WorkTimeSlots() {
+  const toast = useToast();
   // モックデータ（後でAPI連携）
   const [workTimeSlots, setWorkTimeSlots] = useState<WorkTimeSlot[]>([
     {

@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "./ui/table";
 import { Alert, AlertDescription } from "./ui/alert";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 interface RequiredStaffingData {
   dayOfWeek: number; // 0-6 (日曜=0)
@@ -21,6 +21,7 @@ interface RequiredStaffingData {
 }
 
 export function RequiredStaffing() {
+  const toast = useToast();
   const daysOfWeek = ["日", "月", "火", "水", "木", "金", "土"];
   const hours = Array.from({ length: 24 }, (_, i) => i);
 

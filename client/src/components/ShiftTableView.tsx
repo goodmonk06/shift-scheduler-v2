@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 import type { ShiftAssignment, Employee } from "../types/shiftTypes";
 import {
   getDayOfWeek,
@@ -31,6 +31,7 @@ export function ShiftTableView({
   assignments,
   employees,
 }: ShiftTableViewProps) {
+  const toast = useToast();
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 

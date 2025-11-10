@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { toast } from "sonner";
+import { useToast } from "../hooks/useToast";
 
 interface WorkplaceRule {
   employmentType: "fulltime" | "parttime";
@@ -16,6 +16,7 @@ interface WorkplaceRule {
 }
 
 export function WorkplaceRules() {
+  const toast = useToast();
   // モックデータ（後でAPI連携）
   const [rules, setRules] = useState<Record<"fulltime" | "parttime", WorkplaceRule>>({
     fulltime: {
