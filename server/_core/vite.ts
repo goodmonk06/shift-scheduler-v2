@@ -48,9 +48,8 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // In production, files are in /app/dist/public (Railway deployment)
-  // In development, files are in <cwd>/dist/public
-  const distPath = path.resolve(process.cwd(), "dist", "public");
+  // Vite builds to 'build' directory (from vite.config.ts: outDir: '../build')
+  const distPath = path.resolve(process.cwd(), "build");
 
   console.log(`[Static] Serving static files from: ${distPath}`);
   console.log(`[Static] Directory exists: ${fs.existsSync(distPath)}`);
