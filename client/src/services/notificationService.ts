@@ -112,7 +112,7 @@ class NotificationServiceProduction implements NotificationService {
 // ===========================
 
 export const notificationService: NotificationService =
-  import.meta.env.VITE_USE_MOCK_API !== 'false'
+  import.meta.env.VITE_USE_MOCK_API === 'true'
     ? new NotificationServiceMock()
     : new NotificationServiceProduction();
 

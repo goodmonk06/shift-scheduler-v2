@@ -404,7 +404,7 @@ class AuthServiceProduction implements AuthService {
 // ===========================
 
 export const authService: AuthService =
-  import.meta.env.VITE_USE_MOCK_API !== 'false'
+  import.meta.env.VITE_USE_MOCK_API === 'true'
     ? new AuthServiceMock()
     : new AuthServiceProduction();
 

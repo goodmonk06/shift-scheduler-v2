@@ -179,7 +179,7 @@ class EmployeeNotificationServiceProduction implements EmployeeNotificationServi
 // ===========================
 
 export const employeeNotificationService: EmployeeNotificationService =
-  import.meta.env.VITE_USE_MOCK_API !== 'false'
+  import.meta.env.VITE_USE_MOCK_API === 'true'
     ? new EmployeeNotificationServiceMock()
     : new EmployeeNotificationServiceProduction();
 

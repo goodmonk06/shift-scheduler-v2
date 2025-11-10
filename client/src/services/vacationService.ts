@@ -430,7 +430,7 @@ class VacationServiceProduction implements VacationService {
  * - false: 本番実装を使用（本番環境）
  */
 export const vacationService: VacationService = 
-  import.meta.env.VITE_USE_MOCK_API !== 'false'
+  import.meta.env.VITE_USE_MOCK_API === 'true'
     ? new VacationServiceMock()
     : new VacationServiceProduction();
 

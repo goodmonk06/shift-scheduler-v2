@@ -121,7 +121,7 @@ class DashboardServiceProduction implements DashboardService {
 // ===========================
 
 export const dashboardService: DashboardService =
-  import.meta.env.VITE_USE_MOCK_API !== 'false'
+  import.meta.env.VITE_USE_MOCK_API === 'true'
     ? new DashboardServiceMock()
     : new DashboardServiceProduction();
 

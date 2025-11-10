@@ -149,7 +149,7 @@ class LeaveRequestServiceProduction implements LeaveRequestService {
 // ===========================
 
 export const leaveRequestService: LeaveRequestService =
-  import.meta.env.VITE_USE_MOCK_API !== 'false'
+  import.meta.env.VITE_USE_MOCK_API === 'true'
     ? new LeaveRequestServiceMock()
     : new LeaveRequestServiceProduction();
 
