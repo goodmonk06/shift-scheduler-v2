@@ -32,7 +32,7 @@ async function main() {
   });
 
   const migrationSQL = fs.readFileSync(
-    path.join(process.cwd(), "drizzle", "0010_harsh_the_call.sql"),
+    path.join(process.cwd(), "drizzle", "0013_true_chameleon.sql"),
     "utf8"
   );
 

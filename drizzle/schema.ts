@@ -138,7 +138,7 @@ export type InsertRequiredStaffing = typeof requiredStaffing.$inferInsert;
  */
 export const shifts = mysqlTable("shifts", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().references(() => users.id, { onDelete: 'restrict' }), // FK to users - creator
+  userId: int("userId").references(() => users.id, { onDelete: 'restrict' }), // FK to users - creator (nullable)
   year: int("year").notNull(),
   month: int("month").notNull(),
   name: varchar("name", { length: 100 }).notNull(),

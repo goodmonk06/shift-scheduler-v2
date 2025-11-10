@@ -261,7 +261,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         return await db.createShift({
           ...input,
-          userId: ctx.user?.id || 1, // デフォルト値を設定
+          userId: ctx.user?.id || null, // nullを許容（外部キー制約エラーを回避）
         });
       }),
     archive: protectedProcedure
