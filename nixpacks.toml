@@ -5,10 +5,17 @@ nixPkgs = ["nodejs_20", "pnpm"]
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm build"]
+cmds = [
+  "rm -rf build dist .vite",
+  "pnpm build",
+  "echo '=== Build Output Check ==='",
+  "ls -la dist/ 2>&1 || echo 'dist not found'",
+  "ls -la dist/public/ 2>&1 || echo 'dist/public not found'",
+  "ls -la dist/index.js 2>&1 || echo 'dist/index.js not found'"
+]
 
 [start]
-cmd = "pnpm start"
+cmd = "node dist/index.js"
 
 [variables]
 NODE_ENV = "production"
