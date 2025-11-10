@@ -48,41 +48,61 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // Vite builds to 'build' directory (from vite.config.ts: outDir: '../build')
-  const distPath = path.resolve(process.cwd(), "build");
+  // Try multiple possible build locations
+  const possiblePaths = [
+    path.resolve(process.cwd(), "build"),
+    path.resolve(process.cwd(), "dist"),
+    path.resolve(process.cwd(), "client", "build"),
+    path.resolve(import.meta.dirname, "../../build"),
+  ];
 
-  console.log(`[Static] Serving static files from: ${distPath}`);
-  console.log(`[Static] Directory exists: ${fs.existsSync(distPath)}`);
+  console.log(`[Static] Searching for build directory...`);
+  console.log(`[Static] Current working directory: ${process.cwd()}`);
+  console.log(`[Static] import.meta.dirname: ${import.meta.dirname}`);
 
-  if (fs.existsSync(distPath)) {
-    const files = fs.readdirSync(distPath);
-    console.log(`[Static] Build directory contents:`, files.slice(0, 10));
+  let distPath: string | null = null;
+  for (const testPath of possiblePaths) {
+    console.log(`[Static] Checking: ${testPath} - exists: ${fs.existsSync(testPath)}`);
+    if (fs.existsSync(testPath) && fs.existsSync(path.join(testPath, "index.html"))) {
+      distPath = testPath;
+      console.log(`[Static] ✓ Found build directory at: ${distPath}`);
+      break;
+    }
   }
 
-  if (!fs.existsSync(distPath)) {
-    console.error(
-      `[Static] WARNING: Build directory not found at ${distPath}. Client assets will not be served. Make sure 'vite build' was run successfully.`
-    );
-    // Continue anyway - don't crash the server
+  if (!distPath) {
+    console.error(`[Static] ERROR: Build directory not found in any of the expected locations`);
+    console.error(`[Static] Searched paths:`, possiblePaths);
+
+    // List what actually exists in cwd
+    try {
+      const cwdContents = fs.readdirSync(process.cwd());
+      console.error(`[Static] Contents of ${process.cwd()}:`, cwdContents);
+    } catch (e) {
+      console.error(`[Static] Could not read cwd:`, e);
+    }
+
+    distPath = possiblePaths[0]; // fallback to first path for error reporting
+  } else {
+    const files = fs.readdirSync(distPath);
+    console.log(`[Static] Build directory contents (first 10):`, files.slice(0, 10));
   }
 
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res, next) => {
-    const indexPath = path.resolve(distPath, "index.html");
-    console.log(`[Static] Trying to serve index.html from: ${indexPath}`);
+    const indexPath = path.resolve(distPath!, "index.html");
 
     if (!fs.existsSync(indexPath)) {
       console.error(`[Static] ERROR: index.html not found at ${indexPath}`);
-      console.error(`[Static] Current working directory: ${process.cwd()}`);
-      console.error(`[Static] Build directory exists: ${fs.existsSync(distPath)}`);
 
       return res.status(500).json({
         error: "Build files not found",
         message: `index.html not found. Build directory: ${distPath}`,
         cwd: process.cwd(),
-        buildExists: fs.existsSync(distPath)
+        searchedPaths: possiblePaths,
+        selectedPath: distPath
       });
     }
 
