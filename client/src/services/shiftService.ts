@@ -1,10 +1,11 @@
 /**
  * シフトAPI抽象化層
- * 
+ *
  * シフト情報の取得、作成、更新などのAPI
  */
 
 import type { Shift, ApiResponse } from '../types/api';
+import { trpcClient } from '../lib/trpc';
 
 // ===========================
 // インターフェース定義
@@ -246,35 +247,18 @@ class ShiftServiceProduction implements ShiftService {
 
   async getAllShifts(): Promise<Shift[]> {
     try {
-      const response = await this.fetchApi<Shift[]>(
-        '/api/trpc/shifts.list',
-        { method: 'GET' }
-      );
-      return response.data || [];
+      return await trpcClient.shifts.list.query();
     } catch {
       return [];
     }
   }
 
   async createShift(params: { year: number; month: number; name: string }): Promise<Shift> {
-    const input = encodeURIComponent(JSON.stringify(params));
-    const response = await this.fetchApi<Shift>(
-      `/api/trpc/shifts.create?input=${input}`,
-      {
-        method: 'POST',
-      }
-    );
-    return response.data;
+    return await trpcClient.shifts.create.mutate(params);
   }
 
   async deleteShift(id: number): Promise<void> {
-    const input = encodeURIComponent(JSON.stringify({ id }));
-    await this.fetchApi<void>(
-      `/api/trpc/shifts.delete?input=${input}`,
-      {
-        method: 'POST',
-      }
-    );
+    await trpcClient.shifts.delete.mutate({ id });
   }
 }
 
