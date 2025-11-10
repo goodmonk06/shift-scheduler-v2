@@ -261,7 +261,7 @@ class ShiftServiceProduction implements ShiftService {
       '/api/trpc/shifts.create',
       {
         method: 'POST',
-        body: JSON.stringify(params),
+        body: JSON.stringify({ input: params }),
       }
     );
     return response.data;
@@ -272,7 +272,7 @@ class ShiftServiceProduction implements ShiftService {
       '/api/trpc/shifts.delete',
       {
         method: 'POST',
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ input: { id } }),
       }
     );
   }
