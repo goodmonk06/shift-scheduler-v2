@@ -257,22 +257,22 @@ class ShiftServiceProduction implements ShiftService {
   }
 
   async createShift(params: { year: number; month: number; name: string }): Promise<Shift> {
+    const input = encodeURIComponent(JSON.stringify(params));
     const response = await this.fetchApi<Shift>(
-      '/api/trpc/shifts.create',
+      `/api/trpc/shifts.create?input=${input}`,
       {
         method: 'POST',
-        body: JSON.stringify(params),
       }
     );
     return response.data;
   }
 
   async deleteShift(id: number): Promise<void> {
+    const input = encodeURIComponent(JSON.stringify({ id }));
     await this.fetchApi<void>(
-      '/api/trpc/shifts.delete',
+      `/api/trpc/shifts.delete?input=${input}`,
       {
         method: 'POST',
-        body: JSON.stringify({ id }),
       }
     );
   }
