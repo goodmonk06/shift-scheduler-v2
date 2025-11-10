@@ -1,4 +1,5 @@
 # Multi-stage build for production deployment
+# Force rebuild by changing this: v3
 FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -24,7 +25,11 @@ RUN echo "=== Starting build ===" && \
 
 # Verify build output
 RUN echo "=== Build output structure ===" && \
-    ls -laR dist/
+    ls -la dist/ && \
+    echo "=== dist/public/ contents ===" && \
+    ls -la dist/public/ && \
+    echo "=== Checking index.html ===" && \
+    cat dist/public/index.html | grep -o 'index-[^"]*\.js' | head -1
 
 # Production stage
 FROM base AS runner
