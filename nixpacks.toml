@@ -19,3 +19,7 @@ cmd = "node dist/index.js"
 
 [variables]
 NODE_ENV = "production"
+
+# Ensure dist directory and its contents are preserved
+[phases.build.onlyIncludeFiles]
+paths = ["dist"]

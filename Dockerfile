@@ -36,7 +36,6 @@ ENV NODE_ENV=production
 # Copy only production dependencies and built files
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/build ./dist/public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/drizzle ./drizzle
 
