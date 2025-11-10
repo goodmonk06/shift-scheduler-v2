@@ -97,10 +97,26 @@ export function ShiftCreation({ onBack }: ShiftCreationProps = {}) {
                   {isGenerating ? "生成中..." : "AI自動生成"}
                 </Button>
                 {isGenerating && (
-                  <span className="text-muted-foreground flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    最適なシフトを計算しています
-                  </span>
+                  <div className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                      <span className="font-medium">AIがシフトを生成中...</span>
+                    </div>
+                    <div className="text-xs space-y-0.5 ml-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        <span>職員情報を読み込み完了</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        <span>制約条件を分析完了</span>
+                      </div>
+                      <div className="flex items-center gap-2 animate-pulse">
+                        <span className="text-primary">⏳</span>
+                        <span>最適なシフトを計算中（20-30秒）</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
