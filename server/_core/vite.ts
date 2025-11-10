@@ -54,10 +54,16 @@ export function serveStatic(app: Express) {
   console.log(`[Static] Serving static files from: ${distPath}`);
   console.log(`[Static] Directory exists: ${fs.existsSync(distPath)}`);
 
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    console.log(`[Static] Build directory contents:`, files.slice(0, 10));
+  }
+
   if (!fs.existsSync(distPath)) {
     console.error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
+      `[Static] WARNING: Build directory not found at ${distPath}. Client assets will not be served. Make sure 'vite build' was run successfully.`
     );
+    // Continue anyway - don't crash the server
   }
 
   app.use(express.static(distPath));
@@ -65,11 +71,19 @@ export function serveStatic(app: Express) {
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res, next) => {
     const indexPath = path.resolve(distPath, "index.html");
-    console.log(`[Static] Serving index.html from: ${indexPath}`);
+    console.log(`[Static] Trying to serve index.html from: ${indexPath}`);
 
     if (!fs.existsSync(indexPath)) {
       console.error(`[Static] ERROR: index.html not found at ${indexPath}`);
-      return next(new Error(`index.html not found at ${indexPath}`));
+      console.error(`[Static] Current working directory: ${process.cwd()}`);
+      console.error(`[Static] Build directory exists: ${fs.existsSync(distPath)}`);
+
+      return res.status(500).json({
+        error: "Build files not found",
+        message: `index.html not found. Build directory: ${distPath}`,
+        cwd: process.cwd(),
+        buildExists: fs.existsSync(distPath)
+      });
     }
 
     res.sendFile(indexPath, (err) => {
