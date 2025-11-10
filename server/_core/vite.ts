@@ -49,11 +49,12 @@ export async function setupVite(app: Express, server: Server) {
 
 export function serveStatic(app: Express) {
   // Try multiple possible build locations
+  // Primary: dist/public (same directory as compiled server code)
   const possiblePaths = [
+    path.resolve(process.cwd(), "dist", "public"),
+    path.resolve(import.meta.dirname, "../public"),
     path.resolve(process.cwd(), "build"),
     path.resolve(process.cwd(), "dist"),
-    path.resolve(process.cwd(), "client", "build"),
-    path.resolve(import.meta.dirname, "../../build"),
   ];
 
   console.log(`[Static] Searching for build directory...`);
