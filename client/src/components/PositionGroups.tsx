@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Briefcase, Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import { trpcClient } from "../lib/trpc";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -50,23 +51,33 @@ interface PositionGroup {
 
 export function PositionGroups() {
   const toast = useToast();
-  // モックデータ（後でAPI連携）
-  const [positionGroups, setPositionGroups] = useState<PositionGroup[]>([
-    {
-      id: "1",
-      name: "正社員",
-      employmentType: "fulltime",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      name: "パート",
-      employmentType: "parttime",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
+  const [positionGroups, setPositionGroups] = useState<PositionGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // データ読み込み
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await trpcClient.positionGroups.list.query();
+      const mapped: PositionGroup[] = data.map((group: any) => ({
+        id: group.id.toString(),
+        name: group.name,
+        employmentType: group.employmentType,
+        createdAt: group.createdAt,
+        updatedAt: group.updatedAt,
+      }));
+      setPositionGroups(mapped);
+    } catch (error) {
+      console.error("データの読み込みに失敗:", error);
+      toast.error("データの読み込みに失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -100,41 +111,36 @@ export function PositionGroups() {
   };
 
   // 保存処理
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       toast.error("名前を入力してください");
       return;
     }
 
-    if (editingGroup) {
-      // 更新
-      setPositionGroups(
-        positionGroups.map((g) =>
-          g.id === editingGroup.id
-            ? {
-                ...g,
-                name: formData.name,
-                employmentType: formData.employmentType,
-                updatedAt: new Date().toISOString(),
-              }
-            : g
-        )
-      );
-      toast.success("役職グループを更新しました");
-    } else {
-      // 新規作成
-      const newGroup: PositionGroup = {
-        id: Date.now().toString(),
-        name: formData.name,
-        employmentType: formData.employmentType,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setPositionGroups([...positionGroups, newGroup]);
-      toast.success("役職グループを作成しました");
-    }
+    try {
+      if (editingGroup) {
+        // 更新
+        await trpcClient.positionGroups.update.mutate({
+          id: parseInt(editingGroup.id),
+          name: formData.name,
+          employmentType: formData.employmentType,
+        });
+        toast.success("職種グループを更新しました");
+      } else {
+        // 新規作成
+        await trpcClient.positionGroups.create.mutate({
+          name: formData.name,
+          employmentType: formData.employmentType,
+        });
+        toast.success("職種グループを作成しました");
+      }
 
-    setIsDialogOpen(false);
+      await loadData();
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("保存エラー:", error);
+      toast.error(error.message || "保存に失敗しました");
+    }
   };
 
   // 削除確認ダイアログを開く
@@ -144,12 +150,18 @@ export function PositionGroups() {
   };
 
   // 削除処理
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingGroupId) {
-      setPositionGroups(positionGroups.filter((g) => g.id !== deletingGroupId));
-      toast.success("役職グループを削除しました");
-      setIsDeleteDialogOpen(false);
-      setDeletingGroupId(null);
+      try {
+        await trpcClient.positionGroups.delete.mutate({ id: parseInt(deletingGroupId) });
+        toast.success("職種グループを削除しました");
+        await loadData();
+        setIsDeleteDialogOpen(false);
+        setDeletingGroupId(null);
+      } catch (error: any) {
+        console.error("削除エラー:", error);
+        toast.error(error.message || "削除に失敗しました");
+      }
     }
   };
 

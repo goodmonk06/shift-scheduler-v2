@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Users, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
@@ -8,58 +8,58 @@ import type { Employee, PositionGroup, EmployeeFormData } from "../types/staffMa
 import { validateEmployeeForm, getInitialFormData, generateEmployeeId } from "../utils/staffManagementHelpers";
 import { useToast } from "../hooks/useToast";
 import { EmptyState } from "./ui/error-state";
+import { trpcClient } from "../lib/trpc";
+import { useMutation } from "../hooks/useAsync";
 
 export function StaffManagement() {
   const toast = useToast();
 
-  // モックデータ（後でAPI連携）
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      id: "EMP001",
-      name: "山田 太郎",
-      positionGroupId: "1",
-      positionGroupName: "正社員",
-      skillLevel: 100,
-      canWorkNight: true,
-      minDaysOffPerWeek: 2,
-      maxConsecutiveWorkDays: 5,
-      additionalConstraints: "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "EMP002",
-      name: "佐藤 花子",
-      positionGroupId: "1",
-      positionGroupName: "正社員",
-      skillLevel: 100,
-      canWorkNight: true,
-      minDaysOffPerWeek: 2,
-      maxConsecutiveWorkDays: 5,
-      additionalConstraints: "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "EMP003",
-      name: "鈴木 一郎",
-      positionGroupId: "2",
-      positionGroupName: "パート",
-      skillLevel: 80,
-      canWorkNight: false,
-      minDaysOffPerWeek: 2,
-      maxConsecutiveWorkDays: 3,
-      additionalConstraints: "月・水・金のみ勤務可能。水曜日は17時まで（子供の送迎のため）。",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [positionGroups, setPositionGroups] = useState<PositionGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 役職グループのモックデータ（後でAPI連携）
-  const positionGroups: PositionGroup[] = [
-    { id: "1", name: "正社員" },
-    { id: "2", name: "パート" },
-  ];
+  // データ読み込み
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [employeesData, positionGroupsData] = await Promise.all([
+        trpcClient.employees.list.query(),
+        trpcClient.positionGroups.list.query(),
+      ]);
+
+      // データ変換
+      const mappedEmployees: Employee[] = employeesData.map((emp: any) => ({
+        id: emp.employeeId || emp.id.toString(),
+        name: emp.name,
+        positionGroupId: emp.positionGroupId.toString(),
+        positionGroupName: emp.positionGroup?.name || "",
+        skillLevel: emp.skillLevel || 100,
+        canWorkNight: emp.canWorkNightShift || false,
+        minDaysOffPerWeek: 2,
+        maxConsecutiveWorkDays: 5,
+        additionalConstraints: "",
+        createdAt: emp.createdAt,
+        updatedAt: emp.updatedAt,
+      }));
+
+      const mappedGroups: PositionGroup[] = positionGroupsData.map((group: any) => ({
+        id: group.id.toString(),
+        name: group.name,
+      }));
+
+      setEmployees(mappedEmployees);
+      setPositionGroups(mappedGroups);
+    } catch (error) {
+      console.error("データの読み込みに失敗:", error);
+      toast.error("データの読み込みに失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -92,56 +92,42 @@ export function StaffManagement() {
   };
 
   // 保存処理
-  const handleSave = () => {
+  const handleSave = async () => {
     const validationError = validateEmployeeForm(formData);
     if (validationError) {
       toast.error(validationError);
       return;
     }
 
-    const positionGroup = positionGroups.find((g) => g.id === formData.positionGroupId);
+    try {
+      if (editingEmployee) {
+        // 更新
+        await trpcClient.employees.update.mutate({
+          id: parseInt(editingEmployee.id),
+          name: formData.name,
+          positionGroupId: parseInt(formData.positionGroupId),
+          skillLevel: formData.skillLevel,
+          canWorkNightShift: formData.canWorkNight,
+        });
+        toast.success("職員情報を更新しました");
+      } else {
+        // 新規作成
+        await trpcClient.employees.create.mutate({
+          name: formData.name,
+          positionGroupId: parseInt(formData.positionGroupId),
+          skillLevel: formData.skillLevel,
+          canWorkNightShift: formData.canWorkNight,
+        });
+        toast.success("職員を追加しました");
+      }
 
-    if (editingEmployee) {
-      // 更新
-      setEmployees(
-        employees.map((e) =>
-          e.id === editingEmployee.id
-            ? {
-                ...e,
-                name: formData.name,
-                positionGroupId: formData.positionGroupId,
-                positionGroupName: positionGroup?.name || "",
-                skillLevel: formData.skillLevel,
-                canWorkNight: formData.canWorkNight,
-                minDaysOffPerWeek: formData.minDaysOffPerWeek,
-                maxConsecutiveWorkDays: formData.maxConsecutiveWorkDays,
-                additionalConstraints: formData.additionalConstraints,
-                updatedAt: new Date().toISOString(),
-              }
-            : e
-        )
-      );
-      toast.success("職員情報を更新しました");
-    } else {
-      // 新規作成
-      const newEmployee: Employee = {
-        id: generateEmployeeId(employees.length),
-        name: formData.name,
-        positionGroupId: formData.positionGroupId,
-        positionGroupName: positionGroup?.name || "",
-        skillLevel: formData.skillLevel,
-        canWorkNight: formData.canWorkNight,
-        minDaysOffPerWeek: formData.minDaysOffPerWeek,
-        maxConsecutiveWorkDays: formData.maxConsecutiveWorkDays,
-        additionalConstraints: formData.additionalConstraints,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setEmployees([...employees, newEmployee]);
-      toast.success("職員を追加しました");
+      // データ再読み込み
+      await loadData();
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("保存エラー:", error);
+      toast.error(error.message || "保存に失敗しました");
     }
-
-    setIsDialogOpen(false);
   };
 
   // 削除確認ダイアログを開く
@@ -151,12 +137,18 @@ export function StaffManagement() {
   };
 
   // 削除処理
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingEmployeeId) {
-      setEmployees(employees.filter((e) => e.id !== deletingEmployeeId));
-      toast.success("職員を削除しました");
-      setIsDeleteDialogOpen(false);
-      setDeletingEmployeeId(null);
+      try {
+        await trpcClient.employees.delete.mutate({ id: parseInt(deletingEmployeeId) });
+        toast.success("職員を削除しました");
+        await loadData();
+        setIsDeleteDialogOpen(false);
+        setDeletingEmployeeId(null);
+      } catch (error: any) {
+        console.error("削除エラー:", error);
+        toast.error(error.message || "削除に失敗しました");
+      }
     }
   };
 

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock, Plus, Pencil, Trash2, Save, X, Moon, Sun } from "lucide-react";
+import { trpcClient } from "../lib/trpc";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -47,39 +48,36 @@ interface WorkTimeSlot {
 
 export function WorkTimeSlots() {
   const toast = useToast();
-  // モックデータ（後でAPI連携）
-  const [workTimeSlots, setWorkTimeSlots] = useState<WorkTimeSlot[]>([
-    {
-      id: "1",
-      name: "早番",
-      displayLabel: "早",
-      startTime: "08:00",
-      endTime: "16:00",
-      isNightShift: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      name: "遅番",
-      displayLabel: "遅",
-      startTime: "11:00",
-      endTime: "19:00",
-      isNightShift: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: "3",
-      name: "夜勤",
-      displayLabel: "夜",
-      startTime: "16:00",
-      endTime: "09:00",
-      isNightShift: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ]);
+  const [workTimeSlots, setWorkTimeSlots] = useState<WorkTimeSlot[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // データ読み込み
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await trpcClient.workTimeSlots.list.query();
+      const mapped: WorkTimeSlot[] = data.map((slot: any) => ({
+        id: slot.id.toString(),
+        name: slot.name,
+        displayLabel: slot.displayLabel,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        isNightShift: slot.isNightShift || false,
+        createdAt: slot.createdAt,
+        updatedAt: slot.updatedAt,
+      }));
+      setWorkTimeSlots(mapped);
+    } catch (error) {
+      console.error("データの読み込みに失敗:", error);
+      toast.error("データの読み込みに失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -122,7 +120,7 @@ export function WorkTimeSlots() {
   };
 
   // 保存処理
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name.trim()) {
       toast.error("名前を入力してください");
       return;
@@ -136,41 +134,36 @@ export function WorkTimeSlots() {
       return;
     }
 
-    if (editingSlot) {
-      // 更新
-      setWorkTimeSlots(
-        workTimeSlots.map((s) =>
-          s.id === editingSlot.id
-            ? {
-                ...s,
-                name: formData.name,
-                displayLabel: formData.displayLabel,
-                startTime: formData.startTime,
-                endTime: formData.endTime,
-                isNightShift: formData.isNightShift,
-                updatedAt: new Date().toISOString(),
-              }
-            : s
-        )
-      );
-      toast.success("勤務時間枠を更新しました");
-    } else {
-      // 新規作成
-      const newSlot: WorkTimeSlot = {
-        id: Date.now().toString(),
-        name: formData.name,
-        displayLabel: formData.displayLabel,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        isNightShift: formData.isNightShift,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setWorkTimeSlots([...workTimeSlots, newSlot]);
-      toast.success("勤務時間枠を作成しました");
-    }
+    try {
+      if (editingSlot) {
+        // 更新
+        await trpcClient.workTimeSlots.update.mutate({
+          id: parseInt(editingSlot.id),
+          name: formData.name,
+          displayLabel: formData.displayLabel,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          isNightShift: formData.isNightShift,
+        });
+        toast.success("勤務時間枠を更新しました");
+      } else {
+        // 新規作成
+        await trpcClient.workTimeSlots.create.mutate({
+          name: formData.name,
+          displayLabel: formData.displayLabel,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          isNightShift: formData.isNightShift,
+        });
+        toast.success("勤務時間枠を作成しました");
+      }
 
-    setIsDialogOpen(false);
+      await loadData();
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("保存エラー:", error);
+      toast.error(error.message || "保存に失敗しました");
+    }
   };
 
   // 削除確認ダイアログを開く
@@ -180,12 +173,18 @@ export function WorkTimeSlots() {
   };
 
   // 削除処理
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingSlotId) {
-      setWorkTimeSlots(workTimeSlots.filter((s) => s.id !== deletingSlotId));
-      toast.success("勤務時間枠を削除しました");
-      setIsDeleteDialogOpen(false);
-      setDeletingSlotId(null);
+      try {
+        await trpcClient.workTimeSlots.delete.mutate({ id: parseInt(deletingSlotId) });
+        toast.success("勤務時間枠を削除しました");
+        await loadData();
+        setIsDeleteDialogOpen(false);
+        setDeletingSlotId(null);
+      } catch (error: any) {
+        console.error("削除エラー:", error);
+        toast.error(error.message || "削除に失敗しました");
+      }
     }
   };
 
