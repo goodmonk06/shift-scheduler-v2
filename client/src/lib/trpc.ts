@@ -1,9 +1,9 @@
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '../../../server/routers';
-import SuperJSON from 'superjson';
+import superjson from 'superjson';
 
 export const trpcClient = createTRPCProxyClient<AppRouter>({
-  transformer: SuperJSON,
+  transformer: superjson,
   links: [
     httpBatchLink({
       url: `${import.meta.env.VITE_API_URL || ''}/api/trpc`,
