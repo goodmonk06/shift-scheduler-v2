@@ -1,5 +1,5 @@
 # Multi-stage build for production deployment
-# Force rebuild by changing this: v4 - clean dist before build
+# Force rebuild by changing this: v5 - 2025-11-11-20:53 JST
 FROM node:22-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -19,7 +19,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build both client and server
-RUN echo "=== Starting build ===" && \
+# Add cache busting with current timestamp
+ARG CACHEBUST=1
+RUN echo "=== Starting build (cache bust: $CACHEBUST) ===" && \
     rm -rf dist build .vite && \
     echo "=== Cleaned old build dirs ===" && \
     pnpm build && \
