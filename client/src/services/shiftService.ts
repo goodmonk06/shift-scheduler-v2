@@ -195,54 +195,32 @@ class ShiftServiceProduction implements ShiftService {
   }
 
   async getCurrentMonthShift(): Promise<Shift | null> {
-    // TODO: バックエンド側で実装
-    // ✅ 実装例:
-    /*
-    try {
-      const response = await this.fetchApi<Shift>(
-        '/api/trpc/shifts.getCurrentMonth',
-        { method: 'GET' }
-      );
-      return response.data || null;
-    } catch {
-      return null;
-    }
-    */
-    throw new Error('Not implemented - バックエンド側で実装してください');
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const year = nextMonth.getFullYear();
+    const month = nextMonth.getMonth() + 1;
+
+    return this.getShiftByYearMonth(year, month);
   }
 
   async getShiftByYearMonth(year: number, month: number): Promise<Shift | null> {
-    // TODO: バックエンド側で実装
-    // ✅ 実装例:
-    /*
     try {
-      const response = await this.fetchApi<Shift>(
-        `/api/trpc/shifts.getByYearMonth?year=${year}&month=${month}`,
-        { method: 'GET' }
-      );
-      return response.data || null;
-    } catch {
+      const result = await trpcClient.shifts.getCurrentMonth.query({ year, month });
+      return result || null;
+    } catch (error) {
+      console.error(`Failed to fetch shift for ${year}/${month}:`, error);
       return null;
     }
-    */
-    throw new Error('Not implemented - バックエンド側で実装してください');
   }
 
   async getShiftById(id: number): Promise<Shift | null> {
-    // TODO: バックエンド側で実装
-    // ✅ 実装例:
-    /*
     try {
-      const response = await this.fetchApi<Shift>(
-        `/api/trpc/shifts.getById?id=${id}`,
-        { method: 'GET' }
-      );
-      return response.data || null;
-    } catch {
+      const result = await trpcClient.shifts.getById.query({ id });
+      return result || null;
+    } catch (error) {
+      console.error(`Failed to fetch shift ${id}:`, error);
       return null;
     }
-    */
-    throw new Error('Not implemented - バックエンド側で実装してください');
   }
 
   async getAllShifts(): Promise<Shift[]> {

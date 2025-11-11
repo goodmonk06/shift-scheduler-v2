@@ -5,6 +5,7 @@
  */
 
 import type { ApiResponse } from '../types/api';
+import { trpcClient } from '../lib/trpc';
 
 // ===========================
 // インターフェース定義
@@ -110,11 +111,8 @@ class LeaveRequestServiceProduction implements LeaveRequestService {
 
   async getSubmissionStatus(shiftId: number): Promise<SubmissionStatus> {
     try {
-      const response = await this.fetchApi<SubmissionStatus>(
-        `/api/trpc/leaveRequests.getSubmissionStatus?shiftId=${shiftId}`,
-        { method: 'GET' }
-      );
-      return response.data || {
+      const result = await trpcClient.leaveRequests.getSubmissionStatus.query({ shiftId });
+      return result || {
         total: 0,
         submitted: 0,
         notSubmitted: [],
@@ -129,14 +127,8 @@ class LeaveRequestServiceProduction implements LeaveRequestService {
 
   async approveAllForShift(shiftId: number): Promise<BulkApprovalResult> {
     try {
-      const response = await this.fetchApi<BulkApprovalResult>(
-        `/api/trpc/leaveRequests.approveAllForShift`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ shiftId }),
-        }
-      );
-      return response.data || { approved: 0, total: 0 };
+      const result = await trpcClient.leaveRequests.approveAllForShift.mutate({ shiftId });
+      return result || { approved: 0, total: 0 };
     } catch (error) {
       console.error('Failed to approve all leave requests:', error);
       throw error;
