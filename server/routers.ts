@@ -625,6 +625,7 @@ export const appRouter = router({
       return await db.getEmergencyNotifications();
     }),
     getRecent: protectedProcedure
+      .unstable_noTransformer() // 応急処置: superjsonを無効化してエラーを回避
       .input(z.object({ limit: z.number().optional().default(5) }))
       .query(async ({ input }) => {
         const allNotifications = await db.getEmergencyNotifications();
@@ -828,7 +829,9 @@ export const appRouter = router({
 
   // Dashboard Statistics
   dashboard: router({
-    getStats: protectedProcedure.query(async () => {
+    getStats: protectedProcedure
+      .unstable_noTransformer() // 応急処置: superjsonを無効化してエラーを回避
+      .query(async () => {
       const [
         employees,
         shifts,
