@@ -334,7 +334,15 @@ export async function createShift(data: InsertShift) {
   if (!db) throw new Error("Database not available");
   const result = await db.insert(shifts).values(data);
   // INSERTの結果からIDを取得して、作成されたシフトを返す
-  const insertId = Number(result.insertId);
+  // result.insertId は string | number | bigint の可能性があるので、文字列も考慮
+  const insertId = typeof result.insertId === 'string'
+    ? parseInt(result.insertId, 10)
+    : Number(result.insertId);
+
+  if (isNaN(insertId)) {
+    throw new Error(`Invalid insertId received: ${result.insertId}`);
+  }
+
   const created = await getShiftById(insertId);
   if (!created) throw new Error("Failed to retrieve created shift");
   return created;

@@ -255,12 +255,15 @@ export const appRouter = router({
         name: z.string(),
         status: z.enum(["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
         generatedBy: z.enum(["manual", "ai"]).optional(),
-        leaveRequestDeadline: z.date().optional(),
-        additionalRequestDeadline: z.date().optional(),
+        leaveRequestDeadline: z.string().optional(), // ISO文字列として受け取る
+        additionalRequestDeadline: z.string().optional(), // ISO文字列として受け取る
       }))
       .mutation(async ({ input, ctx }) => {
         return await db.createShift({
           ...input,
+          // ISO文字列をDateに変換
+          leaveRequestDeadline: input.leaveRequestDeadline ? new Date(input.leaveRequestDeadline) : undefined,
+          additionalRequestDeadline: input.additionalRequestDeadline ? new Date(input.additionalRequestDeadline) : undefined,
           userId: ctx.user?.id || null, // nullを許容（外部キー制約エラーを回避）
         });
       }),
@@ -278,16 +281,25 @@ export const appRouter = router({
         id: z.number(),
         name: z.string().optional(),
         status: z.enum(["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
-        leaveRequestDeadline: z.date().optional(),
-        additionalRequestDeadline: z.date().optional(),
-        tentativePublishedAt: z.date().optional(),
-        confirmedAt: z.date().optional(),
+        leaveRequestDeadline: z.string().optional(), // ISO文字列
+        additionalRequestDeadline: z.string().optional(), // ISO文字列
+        tentativePublishedAt: z.string().optional(), // ISO文字列
+        confirmedAt: z.string().optional(), // ISO文字列
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
 
+        // ISO文字列をDateに変換
+        const convertedData = {
+          ...data,
+          leaveRequestDeadline: data.leaveRequestDeadline ? new Date(data.leaveRequestDeadline) : undefined,
+          additionalRequestDeadline: data.additionalRequestDeadline ? new Date(data.additionalRequestDeadline) : undefined,
+          tentativePublishedAt: data.tentativePublishedAt ? new Date(data.tentativePublishedAt) : undefined,
+          confirmedAt: data.confirmedAt ? new Date(data.confirmedAt) : undefined,
+        };
+
         // ステータス変更がある場合、遷移ルールを検証
-        if (data.status) {
+        if (convertedData.status) {
           const currentShift = await db.getShiftById(id);
           if (!currentShift) {
             throw new Error("Shift not found");
@@ -304,7 +316,7 @@ export const appRouter = router({
           };
 
           const currentStatus = currentShift.status;
-          const newStatus = data.status;
+          const newStatus = convertedData.status;
 
           // 同じステータスへの更新は許可
           if (currentStatus !== newStatus) {
@@ -318,7 +330,7 @@ export const appRouter = router({
           }
         }
 
-        return await db.updateShift(id, data);
+        return await db.updateShift(id, convertedData);
       }),
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
@@ -328,14 +340,14 @@ export const appRouter = router({
     publishTentative: protectedProcedure
       .input(z.object({
         id: z.number(),
-        additionalRequestDeadline: z.date().optional(),
+        additionalRequestDeadline: z.string().optional(), // ISO文字列
       }))
       .mutation(async ({ input }) => {
         const { id, additionalRequestDeadline } = input;
         return await db.updateShift(id, {
           status: "tentative",
           tentativePublishedAt: new Date(),
-          additionalRequestDeadline,
+          additionalRequestDeadline: additionalRequestDeadline ? new Date(additionalRequestDeadline) : undefined,
         });
       }),
     confirm: protectedProcedure
