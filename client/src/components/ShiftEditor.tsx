@@ -25,6 +25,8 @@ import { ShiftTableView } from "./ShiftTableView";
 import { getStatusLabel, getStatusBadgeVariant, getDaysInMonth } from "../utils/shiftHelpers";
 import { useToast } from "../hooks/useToast";
 import { LoadingInline } from "./ui/loading-spinner";
+import { trpcClient } from "../lib/trpc";
+import { useMutation } from "../hooks/useAsync";
 
 interface ShiftEditorProps {
   shiftId?: string;
@@ -332,36 +334,43 @@ ${aiConfig.customInstructions || "なし"}
     setShowAIPromptDialog(true);
   };
 
+  // AI自動生成を実行 - useMutationに移行
+  const { mutate: generateAI, isLoading: isGeneratingAI } = useMutation(
+    async () => {
+      if (!shiftId) {
+        throw new Error("シフトIDが指定されていません");
+      }
+
+      const numericShiftId = parseInt(shiftId);
+      if (isNaN(numericShiftId)) {
+        throw new Error("無効なシフトIDです");
+      }
+
+      await trpcClient.shifts.generateAI.mutate({ shiftId: numericShiftId });
+    },
+    {
+      onSuccess: () => {
+        toast.success("AI生成が完了しました", {
+          description: "シフトを確認してください",
+        });
+        // ページをリロードして最新データを取得
+        window.location.reload();
+      },
+      onError: (error: Error) => {
+        toast.error("AI生成に失敗しました", {
+          description: error.message,
+        });
+      },
+    }
+  );
+
   // AI自動生成を実行
   const handleAIGenerate = async () => {
     setShowAIPromptDialog(false);
-    toast.info("AI自動生成を開始します...");
-
-    // ここでChatGPT APIを呼び出す
-    // const response = await fetch('/api/ai/generate-shift', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ prompt: aiPrompt })
-    // });
-
-    // モック: 2秒後に成功
-    setTimeout(() => {
-      toast.success("AI生成が完了しました");
-      setCurrentShift({ ...currentShift, status: "ai_generated" });
-
-      // モックデータを追加
-      setAssignments([
-        ...assignments,
-        {
-          date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
-          employeeId: "EMP001",
-          employeeName: "山田 太郎",
-          timeSlotId: "TS001",
-          timeSlotName: "早番",
-          isVacationRequest: false,
-        },
-      ]);
-    }, 2000);
+    toast.info("AI自動生成を開始します...", {
+      description: "生成には20-30秒かかります",
+    });
+    generateAI();
   };
 
   const handleExportPDF = () => {
