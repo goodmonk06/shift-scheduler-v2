@@ -625,14 +625,19 @@ export const appRouter = router({
       return await db.getEmergencyNotifications();
     }),
     getRecent: protectedProcedure
-      .unstable_noTransformer() // 応急処置: superjsonを無効化してエラーを回避
       .input(z.object({ limit: z.number().optional().default(5) }))
       .query(async ({ input }) => {
         const allNotifications = await db.getEmergencyNotifications();
         // 最新のものから指定された件数を取得
-        return allNotifications
+        const sorted = allNotifications
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(0, input.limit);
+
+        // Dateオブジェクトを文字列に変換（superjsonの問題を回避）
+        return sorted.map(n => ({
+          ...n,
+          createdAt: typeof n.createdAt === 'string' ? n.createdAt : new Date(n.createdAt).toISOString(),
+        }));
       }),
     create: protectedProcedure
       .input(z.object({
@@ -829,9 +834,7 @@ export const appRouter = router({
 
   // Dashboard Statistics
   dashboard: router({
-    getStats: protectedProcedure
-      .unstable_noTransformer() // 応急処置: superjsonを無効化してエラーを回避
-      .query(async () => {
+    getStats: protectedProcedure.query(async () => {
       const [
         employees,
         shifts,
@@ -860,7 +863,11 @@ export const appRouter = router({
           year: currentShift.year,
           month: currentShift.month,
           status: currentShift.status,
-          leaveRequestDeadline: currentShift.leaveRequestDeadline,
+          leaveRequestDeadline: currentShift.leaveRequestDeadline
+            ? (typeof currentShift.leaveRequestDeadline === 'string'
+                ? currentShift.leaveRequestDeadline
+                : new Date(currentShift.leaveRequestDeadline).toISOString())
+            : null,
         } : null,
         emergencyNotifications: emergencyNotifications.length,
         archivedShifts,
