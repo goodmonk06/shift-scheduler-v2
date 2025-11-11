@@ -61,8 +61,10 @@ export function VacationManagement() {
   const selectedRequestData = vacationRequests.find((req) => req.id === selectedRequest);
 
   const openDeadlineDialog = () => {
-    const dateStr = deadline.toISOString().split('T')[0];
-    const timeStr = `${deadline.getHours().toString().padStart(2, '0')}:${deadline.getMinutes().toString().padStart(2, '0')}`;
+    // deadline が undefined の場合はデフォルト値を使用
+    const currentDeadline = deadline || new Date(2025, 10, 15, 23, 59, 59);
+    const dateStr = currentDeadline.toISOString().split('T')[0];
+    const timeStr = `${currentDeadline.getHours().toString().padStart(2, '0')}:${currentDeadline.getMinutes().toString().padStart(2, '0')}`;
     setTempDeadlineDate(dateStr);
     setTempDeadlineTime(timeStr);
     setShowDeadlineDialog(true);

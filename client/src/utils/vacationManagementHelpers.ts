@@ -19,7 +19,10 @@ export const formatDate = (date: Date) => {
 };
 
 // 締切日時をフォーマット
-export const formatDeadline = (deadline: Date) => {
+export const formatDeadline = (deadline: Date | undefined) => {
+  if (!deadline) {
+    return '未設定';
+  }
   return deadline.toLocaleString('ja-JP', {
     year: 'numeric',
     month: 'long',
