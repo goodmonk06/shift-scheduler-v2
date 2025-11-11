@@ -148,9 +148,13 @@ class LeaveRequestServiceProduction implements LeaveRequestService {
 // エクスポート
 // ===========================
 
-export const leaveRequestService: LeaveRequestService =
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new LeaveRequestServiceMock()
-    : new LeaveRequestServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const leaveRequestService: LeaveRequestService = useMock
+  ? new LeaveRequestServiceMock()
+  : new LeaveRequestServiceProduction();
 
 export { LeaveRequestServiceMock, LeaveRequestServiceProduction };

@@ -241,9 +241,13 @@ class ShiftDetailServiceProduction implements ShiftDetailService {
 // エクスポート
 // ===========================
 
-export const shiftDetailService: ShiftDetailService =
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new ShiftDetailServiceMock()
-    : new ShiftDetailServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const shiftDetailService: ShiftDetailService = useMock
+  ? new ShiftDetailServiceMock()
+  : new ShiftDetailServiceProduction();
 
 export { ShiftDetailServiceMock, ShiftDetailServiceProduction };

@@ -5,6 +5,7 @@
  */
 
 import type { ApiResponse } from '../types/api';
+import { trpcClient } from '../lib/trpc';
 
 // ===========================
 // インターフェース定義
@@ -93,11 +94,8 @@ class DashboardServiceProduction implements DashboardService {
 
   async getStats(): Promise<DashboardStats> {
     try {
-      const response = await this.fetchApi<DashboardStats>(
-        '/api/trpc/dashboard.getStats',
-        { method: 'GET' }
-      );
-      return response.data || {
+      const result = await trpcClient.dashboard.getStats.query();
+      return result || {
         totalEmployees: 0,
         currentShift: null,
         emergencyNotifications: 0,
@@ -120,9 +118,13 @@ class DashboardServiceProduction implements DashboardService {
 // エクスポート
 // ===========================
 
-export const dashboardService: DashboardService =
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new DashboardServiceMock()
-    : new DashboardServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const dashboardService: DashboardService = useMock
+  ? new DashboardServiceMock()
+  : new DashboardServiceProduction();
 
 export { DashboardServiceMock, DashboardServiceProduction };

@@ -422,17 +422,14 @@ class VacationServiceProduction implements VacationService {
 // エクスポート
 // ===========================
 
-/**
- * 使用するサービス実装を選択
- * 
- * 環境変数 VITE_USE_MOCK_API で切り替え:
- * - true または未設定: モック実装を使用（開発環境）
- * - false: 本番実装を使用（本番環境）
- */
-export const vacationService: VacationService = 
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new VacationServiceMock()
-    : new VacationServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const vacationService: VacationService = useMock
+  ? new VacationServiceMock()
+  : new VacationServiceProduction();
 
 // テスト用にクラスもエクスポート
 export { VacationServiceMock, VacationServiceProduction };

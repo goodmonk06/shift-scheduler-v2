@@ -178,9 +178,13 @@ class EmployeeNotificationServiceProduction implements EmployeeNotificationServi
 // エクスポート
 // ===========================
 
-export const employeeNotificationService: EmployeeNotificationService =
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new EmployeeNotificationServiceMock()
-    : new EmployeeNotificationServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const employeeNotificationService: EmployeeNotificationService = useMock
+  ? new EmployeeNotificationServiceMock()
+  : new EmployeeNotificationServiceProduction();
 
 export { EmployeeNotificationServiceMock, EmployeeNotificationServiceProduction };

@@ -403,9 +403,13 @@ class AuthServiceProduction implements AuthService {
 // エクスポート
 // ===========================
 
-export const authService: AuthService =
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new AuthServiceMock()
-    : new AuthServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const authService: AuthService = useMock
+  ? new AuthServiceMock()
+  : new AuthServiceProduction();
 
 export { AuthServiceMock, AuthServiceProduction };

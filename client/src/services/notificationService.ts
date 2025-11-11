@@ -5,6 +5,7 @@
  */
 
 import type { ApiResponse } from '../types/api';
+import { trpcClient } from '../lib/trpc';
 
 // ===========================
 // インターフェース定義
@@ -95,11 +96,8 @@ class NotificationServiceProduction implements NotificationService {
 
   async getRecentNotifications(limit: number = 5): Promise<EmergencyNotification[]> {
     try {
-      const response = await this.fetchApi<EmergencyNotification[]>(
-        `/api/trpc/emergencyNotifications.getRecent?limit=${limit}`,
-        { method: 'GET' }
-      );
-      return response.data || [];
+      const result = await trpcClient.emergencyNotifications.getRecent.query({ limit });
+      return Array.isArray(result) ? result : [];
     } catch (error) {
       console.error('Failed to fetch recent notifications:', error);
       return [];
@@ -111,9 +109,13 @@ class NotificationServiceProduction implements NotificationService {
 // エクスポート
 // ===========================
 
-export const notificationService: NotificationService =
-  import.meta.env.VITE_USE_MOCK_API === 'true'
-    ? new NotificationServiceMock()
-    : new NotificationServiceProduction();
+import { ENV } from '../lib/env';
+
+// 本番では常にProductionを強制（VITE_USE_MOCK_APIが未定義でも安全）
+const useMock = ENV.PROD ? false : ENV.USE_MOCK;
+
+export const notificationService: NotificationService = useMock
+  ? new NotificationServiceMock()
+  : new NotificationServiceProduction();
 
 export { NotificationServiceMock, NotificationServiceProduction };
