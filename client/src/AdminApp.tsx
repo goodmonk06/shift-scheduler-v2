@@ -23,6 +23,7 @@ import { Statistics } from "./components/Statistics";
 import { EmergencyNotifications } from "./components/EmergencyNotifications";
 import { ShiftArchive } from "./components/ShiftArchive";
 import { ServerManagement } from "./components/ServerManagement";
+import { VacationProvider } from "./contexts/VacationContext";
 
 type AdminView =
   | "dashboard"
@@ -110,9 +111,10 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
   };
 
   return (
-    <div className="flex" data-user-type="admin">
-      {/* Admin Sidebar Navigation */}
-      <aside className="w-64 bg-card border-r min-h-[calc(100vh-73px)]">
+    <VacationProvider>
+      <div className="flex" data-user-type="admin">
+        {/* Admin Sidebar Navigation */}
+        <aside className="w-64 bg-card border-r min-h-[calc(100vh-73px)]">
         <ScrollArea className="h-[calc(100vh-73px)]">
           <nav className="space-y-1 p-4">
             {/* メイン */}
@@ -288,6 +290,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           </div>
         )}
       </main>
-    </div>
+      </div>
+    </VacationProvider>
   );
 }
