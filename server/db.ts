@@ -332,19 +332,14 @@ export async function getShiftByYearMonth(year: number, month: number) {
 export async function createShift(data: InsertShift) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(shifts).values(data);
-  // INSERTの結果からIDを取得して、作成されたシフトを返す
-  // result.insertId は string | number | bigint の可能性があるので、文字列も考慮
-  const insertId = typeof result.insertId === 'string'
-    ? parseInt(result.insertId, 10)
-    : Number(result.insertId);
+  await db.insert(shifts).values(data);
 
-  if (isNaN(insertId)) {
-    throw new Error(`Invalid insertId received: ${result.insertId}`);
+  // INSERTの直後に、year/monthで取得（一意制約があるため安全）
+  const created = await getShiftByYearMonth(data.year, data.month);
+  if (!created) {
+    throw new Error(`Failed to retrieve created shift for ${data.year}/${data.month}`);
   }
 
-  const created = await getShiftById(insertId);
-  if (!created) throw new Error("Failed to retrieve created shift");
   return created;
 }
 
