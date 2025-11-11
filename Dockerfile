@@ -1,9 +1,9 @@
 # Multi-stage build for production deployment
-# Force rebuild by changing this: v5 - 2025-11-11-20:53 JST
-FROM node:22-alpine AS base
+# Force rebuild: 20251111-210500
+FROM node:22-alpine@sha256:b2358485e3e33bc3a33114d2b1bdb18cdbe4df01bd2b257198eb51beb1f026c5 AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN corepack enable && date
 
 # Dependencies stage
 FROM base AS deps
@@ -19,13 +19,17 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build both client and server
-# Add cache busting with current timestamp
-ARG CACHEBUST=1
-RUN echo "=== Starting build (cache bust: $CACHEBUST) ===" && \
-    rm -rf dist build .vite && \
+# CRITICAL: Force fresh build every time
+ARG CACHEBUST=20251111210500
+RUN echo "=== Starting build (CACHEBUST: $CACHEBUST) ===" && \
+    echo "PWD: $(pwd)" && \
+    ls -la && \
+    rm -rf dist build .vite node_modules/.vite && \
     echo "=== Cleaned old build dirs ===" && \
+    ls -la && \
     pnpm build && \
-    echo "=== Build completed ==="
+    echo "=== Build completed ===" && \
+    ls -la dist/public/assets/ | head -20
 
 # Verify build output
 RUN echo "=== Build output structure ===" && \
