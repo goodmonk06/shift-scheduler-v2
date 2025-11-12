@@ -8,7 +8,9 @@ import 'dotenv/config';
 import mysql from 'mysql2/promise';
 
 async function clearMockData() {
-  const connection = await mysql.createConnection(process.env.DATABASE_URL!);
+  // Remove ssl-mode parameter if present (not supported by mysql2)
+  const connectionString = process.env.DATABASE_URL!.replace(/[?&]ssl-mode=[^&]*/g, '');
+  const connection = await mysql.createConnection(connectionString);
 
   console.log('🗑️  モックデータを削除します...\n');
 
