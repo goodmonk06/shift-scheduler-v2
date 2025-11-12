@@ -41,55 +41,7 @@ interface ChangeProposal {
 
 export function ChangeProposals() {
   const toast = useToast();
-  // モックデータ（後でAPI連携）
-  const [proposals, setProposals] = useState<ChangeProposal[]>([
-    {
-      id: "1",
-      employeeId: "EMP001",
-      employeeName: "山田 太郎",
-      date: "2025-11-15",
-      currentShift: "早番",
-      proposedShift: "遅番",
-      reason: "子供の学校行事があるため",
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: "2",
-      employeeId: "EMP002",
-      employeeName: "佐藤 花子",
-      date: "2025-11-20",
-      currentShift: "夜勤",
-      proposedShift: null,
-      reason: "体調不良のため休みたい",
-      status: "pending",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    },
-    {
-      id: "3",
-      employeeId: "EMP003",
-      employeeName: "鈴木 一郎",
-      date: "2025-11-10",
-      currentShift: "早番",
-      proposedShift: "遅番",
-      reason: "病院予約があるため",
-      status: "approved",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-      processedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    },
-    {
-      id: "4",
-      employeeId: "EMP004",
-      employeeName: "田中 美咲",
-      date: "2025-11-12",
-      currentShift: null,
-      proposedShift: "早番",
-      reason: "休日出勤可能です",
-      status: "rejected",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
-      processedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(),
-    },
-  ]);
+  const [proposals, setProposals] = useState<ChangeProposal[]>([]);
 
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<ChangeProposal | null>(null);
