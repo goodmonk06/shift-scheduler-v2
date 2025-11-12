@@ -336,7 +336,7 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
                       key={dayData.day}
                       onClick={() => handleDayClick(dayData)}
                       className={`
-                        aspect-square rounded-2xl p-1 flex flex-col items-center justify-center gap-0.5
+                        aspect-square rounded-2xl p-1 flex flex-col items-center justify-center
                         transition-all duration-300 hover:scale-110 hover:shadow-xl relative
                         ${dayData.hasShift
                           ? "bg-gradient-to-br from-secondary/40 via-secondary/30 to-accent/30 border-2 border-secondary/50 shadow-lg"
@@ -344,18 +344,15 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
                         ${isToday ? "ring-2 ring-primary ring-offset-2 shadow-xl" : ""}
                       `}
                     >
-                      <span className={`${isToday ? "text-primary font-bold" : getDayNumberColor(dayData)}`}>
+                      <span className={`${isToday ? "text-primary" : getDayNumberColor(dayData)} mb-1`}>
                         {dayData.day}
                       </span>
-                      {dayData.holidayName && (
-                        <span className="text-[0.45rem] leading-none text-destructive/90 font-medium px-0.5">
-                          {dayData.holidayName}
-                        </span>
-                      )}
                       {dayData.hasShift && (
-                        <Badge className="px-1 py-0 bg-gradient-to-r from-primary/80 to-primary/60" style={{ fontSize: '0.5rem' }}>
-                          {dayData.shiftType === "早番" ? "早" : dayData.shiftType === "遅番" ? "遅" : "夜"}
-                        </Badge>
+                        <div className="flex items-center justify-center">
+                          <Badge className="px-1.5 py-0 bg-gradient-to-r from-primary/80 to-primary/60" style={{ fontSize: '0.5625rem' }}>
+                            {dayData.shiftType === "早番" ? "早" : dayData.shiftType === "遅番" ? "遅" : "夜"}
+                          </Badge>
+                        </div>
                       )}
                       {dayData.event && (
                         <div className="absolute -top-1 -right-1">
