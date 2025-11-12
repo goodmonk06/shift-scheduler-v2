@@ -128,7 +128,8 @@ export function EmployeeApp({ hasNotifications = false, onLogout, employeeName =
         return <EmployeeHome employeeName={employeeName} employeeId={employeeId} hasNotifications={hasNotifications} headerImageUrl={currentHeaderImageUrl} />;
       case "vacation":
         return (
-          <VacationRequest 
+          <VacationRequest
+            employeeId={employeeId}
             onUnsavedChangesChange={(hasChanges, count) => {
               setHasUnsavedChanges(hasChanges);
               setUnsavedCount(count);
@@ -137,7 +138,7 @@ export function EmployeeApp({ hasNotifications = false, onLogout, employeeName =
           />
         );
       case "shift":
-        return <ShiftView />;
+        return <ShiftView employeeId={employeeId} />;
       case "settings":
         return (
           <Settings

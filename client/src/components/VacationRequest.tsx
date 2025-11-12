@@ -8,23 +8,39 @@ import { SparkleIcon } from "./DecorativeElements";
 import { VacationCalendar } from "./VacationCalendar";
 import { VacationDayDialog } from "./VacationDayDialog";
 import { VacationTimePicker } from "./VacationTimePicker";
-import { useVacation } from "../contexts/VacationContext";
-import type { VacationRequestProps, DayRequest } from "../types/vacationTypes";
-import { loadFromStorage, formatTimeText, getRequestTypeConfig } from "../utils/vacationHelpers";
 import { useToast } from "../hooks/useToast";
-import { LoadingInline } from "./ui/loading-spinner";
+import { useAsync } from "../hooks/useAsync";
+import { leaveRequestService, type LeaveRequest } from "../services/leaveRequestService";
+import { trpcClient } from "../lib/trpc";
+import { CalendarSkeleton } from "./ui/loading-skeleton";
+import { ErrorState } from "./ui/error-state";
+
+interface VacationRequestProps {
+  employeeId?: number;
+  onUnsavedChangesChange: (hasChanges: boolean, count: number) => void;
+  headerImageUrl?: string;
+}
+
+interface DayRequest {
+  day: number;
+  type: "休" | "有休" | "時間指定";
+  startTime?: string;
+  endTime?: string;
+  reason?: string;
+}
 
 export function VacationRequest({
+  employeeId = 1,
   onUnsavedChangesChange,
   headerImageUrl = "https://images.unsplash.com/photo-1709098165904-e9c5f9eec48a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYXN0ZWwlMjBmbG93ZXJzJTIwc29mdHxlbnwxfHx8fDE3NjI1MDE0Nzl8MA&ixlib=rb-4.1.0&q=80&w=1080"
 }: VacationRequestProps) {
   const toast = useToast();
-  const { addVacationRequest, deadline } = useVacation();
 
-  // 編集中の希望休（未提出）
-  const [requests, setRequests] = useState<Map<number, DayRequest>>(() => loadFromStorage('vacation_editing_requests'));
-  // 提出済みの希望休
-  const [submittedRequests, setSubmittedRequests] = useState<Map<number, DayRequest>>(() => loadFromStorage('vacation_submitted_requests'));
+  // 編集中の希望休（未提出）- 日付をキーにしたMap
+  const [requests, setRequests] = useState<Map<number, DayRequest>>(new Map());
+  // データベースから取得した既存の希望休
+  const [existingRequests, setExistingRequests] = useState<LeaveRequest[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showDayDialog, setShowDayDialog] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
@@ -36,27 +52,71 @@ export function VacationRequest({
   const [endMinute, setEndMinute] = useState("00");
   const [reason, setReason] = useState("");
 
-  // 来月のカレンダーを表示
+  // 来月の情報
   const today = new Date();
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const nextMonthYear = nextMonth.getFullYear();
+  const nextMonthNum = nextMonth.getMonth() + 1;
   const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
-  const daysInNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+  const daysInNextMonth = new Date(nextMonthYear, nextMonthNum, 0).getDate();
   const monthDays = Array.from({ length: daysInNextMonth }, (_, i) => i + 1);
 
+  // 現在のシフト情報と締切を取得
+  const {
+    data: currentShift,
+    isLoading: isLoadingShift,
+    isError: isShiftError,
+    error: shiftError,
+    refetch: refetchShift,
+  } = useAsync(
+    async () => {
+      return await trpcClient.shifts.getCurrentMonth.query({
+        year: nextMonthYear,
+        month: nextMonthNum
+      });
+    },
+    {
+      onError: (error) => {
+        console.error("シフト情報の取得に失敗:", error);
+        // シフトが存在しない場合はエラーにしない
+      },
+    }
+  );
+
+  // 既存の希望休を取得
+  const {
+    data: leaveRequestsData,
+    isLoading: isLoadingRequests,
+    isError: isRequestsError,
+    error: requestsError,
+    refetch: refetchRequests,
+  } = useAsync(
+    async () => {
+      return await leaveRequestService.getByEmployee(employeeId);
+    },
+    {
+      onError: () => toast.error("希望休データの取得に失敗しました"),
+    }
+  );
+
+  // データ取得後、existingRequestsに保存
+  useEffect(() => {
+    if (leaveRequestsData) {
+      // 来月分の希望休のみフィルタリング
+      const nextMonthRequests = leaveRequestsData.filter(req => {
+        const startDate = new Date(req.startDate);
+        return startDate.getFullYear() === nextMonthYear &&
+               startDate.getMonth() + 1 === nextMonthNum;
+      });
+      setExistingRequests(nextMonthRequests);
+    }
+  }, [leaveRequestsData, nextMonthYear, nextMonthNum]);
+
+  const deadline = currentShift?.leaveRequestDeadline
+    ? new Date(currentShift.leaveRequestDeadline)
+    : new Date(nextMonthYear, nextMonthNum - 1, 20, 23, 59); // デフォルト: 前月20日
+
   const isBeforeDeadline = useMemo(() => today < deadline, [today, deadline]);
-
-  // localStorageに保存
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('vacation_editing_requests', JSON.stringify(Array.from(requests.entries())));
-    }
-  }, [requests]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('vacation_submitted_requests', JSON.stringify(Array.from(submittedRequests.entries())));
-    }
-  }, [submittedRequests]);
 
   // 未保存の変更を親に通知
   useEffect(() => {
@@ -73,26 +133,40 @@ export function VacationRequest({
 
     setSelectedDay(day);
 
-    const existing = requests.get(day) || submittedRequests.get(day);
-    if (existing) {
-      setRequestType(existing.type);
-      if (existing.startTime) {
-        const [h, m] = existing.startTime.split(":");
+    // 編集中のリクエストまたは既存のリクエストを取得
+    const editingRequest = requests.get(day);
+    const existingRequest = existingRequests.find(req => {
+      const startDate = new Date(req.startDate);
+      return startDate.getDate() === day;
+    });
+
+    const request = editingRequest || (existingRequest ? {
+      day,
+      type: existingRequest.leaveType,
+      startTime: existingRequest.startTime,
+      endTime: existingRequest.endTime,
+      reason: existingRequest.reason,
+    } : null);
+
+    if (request) {
+      setRequestType(request.type);
+      if (request.startTime) {
+        const [h, m] = request.startTime.split(":");
         setStartHour(h);
         setStartMinute(m);
       } else {
         setStartHour("09");
         setStartMinute("00");
       }
-      if (existing.endTime) {
-        const [h, m] = existing.endTime.split(":");
+      if (request.endTime) {
+        const [h, m] = request.endTime.split(":");
         setEndHour(h);
         setEndMinute(m);
       } else {
         setEndHour("12");
         setEndMinute("00");
       }
-      setReason(existing.reason || "");
+      setReason(request.reason || "");
     } else {
       setRequestType("休");
       setStartHour("09");
@@ -138,10 +212,32 @@ export function VacationRequest({
       return updated;
     });
 
-    if (submittedRequests.has(selectedDay)) {
-      setSubmittedRequests(prev => {
+    setShowDayDialog(false);
+    setSelectedDay(null);
+  };
+
+  const handleRemoveDay = () => {
+    if (selectedDay === null) return;
+
+    // 編集中のリクエストから削除
+    setRequests(prev => {
+      const updated = new Map(prev);
+      updated.delete(selectedDay);
+      return updated;
+    });
+
+    // 既存のリクエストがあれば、それも削除マークをつける（実際の削除は submit 時）
+    const existingRequest = existingRequests.find(req => {
+      const startDate = new Date(req.startDate);
+      return startDate.getDate() === selectedDay;
+    });
+
+    if (existingRequest) {
+      // 既存のリクエストを削除リストに追加
+      setRequests(prev => {
         const updated = new Map(prev);
-        updated.delete(selectedDay);
+        // 削除マーカーとして null を設定
+        updated.set(selectedDay, null as any);
         return updated;
       });
     }
@@ -150,82 +246,152 @@ export function VacationRequest({
     setSelectedDay(null);
   };
 
-  const handleRemoveDay = () => {
-    if (selectedDay === null) return;
-
-    setRequests(prev => {
-      const updated = new Map(prev);
-      updated.delete(selectedDay);
-      return updated;
-    });
-
-    setSubmittedRequests(prev => {
-      const updated = new Map(prev);
-      updated.delete(selectedDay);
-      return updated;
-    });
-
-    setShowDayDialog(false);
-    setSelectedDay(null);
-  };
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (requests.size === 0) return;
 
-    addVacationRequest({
-      staffName: "山田花子",
-      staffId: "staff-demo",
-      month: nextMonthName,
-      requests: Array.from(requests.values()),
-    });
+    setIsSubmitting(true);
 
-    toast.success("希望休申請を送信しました！", {
-      description: `${requests.size}件の申請が管理者に送信されました。`,
-    });
+    try {
+      const promises: Promise<any>[] = [];
 
-    setSubmittedRequests(prev => {
-      const updated = new Map(prev);
-      requests.forEach((request, day) => {
-        updated.set(day, request);
+      for (const [day, request] of requests.entries()) {
+        const dateStr = `${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        // 既存のリクエストがあるか確認
+        const existingRequest = existingRequests.find(req => {
+          const startDate = new Date(req.startDate);
+          return startDate.getDate() === day;
+        });
+
+        if (request === null) {
+          // 削除マーカー: 既存のリクエストを削除
+          if (existingRequest) {
+            promises.push(leaveRequestService.delete(existingRequest.id));
+          }
+        } else if (existingRequest) {
+          // 更新
+          promises.push(
+            leaveRequestService.update(existingRequest.id, {
+              employeeId,
+              shiftId: currentShift?.id,
+              startDate: dateStr,
+              endDate: dateStr,
+              leaveType: request.type,
+              startTime: request.startTime,
+              endTime: request.endTime,
+              reason: request.reason,
+            })
+          );
+        } else {
+          // 新規作成
+          promises.push(
+            leaveRequestService.create({
+              employeeId,
+              shiftId: currentShift?.id,
+              startDate: dateStr,
+              endDate: dateStr,
+              leaveType: request.type,
+              startTime: request.startTime,
+              endTime: request.endTime,
+              reason: request.reason,
+            })
+          );
+        }
+      }
+
+      await Promise.all(promises);
+
+      toast.success("希望休申請を送信しました!", {
+        description: `${requests.size}件の申請が送信されました。`,
       });
-      return updated;
-    });
 
-    setRequests(new Map());
-    onUnsavedChangesChange(false, 0);
+      // データを再取得
+      await refetchRequests();
+
+      // 編集中のリクエストをクリア
+      setRequests(new Map());
+      onUnsavedChangesChange(false, 0);
+    } catch (error: any) {
+      console.error("希望休申請エラー:", error);
+      toast.error("申請に失敗しました", {
+        description: error.message || "もう一度お試しください。",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getRequestBadge = (day: number) => {
+    // 編集中のリクエストを優先
     const editingRequest = requests.get(day);
-    const submittedRequest = submittedRequests.get(day);
-    const request = editingRequest || submittedRequest;
-
-    if (!request) return null;
-
-    const isSubmitted = !editingRequest && submittedRequest;
-
-    let timeText = "";
-    if (request.type === "時間指定" && request.startTime && request.endTime) {
-      timeText = formatTimeText(request.startTime, request.endTime);
+    if (editingRequest === null) {
+      // 削除マーカー
+      return null;
     }
 
-    const config = getRequestTypeConfig(request.type, isSubmitted, timeText);
-    const isMultiLine = timeText.includes("\n");
+    if (editingRequest) {
+      // 編集中（未送信）
+      const timeText = editingRequest.type === "時間指定" && editingRequest.startTime && editingRequest.endTime
+        ? `${editingRequest.startTime}\n〜${editingRequest.endTime}`
+        : "";
+      const isMultiLine = timeText.includes("\n");
+      const emoji = editingRequest.type === "休" ? "🌸" : editingRequest.type === "有休" ? "💐" : "⏰";
+      const text = editingRequest.type === "時間指定" ? timeText : editingRequest.type;
+      const color = "bg-warning";
 
-    return (
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${config.color} shadow-md flex items-center gap-0.5`}>
-        <span className="text-[0.5rem]">{config.emoji}</span>
-        {config.text && (
-          <span
-            className="leading-tight whitespace-pre-line text-center"
-            style={{ fontSize: isMultiLine ? '0.5rem' : '0.55rem' }}
-          >
-            {config.text}
-          </span>
-        )}
-        {isSubmitted && <CheckCircle className="w-2.5 h-2.5" />}
-      </div>
-    );
+      return (
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
+          <span className="text-[0.5rem]">{emoji}</span>
+          {text && (
+            <span
+              className="leading-tight whitespace-pre-line text-center"
+              style={{ fontSize: isMultiLine ? '0.5rem' : '0.55rem' }}
+            >
+              {text}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // 既存のリクエスト（送信済み）
+    const existingRequest = existingRequests.find(req => {
+      const startDate = new Date(req.startDate);
+      return startDate.getDate() === day;
+    });
+
+    if (existingRequest) {
+      const timeText = existingRequest.leaveType === "時間指定" && existingRequest.startTime && existingRequest.endTime
+        ? `${existingRequest.startTime}\n〜${existingRequest.endTime}`
+        : "";
+      const isMultiLine = timeText.includes("\n");
+      const emoji = existingRequest.leaveType === "休" ? "🌸" : existingRequest.leaveType === "有休" ? "💐" : "⏰";
+      const text = existingRequest.leaveType === "時間指定" ? timeText : existingRequest.leaveType;
+
+      // ステータスに応じた色
+      const color = existingRequest.status === "approved"
+        ? "bg-success"
+        : existingRequest.status === "rejected"
+        ? "bg-destructive"
+        : "bg-success/60";
+
+      return (
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
+          <span className="text-[0.5rem]">{emoji}</span>
+          {text && (
+            <span
+              className="leading-tight whitespace-pre-line text-center"
+              style={{ fontSize: isMultiLine ? '0.5rem' : '0.55rem' }}
+            >
+              {text}
+            </span>
+          )}
+          {existingRequest.status === "approved" && <CheckCircle className="w-2.5 h-2.5" />}
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const handleTimeConfirm = (hours: { startHour: string; startMinute: string; endHour: string; endMinute: string }) => {
@@ -234,6 +400,42 @@ export function VacationRequest({
     setEndHour(hours.endHour);
     setEndMinute(hours.endMinute);
   };
+
+  // ローディング中
+  if (isLoadingShift || isLoadingRequests) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-md mx-auto space-y-6">
+          <div className="flex items-center gap-3">
+            <Sparkles className="w-6 h-6" />
+            <div>
+              <h2 className="text-xl">希望休入力</h2>
+              <p className="text-sm text-muted-foreground">{nextMonthName}の希望する休日</p>
+            </div>
+          </div>
+          <CalendarSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  // エラー状態
+  if (isRequestsError) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-md mx-auto pt-20">
+          <ErrorState
+            type="network"
+            error={requestsError}
+            onRetry={refetchRequests}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 申請済み希望休のカウント
+  const submittedCount = existingRequests.filter(req => req.status === "pending" || req.status === "approved").length;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -263,10 +465,10 @@ export function VacationRequest({
                   ⚠️ 未送信 {requests.size}件
                 </Badge>
               )}
-              {submittedRequests.size > 0 && (
+              {submittedCount > 0 && (
                 <Badge className="bg-gradient-to-r from-success/60 to-success/50 shadow-lg">
                   <CheckCircle className="w-3 h-3 mr-1" />
-                  申請済み {submittedRequests.size}件
+                  申請済み {submittedCount}件
                 </Badge>
               )}
               {!isBeforeDeadline && (
@@ -325,7 +527,7 @@ export function VacationRequest({
           </Card>
 
           {/* 申請済み状態の説明 */}
-          {submittedRequests.size > 0 && isBeforeDeadline && (
+          {submittedCount > 0 && isBeforeDeadline && (
             <Card className="p-4 bg-gradient-to-br from-success/10 to-success/5 border-2 border-success/30">
               <div className="flex gap-3">
                 <div className="text-2xl">✨</div>
@@ -335,10 +537,10 @@ export function VacationRequest({
                     申請済み
                   </h4>
                   <p className="text-muted-foreground">
-                    現在{submittedRequests.size}件の希望休を申請中です。仮確定後に追加申請できます。
+                    現在{submittedCount}件の希望休を申請中です。締切日までは変更できます。
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    💡 締切日までは日付をタップして変更できます
+                    💡 日付をタップして変更・削除できます
                   </p>
                 </div>
               </div>
@@ -349,7 +551,16 @@ export function VacationRequest({
           <VacationCalendar
             monthDays={monthDays}
             requests={requests}
-            submittedRequests={submittedRequests}
+            submittedRequests={new Map(existingRequests.map(req => {
+              const startDate = new Date(req.startDate);
+              return [startDate.getDate(), {
+                day: startDate.getDate(),
+                type: req.leaveType,
+                startTime: req.startTime,
+                endTime: req.endTime,
+                reason: req.reason,
+              }];
+            }))}
             isBeforeDeadline={isBeforeDeadline}
             onDateClick={handleDateClick}
             getRequestBadge={getRequestBadge}
@@ -372,13 +583,13 @@ export function VacationRequest({
               <div className="absolute inset-0 bg-gradient-to-r from-primary/30 to-accent/30 rounded-2xl blur-xl" />
               <Button
                 onClick={handleSubmit}
-                disabled={requests.size === 0}
+                disabled={requests.size === 0 || isSubmitting}
                 className="relative w-full py-7 rounded-2xl bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-105"
                 size="lg"
               >
                 <Sparkles className="w-5 h-5 mr-2" />
-                {submittedRequests.size > 0 ? '追加の希望休を申請する' : '希望休を申請する'}
-                {requests.size > 0 && `(${requests.size}日)`}
+                {isSubmitting ? "送信中..." : submittedCount > 0 ? '変更を保存する' : '希望休を申請する'}
+                {requests.size > 0 && !isSubmitting && `(${requests.size}日)`}
                 <Heart className="w-5 h-5 ml-2 fill-white" />
               </Button>
             </div>
@@ -402,7 +613,10 @@ export function VacationRequest({
         setReason={setReason}
         onSave={handleSaveDay}
         onRemove={handleRemoveDay}
-        hasRequest={requests.has(selectedDay || 0) || submittedRequests.has(selectedDay || 0)}
+        hasRequest={requests.has(selectedDay || 0) || existingRequests.some(req => {
+          const startDate = new Date(req.startDate);
+          return startDate.getDate() === selectedDay;
+        })}
         onTimePickerOpen={() => setShowTimeModal(true)}
       />
 

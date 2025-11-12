@@ -28,16 +28,63 @@ export interface BulkApprovalResult {
   total: number;
 }
 
+export interface LeaveRequest {
+  id: number;
+  employeeId: number;
+  shiftId: number | null;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  leaveType: "休" | "有休" | "時間指定";
+  startTime?: string; // HH:MM
+  endTime?: string; // HH:MM
+  isAdditional: boolean;
+  reason?: string;
+  status: "pending" | "approved" | "rejected";
+  submittedAt: string;
+}
+
+export interface CreateLeaveRequestInput {
+  employeeId: number;
+  shiftId?: number;
+  startDate: string;
+  endDate: string;
+  leaveType?: "休" | "有休" | "時間指定";
+  startTime?: string;
+  endTime?: string;
+  isAdditional?: boolean;
+  reason?: string;
+}
+
 export interface LeaveRequestService {
   /**
-   * 指定シフトの希望休提出状況を取得
+   * 指定シフトの希望休提出状況を取得（管理者用）
    */
   getSubmissionStatus(shiftId: number): Promise<SubmissionStatus>;
 
   /**
-   * 指定シフトの未承認希望休を一括承認
+   * 指定シフトの未承認希望休を一括承認（管理者用）
    */
   approveAllForShift(shiftId: number): Promise<BulkApprovalResult>;
+
+  /**
+   * 職員の希望休一覧を取得
+   */
+  getByEmployee(employeeId: number): Promise<LeaveRequest[]>;
+
+  /**
+   * 希望休を作成
+   */
+  create(input: CreateLeaveRequestInput): Promise<LeaveRequest>;
+
+  /**
+   * 希望休を更新
+   */
+  update(id: number, data: Partial<CreateLeaveRequestInput>): Promise<LeaveRequest>;
+
+  /**
+   * 希望休を削除
+   */
+  delete(id: number): Promise<void>;
 }
 
 // ===========================
@@ -69,6 +116,48 @@ class LeaveRequestServiceMock implements LeaveRequestService {
       approved: 5,
       total: 18,
     };
+  }
+
+  async getByEmployee(employeeId: number): Promise<LeaveRequest[]> {
+    return [];
+  }
+
+  async create(input: CreateLeaveRequestInput): Promise<LeaveRequest> {
+    return {
+      id: Date.now(),
+      employeeId: input.employeeId,
+      shiftId: input.shiftId || null,
+      startDate: input.startDate,
+      endDate: input.endDate,
+      leaveType: input.leaveType || "休",
+      startTime: input.startTime,
+      endTime: input.endTime,
+      isAdditional: input.isAdditional || false,
+      reason: input.reason,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+    };
+  }
+
+  async update(id: number, data: Partial<CreateLeaveRequestInput>): Promise<LeaveRequest> {
+    return {
+      id,
+      employeeId: data.employeeId || 1,
+      shiftId: data.shiftId || null,
+      startDate: data.startDate || "",
+      endDate: data.endDate || "",
+      leaveType: data.leaveType || "休",
+      startTime: data.startTime,
+      endTime: data.endTime,
+      isAdditional: data.isAdditional || false,
+      reason: data.reason,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+    };
+  }
+
+  async delete(id: number): Promise<void> {
+    // モックでは何もしない
   }
 }
 
@@ -131,6 +220,45 @@ class LeaveRequestServiceProduction implements LeaveRequestService {
       return result || { approved: 0, total: 0 };
     } catch (error) {
       console.error('Failed to approve all leave requests:', error);
+      throw error;
+    }
+  }
+
+  async getByEmployee(employeeId: number): Promise<LeaveRequest[]> {
+    try {
+      const result = await trpcClient.leaveRequests.getByEmployee.query({ employeeId });
+      return result || [];
+    } catch (error) {
+      console.error('Failed to fetch employee leave requests:', error);
+      throw error;
+    }
+  }
+
+  async create(input: CreateLeaveRequestInput): Promise<LeaveRequest> {
+    try {
+      const result = await trpcClient.leaveRequests.create.mutate(input);
+      return result as LeaveRequest;
+    } catch (error) {
+      console.error('Failed to create leave request:', error);
+      throw error;
+    }
+  }
+
+  async update(id: number, data: Partial<CreateLeaveRequestInput>): Promise<LeaveRequest> {
+    try {
+      const result = await trpcClient.leaveRequests.update.mutate({ id, ...data });
+      return result as LeaveRequest;
+    } catch (error) {
+      console.error('Failed to update leave request:', error);
+      throw error;
+    }
+  }
+
+  async delete(id: number): Promise<void> {
+    try {
+      await trpcClient.leaveRequests.delete.mutate({ id });
+    } catch (error) {
+      console.error('Failed to delete leave request:', error);
       throw error;
     }
   }
