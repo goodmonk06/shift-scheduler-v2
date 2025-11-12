@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Calendar, Clock, Bell, Sparkles, Heart } from "lucide-react";
+import { Calendar, Clock, Bell, Sparkles, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -22,10 +22,13 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
   const [showDayDialog, setShowDayDialog] = useState(false);
 
   const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth() + 1;
   const currentDay = today.getDate();
-  const currentMonthString = today.toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
+
+  // 表示する月を管理する状態
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth() + 1);
+
+  const viewMonthString = new Date(viewYear, viewMonth - 1, 1).toLocaleDateString("ja-JP", { year: "numeric", month: "long" });
 
   // 通知データを取得
   const {
@@ -47,7 +50,7 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     }
   );
 
-  // シフトデータを取得
+  // シフトデータを取得（表示中の月のデータを取得）
   const {
     data: shiftData,
     isLoading: isLoadingShift,
@@ -56,20 +59,21 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     refetch: refetchShift,
   } = useAsync(
     async () => {
-      return await shiftDetailService.getEmployeeMonthlyShift(employeeId, currentYear, currentMonth);
+      return await shiftDetailService.getEmployeeMonthlyShift(employeeId, viewYear, viewMonth);
     },
     {
       onError: () => toast.error("シフトデータの取得に失敗しました"),
-    }
+    },
+    [viewYear, viewMonth] // 月が変わったら再取得
   );
 
   const notifications = notificationsData?.notifications || [];
   const stats = notificationsData?.stats || null;
   const employeeShiftData = shiftData || [];
 
-  // 当月のシフト表示（曜日情報付き）
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-  const firstDayOfWeek = new Date(currentYear, currentMonth - 1, 1).getDay();
+  // 表示中の月のカレンダー情報を計算
+  const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+  const firstDayOfWeek = new Date(viewYear, viewMonth - 1, 1).getDay();
 
   // シフトデータをMapに変換（日付でアクセス）
   const shiftDataMap = useMemo(() => {
@@ -85,7 +89,7 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const dayOfWeek = (firstDayOfWeek + i) % 7;
-      const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dateStr = `${viewYear}-${String(viewMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const shiftInfo = shiftDataMap.get(dateStr);
 
       const hasShift = shiftInfo?.status === 'working';
@@ -105,16 +109,16 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
         event: facilityEvents.get(day),
       };
     });
-  }, [daysInMonth, firstDayOfWeek, currentYear, currentMonth, shiftDataMap]);
+  }, [daysInMonth, firstDayOfWeek, viewYear, viewMonth, shiftDataMap]);
 
-  // 次の出勤予定を計算
+  // 次の出勤予定を計算（今日以降の最初のシフト）
   const nextShift = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const futureShifts = monthDays.filter(dayData => {
       if (!dayData.hasShift) return false;
-      const shiftDate = new Date(currentYear, currentMonth - 1, dayData.day);
+      const shiftDate = new Date(viewYear, viewMonth - 1, dayData.day);
       return shiftDate >= today;
     });
 
@@ -128,16 +132,38 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
 
     const nextShiftDay = futureShifts[0];
     return {
-      date: `${currentMonth}月${nextShiftDay.day}日`,
+      date: `${viewMonth}月${nextShiftDay.day}日`,
       type: nextShiftDay.shiftType,
       time: nextShiftDay.shiftTime || "",
     };
-  }, [monthDays, currentYear, currentMonth]);
+  }, [monthDays, viewYear, viewMonth]);
 
   const handleDayClick = (dayData: DayData) => {
     setSelectedDay(dayData);
     setShowDayDialog(true);
   };
+
+  // 月の移動処理
+  const handlePreviousMonth = () => {
+    if (viewMonth === 1) {
+      setViewYear(viewYear - 1);
+      setViewMonth(12);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (viewMonth === 12) {
+      setViewYear(viewYear + 1);
+      setViewMonth(1);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  // 現在の月を表示しているかチェック
+  const isViewingCurrentMonth = viewYear === today.getFullYear() && viewMonth === (today.getMonth() + 1);
 
   // エラー状態の表示
   if (hasNotificationError || hasShiftError) {
@@ -242,12 +268,35 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
           {/* Calendar */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-primary" />
-                {currentMonthString}
-              </h2>
-              <Badge variant="outline" className="bg-gradient-to-r from-secondary/20 to-accent/20">
-                今月のシフト
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handlePreviousMonth}
+                  className="p-2 rounded-xl hover:bg-secondary/20 transition-all hover:scale-110"
+                  aria-label="前の月"
+                >
+                  <ChevronLeft className="w-5 h-5 text-primary" />
+                </button>
+                <h2 className="flex items-center gap-2">
+                  <Calendar className="w-6 h-6 text-primary" />
+                  {viewMonthString}
+                </h2>
+                <button
+                  onClick={handleNextMonth}
+                  className="p-2 rounded-xl hover:bg-secondary/20 transition-all hover:scale-110"
+                  aria-label="次の月"
+                >
+                  <ChevronRight className="w-5 h-5 text-primary" />
+                </button>
+              </div>
+              <Badge
+                variant="outline"
+                className={`${
+                  isViewingCurrentMonth
+                    ? "bg-gradient-to-r from-primary/20 to-accent/20 border-primary/40"
+                    : "bg-gradient-to-r from-secondary/20 to-accent/20"
+                }`}
+              >
+                {isViewingCurrentMonth ? "今月のシフト" : "シフト表"}
               </Badge>
             </div>
             
@@ -275,38 +324,41 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
                   <div key={`empty-${i}`} />
                 ))}
                 
-                {monthDays.map((dayData) => (
-                  <button
-                    key={dayData.day}
-                    onClick={() => handleDayClick(dayData)}
-                    className={`
-                      aspect-square rounded-2xl p-1 flex flex-col items-center justify-center
-                      transition-all duration-300 hover:scale-110 hover:shadow-xl relative
-                      ${dayData.hasShift 
-                        ? "bg-gradient-to-br from-secondary/40 via-secondary/30 to-accent/30 border-2 border-secondary/50 shadow-lg" 
-                        : "bg-card hover:bg-secondary/10"}
-                      ${dayData.day === currentDay ? "ring-2 ring-primary ring-offset-2 shadow-xl" : ""}
-                    `}
-                  >
-                    <span className={`${dayData.day === currentDay ? "text-primary" : getDayNumberColor(dayData)} mb-1`}>
-                      {dayData.day}
-                    </span>
-                    {dayData.hasShift && (
-                      <div className="flex items-center justify-center">
-                        <Badge className="px-1.5 py-0 bg-gradient-to-r from-primary/80 to-primary/60" style={{ fontSize: '0.5625rem' }}>
-                          {dayData.shiftType === "早番" ? "早" : dayData.shiftType === "遅番" ? "遅" : "夜"}
-                        </Badge>
-                      </div>
-                    )}
-                    {dayData.event && (
-                      <div className="absolute -top-1 -right-1">
-                        <Badge className="w-4 h-4 p-0 flex items-center justify-center bg-gradient-to-r from-warning to-warning/70 text-xs">
-                          🎉
-                        </Badge>
-                      </div>
-                    )}
-                  </button>
-                ))}
+                {monthDays.map((dayData) => {
+                  const isToday = isViewingCurrentMonth && dayData.day === currentDay;
+                  return (
+                    <button
+                      key={dayData.day}
+                      onClick={() => handleDayClick(dayData)}
+                      className={`
+                        aspect-square rounded-2xl p-1 flex flex-col items-center justify-center
+                        transition-all duration-300 hover:scale-110 hover:shadow-xl relative
+                        ${dayData.hasShift
+                          ? "bg-gradient-to-br from-secondary/40 via-secondary/30 to-accent/30 border-2 border-secondary/50 shadow-lg"
+                          : "bg-card hover:bg-secondary/10"}
+                        ${isToday ? "ring-2 ring-primary ring-offset-2 shadow-xl" : ""}
+                      `}
+                    >
+                      <span className={`${isToday ? "text-primary" : getDayNumberColor(dayData)} mb-1`}>
+                        {dayData.day}
+                      </span>
+                      {dayData.hasShift && (
+                        <div className="flex items-center justify-center">
+                          <Badge className="px-1.5 py-0 bg-gradient-to-r from-primary/80 to-primary/60" style={{ fontSize: '0.5625rem' }}>
+                            {dayData.shiftType === "早番" ? "早" : dayData.shiftType === "遅番" ? "遅" : "夜"}
+                          </Badge>
+                        </div>
+                      )}
+                      {dayData.event && (
+                        <div className="absolute -top-1 -right-1">
+                          <Badge className="w-4 h-4 p-0 flex items-center justify-center bg-gradient-to-r from-warning to-warning/70 text-xs">
+                            🎉
+                          </Badge>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </Card>
           </div>
