@@ -160,6 +160,8 @@ export default function App() {
             <EmployeeApp
               hasNotifications={hasNotifications}
               onLogout={handleLogout}
+              employeeName={user.name}
+              employeeId={user.id}
             />
           ) : (
             <AdminApp

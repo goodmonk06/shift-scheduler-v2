@@ -14,9 +14,11 @@ type EmployeeView = "home" | "vacation" | "shift" | "settings";
 interface EmployeeAppProps {
   hasNotifications?: boolean;
   onLogout?: () => void;
+  employeeName?: string;
+  employeeId?: number;
 }
 
-export function EmployeeApp({ hasNotifications = false, onLogout }: EmployeeAppProps) {
+export function EmployeeApp({ hasNotifications = false, onLogout, employeeName = "ゲスト", employeeId = 1 }: EmployeeAppProps) {
   const [employeeView, setEmployeeView] = useState<EmployeeView>("home");
   // 未保存の変更があるかどうか（VacationRequestから受け取る）
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -123,7 +125,7 @@ export function EmployeeApp({ hasNotifications = false, onLogout }: EmployeeAppP
   const renderEmployeeView = () => {
     switch (employeeView) {
       case "home":
-        return <EmployeeHome employeeName="山田花子" hasNotifications={hasNotifications} headerImageUrl={currentHeaderImageUrl} />;
+        return <EmployeeHome employeeName={employeeName} employeeId={employeeId} hasNotifications={hasNotifications} headerImageUrl={currentHeaderImageUrl} />;
       case "vacation":
         return (
           <VacationRequest 
@@ -149,7 +151,7 @@ export function EmployeeApp({ hasNotifications = false, onLogout }: EmployeeAppP
           />
         );
       default:
-        return <EmployeeHome employeeName="山田花子" hasNotifications={hasNotifications} headerImageUrl={currentHeaderImageUrl} />;
+        return <EmployeeHome employeeName={employeeName} employeeId={employeeId} hasNotifications={hasNotifications} headerImageUrl={currentHeaderImageUrl} />;
     }
   };
 
