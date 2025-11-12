@@ -2,6 +2,7 @@ import { Calendar, Edit } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import type { VacationCalendarProps } from "../types/vacationTypes";
+import { getHolidaysForMonth } from "../constants/employeeHomeConstants";
 
 export function VacationCalendar({
   monthDays,
@@ -13,7 +14,14 @@ export function VacationCalendar({
 }: VacationCalendarProps) {
   const today = new Date();
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const nextMonthYear = nextMonth.getFullYear();
+  const nextMonthNum = nextMonth.getMonth() + 1;
   const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
+  const firstDayOfWeek = nextMonth.getDay(); // 月初の曜日
+
+  // 祝日データを取得
+  const holidays = getHolidaysForMonth(nextMonthYear, nextMonthNum);
+  const holidaySet = new Set(holidays.map(h => h.day));
 
   return (
     <Card className="p-6 bg-gradient-to-br from-white to-secondary/5 border-2 border-secondary/30 shadow-xl">
@@ -39,10 +47,28 @@ export function VacationCalendar({
               {day}
             </div>
           ))}
-          {monthDays.map((day) => {
+          {monthDays.map((day, index) => {
             const hasEditingRequest = requests.has(day);
             const hasSubmittedRequest = submittedRequests.has(day);
             const hasRequest = hasEditingRequest || hasSubmittedRequest;
+
+            // 曜日を計算（0=日曜, 6=土曜）
+            const dayOfWeek = (firstDayOfWeek + index) % 7;
+            const isSunday = dayOfWeek === 0;
+            const isSaturday = dayOfWeek === 6;
+            const isHoliday = holidaySet.has(day);
+
+            // 数字の色を決定
+            let textColor = "";
+            if (hasRequest) {
+              textColor = hasEditingRequest ? "text-white" : "text-primary";
+            } else if (isHoliday || isSunday) {
+              textColor = "text-destructive";
+            } else if (isSaturday) {
+              textColor = "text-blue-600";
+            } else {
+              textColor = "text-foreground";
+            }
 
             return (
               <button
@@ -54,12 +80,12 @@ export function VacationCalendar({
                   ${isBeforeDeadline ? 'hover:scale-110 hover:shadow-lg' : 'cursor-not-allowed opacity-60'}
                   ${hasRequest
                     ? hasEditingRequest
-                      ? "bg-gradient-to-br from-accent via-accent/80 to-secondary/60 text-white shadow-xl ring-2 ring-accent/50 ring-offset-2"
-                      : "bg-gradient-to-br from-success/30 via-success/20 to-secondary/10 text-primary shadow-md border-2 border-success/40"
+                      ? "bg-gradient-to-br from-accent via-accent/80 to-secondary/60 shadow-xl ring-2 ring-accent/50 ring-offset-2"
+                      : "bg-gradient-to-br from-success/30 via-success/20 to-secondary/10 shadow-md border-2 border-success/40"
                     : "bg-gradient-to-br from-card to-secondary/5 hover:from-secondary/20 hover:to-accent/10"}
                 `}
               >
-                <span className={hasRequest ? "" : ""}>{day}</span>
+                <span className={textColor}>{day}</span>
                 {getRequestBadge(day)}
                 {hasSubmittedRequest && !hasEditingRequest && (
                   <Edit className="absolute top-1 right-1 w-3 h-3 text-success opacity-60" />
