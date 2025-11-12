@@ -8,7 +8,7 @@ import { employeeNotificationService, type EmployeeNotification, type Notificati
 import { shiftDetailService, type EmployeeShiftData } from "../services/shiftDetailService";
 import { NotificationListCard } from "./employee/NotificationListCard";
 import { DayDetailsDialog } from "./employee/DayDetailsDialog";
-import { holidays2025Nov, shiftTimes, facilityEvents, DEFAULT_HEADER_IMAGE_URL } from "../constants/employeeHomeConstants";
+import { holidays2025Nov, shiftTimes, facilityEvents, DEFAULT_HEADER_IMAGE_URL, getHolidaysForMonth } from "../constants/employeeHomeConstants";
 import { getDayNumberColor } from "../utils/employeeHomeUtils";
 import type { DayData, EmployeeHomeProps } from "../types/employeeHomeTypes";
 import { useAsync } from "../hooks/useAsync";
@@ -86,6 +86,9 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
 
   // 月の日付データを生成
   const monthDays: DayData[] = useMemo(() => {
+    const monthHolidays = getHolidaysForMonth(viewYear, viewMonth);
+    const holidayMap = new Map(monthHolidays.map(h => [h.day, h.name]));
+
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const dayOfWeek = (firstDayOfWeek + i) % 7;
@@ -97,7 +100,8 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
       const shiftTime = shiftInfo?.timeSlot
         ? `${shiftInfo.timeSlot.startTime}〜${shiftInfo.timeSlot.endTime}`
         : undefined;
-      const isHoliday = holidays2025Nov.includes(day);
+      const holidayName = holidayMap.get(day);
+      const isHoliday = !!holidayName;
 
       return {
         day,
@@ -106,6 +110,7 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
         shiftTime,
         dayOfWeek,
         isHoliday,
+        holidayName,
         event: facilityEvents.get(day),
       };
     });
@@ -331,7 +336,7 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
                       key={dayData.day}
                       onClick={() => handleDayClick(dayData)}
                       className={`
-                        aspect-square rounded-2xl p-1 flex flex-col items-center justify-center
+                        aspect-square rounded-2xl p-1 flex flex-col items-center justify-center gap-0.5
                         transition-all duration-300 hover:scale-110 hover:shadow-xl relative
                         ${dayData.hasShift
                           ? "bg-gradient-to-br from-secondary/40 via-secondary/30 to-accent/30 border-2 border-secondary/50 shadow-lg"
@@ -339,15 +344,18 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
                         ${isToday ? "ring-2 ring-primary ring-offset-2 shadow-xl" : ""}
                       `}
                     >
-                      <span className={`${isToday ? "text-primary" : getDayNumberColor(dayData)} mb-1`}>
+                      <span className={`${isToday ? "text-primary font-bold" : getDayNumberColor(dayData)}`}>
                         {dayData.day}
                       </span>
+                      {dayData.holidayName && (
+                        <span className="text-[0.45rem] leading-none text-destructive/90 font-medium px-0.5">
+                          {dayData.holidayName}
+                        </span>
+                      )}
                       {dayData.hasShift && (
-                        <div className="flex items-center justify-center">
-                          <Badge className="px-1.5 py-0 bg-gradient-to-r from-primary/80 to-primary/60" style={{ fontSize: '0.5625rem' }}>
-                            {dayData.shiftType === "早番" ? "早" : dayData.shiftType === "遅番" ? "遅" : "夜"}
-                          </Badge>
-                        </div>
+                        <Badge className="px-1 py-0 bg-gradient-to-r from-primary/80 to-primary/60" style={{ fontSize: '0.5rem' }}>
+                          {dayData.shiftType === "早番" ? "早" : dayData.shiftType === "遅番" ? "遅" : "夜"}
+                        </Badge>
                       )}
                       {dayData.event && (
                         <div className="absolute -top-1 -right-1">

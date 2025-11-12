@@ -9,6 +9,7 @@ export interface DayData {
   shiftTime?: string;
   dayOfWeek: number; // 0 = Sunday, 6 = Saturday
   isHoliday?: boolean;
+  holidayName?: string;
   event?: {
     title: string;
     description: string;

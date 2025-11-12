@@ -1,7 +1,69 @@
 import type { ShiftType } from "../types/employeeHomeTypes";
 
-// 2025年11月の祝日
-export const holidays2025Nov = [3, 23, 24]; // 文化の日、勤労感謝の日、振替休日
+// 祝日データ型
+export interface Holiday {
+  day: number;
+  name: string;
+}
+
+// 2025年の祝日データ（月ごと）
+export const holidays2025: Record<number, Holiday[]> = {
+  1: [
+    { day: 1, name: "元日" },
+    { day: 13, name: "成人の日" }
+  ],
+  2: [
+    { day: 11, name: "建国記念の日" },
+    { day: 23, name: "天皇誕生日" },
+    { day: 24, name: "振替休日" }
+  ],
+  3: [
+    { day: 20, name: "春分の日" }
+  ],
+  4: [
+    { day: 29, name: "昭和の日" }
+  ],
+  5: [
+    { day: 3, name: "憲法記念日" },
+    { day: 4, name: "みどりの日" },
+    { day: 5, name: "こどもの日" },
+    { day: 6, name: "振替休日" }
+  ],
+  7: [
+    { day: 21, name: "海の日" }
+  ],
+  8: [
+    { day: 11, name: "山の日" }
+  ],
+  9: [
+    { day: 15, name: "敬老の日" },
+    { day: 22, name: "秋分の日" },
+    { day: 23, name: "振替休日" }
+  ],
+  10: [
+    { day: 13, name: "スポーツの日" }
+  ],
+  11: [
+    { day: 3, name: "文化の日" },
+    { day: 23, name: "勤労感謝の日" },
+    { day: 24, name: "振替休日" }
+  ],
+  12: []
+};
+
+// 後方互換性のため残す
+export const holidays2025Nov = [3, 23, 24];
+
+/**
+ * 指定した年月の祝日を取得
+ */
+export function getHolidaysForMonth(year: number, month: number): Holiday[] {
+  // 現在は2025年のみ対応
+  if (year === 2025) {
+    return holidays2025[month] || [];
+  }
+  return [];
+}
 
 // シフト時間
 export const shiftTimes: Record<ShiftType, string> = {

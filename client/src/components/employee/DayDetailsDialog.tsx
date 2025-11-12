@@ -77,11 +77,14 @@ export function DayDetailsDialog({ open, onOpenChange, selectedDay }: DayDetails
             )}
 
             {/* Holiday Info */}
-            {selectedDay.isHoliday && (
-              <Card className="p-4 bg-gradient-to-br from-destructive/10 to-destructive/5 border-2 border-destructive/30">
-                <div className="flex items-center gap-2">
-                  <div className="text-xl">🎌</div>
-                  <span className="text-destructive">祝日</span>
+            {selectedDay.isHoliday && selectedDay.holidayName && (
+              <Card className="p-5 bg-gradient-to-br from-destructive/10 to-destructive/5 border-2 border-destructive/30">
+                <div className="flex items-center gap-3">
+                  <div className="text-3xl">🎌</div>
+                  <div>
+                    <h4 className="text-destructive font-medium">{selectedDay.holidayName}</h4>
+                    <p className="text-muted-foreground text-sm">祝日</p>
+                  </div>
                 </div>
               </Card>
             )}
