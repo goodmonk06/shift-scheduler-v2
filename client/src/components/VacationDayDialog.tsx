@@ -10,6 +10,7 @@ export function VacationDayDialog({
   onOpenChange,
   selectedDay,
   nextMonthName,
+  holidayName,
   requestType,
   setRequestType,
   startHour,
@@ -28,8 +29,13 @@ export function VacationDayDialog({
       <DialogContent className="rounded-3xl border-2 border-secondary/30 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
           <DialogTitle className="flex items-center gap-2">
-            <span className="text-2xl">📅</span>
-            {nextMonthName}{selectedDay}日の設定
+            <span className="text-2xl">{holidayName ? "🎌" : "📅"}</span>
+            <div className="flex flex-col">
+              <span>{nextMonthName}{selectedDay}日の設定</span>
+              {holidayName && (
+                <span className="text-sm text-destructive font-medium">{holidayName}</span>
+              )}
+            </div>
             <Sparkles className="w-5 h-5 text-accent ml-auto" />
           </DialogTitle>
         </DialogHeader>

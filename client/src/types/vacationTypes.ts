@@ -25,6 +25,7 @@ export interface VacationDayDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedDay: number | null;
   nextMonthName: string;
+  holidayName?: string;
   requestType: "休" | "有休" | "時間指定";
   setRequestType: (type: "休" | "有休" | "時間指定") => void;
   startHour: string;

@@ -14,6 +14,7 @@ import { leaveRequestService, type LeaveRequest } from "../services/leaveRequest
 import { trpcClient } from "../lib/trpc";
 import { CalendarSkeleton } from "./ui/loading-skeleton";
 import { ErrorState } from "./ui/error-state";
+import { getHolidaysForMonth } from "../constants/employeeHomeConstants";
 
 interface VacationRequestProps {
   employeeId?: number;
@@ -60,6 +61,16 @@ export function VacationRequest({
   const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
   const daysInNextMonth = new Date(nextMonthYear, nextMonthNum, 0).getDate();
   const monthDays = Array.from({ length: daysInNextMonth }, (_, i) => i + 1);
+
+  // 来月の祝日を取得
+  const holidays = useMemo(() => {
+    return getHolidaysForMonth(nextMonthYear, nextMonthNum);
+  }, [nextMonthYear, nextMonthNum]);
+
+  // 祝日マップ（日付 → 祝日名）
+  const holidayMap = useMemo(() => {
+    return new Map(holidays.map(h => [h.day, h.name]));
+  }, [holidays]);
 
   // 現在のシフト情報と締切を取得
   const {
@@ -603,6 +614,7 @@ export function VacationRequest({
         onOpenChange={setShowDayDialog}
         selectedDay={selectedDay}
         nextMonthName={nextMonthName}
+        holidayName={selectedDay ? holidayMap.get(selectedDay) : undefined}
         requestType={requestType}
         setRequestType={setRequestType}
         startHour={startHour}
