@@ -44,6 +44,23 @@ export function StaffFormDialog({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="employeeId">職員ID *</Label>
+            <Input
+              id="employeeId"
+              placeholder="例: 1234（1〜4桁の数字）"
+              value={formData.employeeId || ""}
+              onChange={(e) =>
+                setFormData({ ...formData, employeeId: e.target.value })
+              }
+              className="rounded-xl"
+              maxLength={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              職員がログインする際に使用するID（1〜4桁）
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="positionGroupId">役職グループ *</Label>
             <Select
               value={formData.positionGroupId}

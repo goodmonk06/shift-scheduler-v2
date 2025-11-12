@@ -1,5 +1,6 @@
 export interface Employee {
   id: string;
+  employeeId?: string; // ログイン用ID (1-4桁)
   name: string;
   positionGroupId: string;
   positionGroupName: string; // 表示用
@@ -20,6 +21,7 @@ export interface PositionGroup {
 
 export interface EmployeeFormData {
   name: string;
+  employeeId?: string; // ログイン用ID (1-4桁)
   positionGroupId: string;
   skillLevel: number;
   canWorkNight: boolean;

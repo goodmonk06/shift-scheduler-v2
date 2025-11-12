@@ -33,7 +33,8 @@ export function StaffManagement() {
 
       // データ変換
       const mappedEmployees: Employee[] = employeesData.map((emp: any) => ({
-        id: emp.employeeId || emp.id.toString(),
+        id: emp.id.toString(),
+        employeeId: emp.employeeId,
         name: emp.name,
         positionGroupId: emp.positionGroupId.toString(),
         positionGroupName: emp.positionGroup?.name || "",
@@ -81,6 +82,7 @@ export function StaffManagement() {
     setEditingEmployee(employee);
     setFormData({
       name: employee.name,
+      employeeId: employee.employeeId,
       positionGroupId: employee.positionGroupId,
       skillLevel: employee.skillLevel,
       canWorkNight: employee.canWorkNight,
@@ -105,6 +107,7 @@ export function StaffManagement() {
         await trpcClient.employees.update.mutate({
           id: parseInt(editingEmployee.id),
           name: formData.name,
+          employeeId: formData.employeeId,
           positionGroupId: parseInt(formData.positionGroupId),
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
@@ -114,6 +117,7 @@ export function StaffManagement() {
         // 新規作成
         await trpcClient.employees.create.mutate({
           name: formData.name,
+          employeeId: formData.employeeId,
           positionGroupId: parseInt(formData.positionGroupId),
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
