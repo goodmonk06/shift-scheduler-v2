@@ -1,36 +1,30 @@
-import "dotenv/config";
-import { getDb } from "../server/db";
-import * as schema from "../drizzle/schema";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import { config } from "dotenv";
+import { employees } from "../drizzle/schema";
 
-/**
- * List all employees in the database
- */
+config();
+
 async function main() {
-  console.log("📋 Listing all employees...\n");
+  const dbUrl = process.env.DATABASE_URL || "";
+  if (!dbUrl) throw new Error("DATABASE_URL not set");
 
-  const db = await getDb();
-  if (!db) {
-    throw new Error("Failed to connect to database");
-  }
+  const connectionString = dbUrl.replace(/[?&]ssl-mode=[^&]*/g, "");
+  const connection = await mysql.createPool(connectionString);
+  const db = drizzle(connection);
 
-  const employees = await db.select().from(schema.employees);
+  const allEmployees = await db.select().from(employees);
 
-  if (employees.length === 0) {
-    console.log("❌ No employees found");
-    return;
-  }
+  console.log(`Total employees: ${allEmployees.length}\n`);
 
-  console.log(`Found ${employees.length} employee(s):\n`);
-  employees.forEach((emp) => {
-    console.log(`- ${emp.employeeId}: ${emp.name} (${emp.email || "no email"})`);
-    console.log(`  Position Group ID: ${emp.positionGroupId}`);
-    console.log(`  User ID: ${emp.userId || "not linked"}\n`);
+  allEmployees.forEach((emp) => {
+    console.log(`ID: ${emp.id}, Name: "${emp.name}", EmployeeID: ${emp.employeeId}`);
   });
+
+  await connection.end();
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error("❌ Failed to list employees:", err);
-    process.exit(1);
-  });
+main().catch((err) => {
+  console.error("Failed:", err);
+  process.exit(1);
+});

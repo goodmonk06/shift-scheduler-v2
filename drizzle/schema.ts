@@ -48,7 +48,7 @@ export const employees = mysqlTable("employees", {
   skillLevel: int("skillLevel").default(100).notNull(), // 50-100 (0.5人前〜1人前を0.5-1で50-100で表現)
   canWorkNightShift: boolean("canWorkNightShift").default(false).notNull(),
   workableDays: json("workableDays"), // 勤務可能曜日と時間帯 [{dayOfWeek: 0-6, startTime: "09:00", endTime: "17:00"}]
-  additionalConstraints: text("additionalConstraints"), // 追加の制約条件（自然言語）
+  additionalConstraints: json("additionalConstraints"), // 追加の制約条件（構造化JSON）
   breakTime: int("breakTime").default(60).notNull(), // 休憩時間（0/30/60分）
   isServiceManager: boolean("isServiceManager").default(false).notNull(), // サービス提供責任者フラグ
   isOfficeStaff: boolean("isOfficeStaff").default(false).notNull(), // 事務員フラグ
