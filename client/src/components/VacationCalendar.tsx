@@ -14,10 +14,12 @@ export function VacationCalendar({
   onDateClick,
   getRequestBadge,
 }: VacationCalendarProps) {
-  const nextMonthYear = year;
-  const nextMonthNum = month;
-  const nextMonth = new Date(year, month - 1, 1);
-  const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
+  const nextMonthYear = year || new Date().getFullYear();
+  const nextMonthNum = month || (new Date().getMonth() + 1);
+  const nextMonth = new Date(nextMonthYear, nextMonthNum - 1, 1);
+  const nextMonthName = nextMonth && !isNaN(nextMonth.getTime())
+    ? nextMonth.toLocaleDateString("ja-JP", { month: "long" })
+    : "";
 
   // 祝日データを取得
   const holidays = getHolidaysForMonth(nextMonthYear, nextMonthNum);
@@ -41,8 +43,7 @@ export function VacationCalendar({
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-2">
             <Calendar className="w-5 h-5 text-primary" />
-            {nextMonthName}
-          </h3>
+            {String(nextMonthName || '')}</h3>
           {isBeforeDeadline && (
             <Badge className="bg-gradient-to-r from-secondary/80 to-accent/80">
               タップして選択 ✨
@@ -56,7 +57,7 @@ export function VacationCalendar({
               key={day}
               className={`text-center py-2 ${index === 0 ? 'text-destructive' : index === 6 ? 'text-blue-600' : 'text-muted-foreground'}`}
             >
-              {day}
+              {String(day)}
             </div>
           ))}
           {/* 月の1日の前の空白セル */}
