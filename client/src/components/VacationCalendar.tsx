@@ -89,7 +89,7 @@ export function VacationCalendar({
 
             return (
               <button
-                key={day}
+                key={`${year}-${month}-${day}`}
                 onClick={() => onDateClick(day)}
                 disabled={!isBeforeDeadline}
                 className={`
