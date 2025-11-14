@@ -540,21 +540,18 @@ export const appRouter = router({
         previousTimeSlotId: z.number().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
-        // Build sanitized input - only include fields with actual values
-        const sanitizedInput: any = {
+        // Build sanitized input - set explicit null for all nullable fields
+        const sanitizedInput = {
           shiftId: input.shiftId,
           employeeId: input.employeeId,
           date: input.date,
           status: input.status,
+          timeSlotId: input.timeSlotId ?? null,
+          leaveType: input.leaveType ?? null,
+          startTime: input.startTime ?? null,
+          endTime: input.endTime ?? null,
+          previousTimeSlotId: input.previousTimeSlotId ?? null,
         };
-
-        // Only include optional fields if they have values
-        if (input.timeSlotId) sanitizedInput.timeSlotId = input.timeSlotId;
-        if (input.leaveType) sanitizedInput.leaveType = input.leaveType;
-        if (input.startTime) sanitizedInput.startTime = input.startTime;
-        if (input.endTime) sanitizedInput.endTime = input.endTime;
-        if (input.isChanged !== undefined) sanitizedInput.isChanged = input.isChanged;
-        if (input.previousTimeSlotId) sanitizedInput.previousTimeSlotId = input.previousTimeSlotId;
 
         return await db.createShiftDetail(sanitizedInput);
       }),
@@ -572,27 +569,17 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        // Build sanitized data - only include fields that are explicitly set
+        // Build sanitized data with explicit null for nullable fields
         const sanitizedData: any = {};
 
         if (data.date !== undefined) sanitizedData.date = data.date;
         if (data.status !== undefined) sanitizedData.status = data.status;
-        if (data.timeSlotId !== undefined && data.timeSlotId !== null && data.timeSlotId !== "") {
-          sanitizedData.timeSlotId = data.timeSlotId;
-        }
-        if (data.leaveType !== undefined && data.leaveType !== null && data.leaveType !== "") {
-          sanitizedData.leaveType = data.leaveType;
-        }
-        if (data.startTime !== undefined && data.startTime !== null && data.startTime !== "") {
-          sanitizedData.startTime = data.startTime;
-        }
-        if (data.endTime !== undefined && data.endTime !== null && data.endTime !== "") {
-          sanitizedData.endTime = data.endTime;
-        }
+        if (data.timeSlotId !== undefined) sanitizedData.timeSlotId = data.timeSlotId ?? null;
+        if (data.leaveType !== undefined) sanitizedData.leaveType = data.leaveType ?? null;
+        if (data.startTime !== undefined) sanitizedData.startTime = data.startTime ?? null;
+        if (data.endTime !== undefined) sanitizedData.endTime = data.endTime ?? null;
         if (data.isChanged !== undefined) sanitizedData.isChanged = data.isChanged;
-        if (data.previousTimeSlotId !== undefined && data.previousTimeSlotId !== null) {
-          sanitizedData.previousTimeSlotId = data.previousTimeSlotId;
-        }
+        if (data.previousTimeSlotId !== undefined) sanitizedData.previousTimeSlotId = data.previousTimeSlotId ?? null;
 
         return await db.updateShiftDetail(id, sanitizedData);
       }),
