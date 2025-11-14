@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { RefreshCw, Check, X, Clock } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -23,12 +23,16 @@ import {
   AlertDialogTitle,
 } from "./ui/alert-dialog";
 import { useToast } from "../hooks/useToast";
+import { useAsync, useMutation } from "../hooks/useAsync";
+import { trpcClient } from "../lib/trpc";
+import { LoadingInline } from "./ui/loading-spinner";
+import { EmptyState } from "./ui/error-state";
 
 type ProposalStatus = "pending" | "approved" | "rejected";
 
 interface ChangeProposal {
-  id: string;
-  employeeId: string;
+  id: number;
+  employeeId: number;
   employeeName: string;
   date: string;
   currentShift: string | null; // null = 休み
@@ -41,7 +45,80 @@ interface ChangeProposal {
 
 export function ChangeProposals() {
   const toast = useToast();
-  const [proposals, setProposals] = useState<ChangeProposal[]>([]);
+
+  // 次月の年月を計算
+  const today = new Date();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const nextMonthYear = nextMonth.getFullYear();
+  const nextMonthNum = nextMonth.getMonth() + 1;
+
+  // 現在のシフト情報を取得
+  const {
+    data: currentShift,
+    isLoading: isLoadingShift,
+  } = useAsync(
+    async () => {
+      return await trpcClient.shifts.getCurrentMonth.query({
+        year: nextMonthYear,
+        month: nextMonthNum
+      });
+    },
+    {
+      onError: (error) => {
+        console.error("シフト情報の取得に失敗:", error);
+      },
+    }
+  );
+
+  // 変更提案データを取得
+  const {
+    data: changeProposalsData,
+    isLoading: isLoadingProposals,
+    isError: isProposalsError,
+    error: proposalsError,
+    refetch: refetchProposals,
+  } = useAsync(
+    async () => {
+      if (!currentShift) return [];
+      return await trpcClient.changeProposals.getByShift.query({ shiftId: currentShift.id });
+    },
+    {
+      onError: () => toast.error("変更提案データの取得に失敗しました"),
+      deps: [currentShift?.id],
+    }
+  );
+
+  // 従業員データを取得
+  const {
+    data: employeesData,
+    isLoading: isLoadingEmployees,
+  } = useAsync(
+    async () => {
+      return await trpcClient.employees.list.query();
+    },
+    {
+      onError: () => toast.error("従業員データの取得に失敗しました"),
+    }
+  );
+
+  const employees = employeesData || [];
+  const rawProposals = changeProposalsData || [];
+
+  // DBデータをUIデータに変換
+  const proposals = useMemo(() => {
+    return rawProposals.map((p: any) => ({
+      id: p.id,
+      employeeId: p.employeeId,
+      employeeName: employees.find((e) => e.id === p.employeeId)?.name || "不明",
+      date: p.proposalDate,
+      currentShift: p.currentTimeSlotId ? `タイムスロット${p.currentTimeSlotId}` : null,
+      proposedShift: p.proposedTimeSlotId ? `タイムスロット${p.proposedTimeSlotId}` : null,
+      reason: p.reason,
+      status: p.status,
+      createdAt: p.createdAt,
+      processedAt: p.reviewedAt,
+    }));
+  }, [rawProposals, employees]);
 
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<ChangeProposal | null>(null);
@@ -62,28 +139,36 @@ export function ChangeProposals() {
   };
 
   // 承認または却下処理
-  const handleAction = () => {
-    if (!selectedProposal) return;
+  const { mutate: handleAction, isLoading: isProcessing } = useMutation(
+    async () => {
+      if (!selectedProposal) throw new Error("提案が選択されていません");
 
-    const updatedProposals = proposals.map((p) =>
-      p.id === selectedProposal.id
-        ? {
-            ...p,
-            status: actionType === "approve" ? ("approved" as const) : ("rejected" as const),
-            processedAt: new Date().toISOString(),
-          }
-        : p
-    );
-
-    setProposals(updatedProposals);
-    toast.success(
-      actionType === "approve"
-        ? "変更提案を承認しました"
-        : "変更提案を却下しました"
-    );
-    setActionDialogOpen(false);
-    setSelectedProposal(null);
-  };
+      if (actionType === "approve") {
+        await trpcClient.changeProposals.approve.mutate({ id: selectedProposal.id });
+      } else {
+        await trpcClient.changeProposals.reject.mutate({ id: selectedProposal.id });
+      }
+    },
+    {
+      onSuccess: () => {
+        toast.success(
+          actionType === "approve"
+            ? "変更提案を承認しました"
+            : "変更提案を却下しました"
+        );
+        refetchProposals();
+        setActionDialogOpen(false);
+        setSelectedProposal(null);
+      },
+      onError: () => {
+        toast.error(
+          actionType === "approve"
+            ? "承認に失敗しました"
+            : "却下に失敗しました"
+        );
+      },
+    }
+  );
 
   // シフト表示（null = 休み）
   const formatShift = (shift: string | null) => {
@@ -115,6 +200,34 @@ export function ChangeProposals() {
   };
 
   // フィルター
+  // ローディング中
+  if (isLoadingShift || isLoadingProposals || isLoadingEmployees) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="flex items-center justify-center h-64">
+            <LoadingInline message="読み込み中..." size="lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // エラー状態
+  if (isProposalsError) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-7xl mx-auto pt-20">
+          <EmptyState
+            type="network"
+            error={proposalsError}
+            onRetry={refetchProposals}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const pendingProposals = proposals.filter((p) => p.status === "pending");
   const processedProposals = proposals.filter(
     (p) => p.status === "approved" || p.status === "rejected"
@@ -280,14 +393,19 @@ export function ChangeProposals() {
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-xl">キャンセル</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleAction}
+              onClick={() => handleAction()}
+              disabled={isProcessing}
               className={
                 actionType === "approve"
                   ? "rounded-xl bg-green-600 hover:bg-green-700"
                   : "rounded-xl bg-red-600 hover:bg-red-700"
               }
             >
-              {actionType === "approve" ? "承認" : "却下"}
+              {isProcessing ? (
+                <LoadingInline message="処理中..." size="sm" />
+              ) : (
+                actionType === "approve" ? "承認" : "却下"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
