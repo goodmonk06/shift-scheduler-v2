@@ -157,13 +157,29 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         // シフト詳細をShiftAssignment形式に変換
         const formattedAssignments: ShiftAssignment[] = shiftDetails.map(detail => {
           const employee = employeesData.find(emp => emp.id === detail.employeeId);
+
+          // Determine display name based on leaveType and times
+          let displayName = null;
+          if (detail.leaveType === "時間指定" && detail.startTime && detail.endTime) {
+            // Format time display (remove :00 for clean display)
+            const formatTime = (time: string) => {
+              const [hour, minute] = time.split(':');
+              return minute === '00' ? hour : time;
+            };
+            displayName = `${formatTime(detail.startTime)}-${formatTime(detail.endTime)}`;
+          } else if (detail.leaveType) {
+            displayName = detail.leaveType;
+          } else if (detail.timeSlotId) {
+            displayName = "勤務"; // TODO: 実際の時間枠名を取得
+          }
+
           return {
             date: detail.date,
             employeeId: employee?.employeeId || String(detail.employeeId),
             employeeName: employee?.name || "不明",
             positionGroup: "fulltime", // TODO: 実際のデータから取得
             timeSlotId: detail.timeSlotId?.toString() || null,
-            timeSlotName: detail.timeSlotId ? "勤務" : null, // TODO: 実際の時間枠名を取得
+            timeSlotName: displayName,
             isVacationRequest: detail.status === "requested_off",
             shiftDetailId: detail.id, // Include the ID for editing
           };

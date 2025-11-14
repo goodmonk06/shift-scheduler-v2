@@ -79,9 +79,7 @@ export function ShiftTableView({
   // Inline editing state
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>("");
-  const [selectedTimeSlotId, setSelectedTimeSlotId] = useState<number | null>(null);
-  const [customStartTime, setCustomStartTime] = useState<string>("09:00");
-  const [customEndTime, setCustomEndTime] = useState<string>("18:00");
+  const [timeInput, setTimeInput] = useState<string>("9-18"); // Simple time input format
   const [isSaving, setIsSaving] = useState(false);
 
   // Warning dialog state
@@ -129,9 +127,7 @@ export function ShiftTableView({
   const startEditing = (employeeId: string, day: number, shiftDetailId: number | null) => {
     setEditingCell({ employeeId, day, shiftDetailId });
     setSelectedOption("");
-    setSelectedTimeSlotId(null);
-    setCustomStartTime("09:00");
-    setCustomEndTime("18:00");
+    setTimeInput("9-18");
   };
 
   const handleWarningConfirm = () => {
@@ -147,7 +143,7 @@ export function ShiftTableView({
     setPendingEdit(null);
   };
 
-  const handleSave = async (optionValue: string, timeSlotId?: number | null) => {
+  const handleSave = async () => {
     if (!editingCell || !shiftId) return;
 
     try {
@@ -155,43 +151,67 @@ export function ShiftTableView({
 
       const dateStr = `${viewYear}-${String(viewMonth).padStart(2, "0")}-${String(editingCell.day).padStart(2, "0")}`;
 
-      // Build shift data - only include fields that have values (no null)
-      let shiftData: any = {
+      // Prepare data based on selected option
+      let mutationData: any = {
+        shiftId: Number(shiftId),
+        employeeId: Number(editingCell.employeeId),
         date: dateStr,
       };
 
-      // Handle different option types - only send fields with actual values
-      if (optionValue === "休") {
-        shiftData.status = "off";
-        shiftData.leaveType = "休";
-      } else if (optionValue === "時間指定") {
-        shiftData.status = "working";
-        shiftData.leaveType = "時間指定";
-        shiftData.startTime = customStartTime;
-        shiftData.endTime = customEndTime;
+      if (selectedOption === "休") {
+        // Set as day off
+        mutationData.status = "off";
+        mutationData.leaveType = "休";
+        mutationData.timeSlotId = null;
+        mutationData.startTime = null;
+        mutationData.endTime = null;
+      } else if (selectedOption === "時間指定") {
+        // Parse time input (format: "9-18" or "09:00-18:00")
+        const timeParts = timeInput.split("-").map(t => t.trim());
+        if (timeParts.length !== 2) {
+          toast.error("時間の形式が正しくありません（例: 9-18）");
+          return;
+        }
+
+        // Convert to HH:MM format
+        const formatTime = (time: string) => {
+          // If already in HH:MM format, return as is
+          if (time.includes(":")) return time;
+          // Otherwise, assume it's just hours
+          const hour = parseInt(time);
+          if (isNaN(hour) || hour < 0 || hour > 23) {
+            throw new Error("時間が正しくありません");
+          }
+          return `${String(hour).padStart(2, "0")}:00`;
+        };
+
+        try {
+          const startTime = formatTime(timeParts[0]);
+          const endTime = formatTime(timeParts[1]);
+
+          mutationData.status = "working";
+          mutationData.leaveType = "時間指定";
+          mutationData.timeSlotId = null;
+          mutationData.startTime = startTime;
+          mutationData.endTime = endTime;
+        } catch (error) {
+          toast.error("時間の形式が正しくありません（例: 9-18 または 09:00-18:00）");
+          return;
+        }
+      } else {
+        toast.error("オプションを選択してください");
+        return;
       }
 
       // Call API - create or update
       if (editingCell.shiftDetailId === null) {
         // Create new shift detail
-        await trpcClient.shiftDetails.create.mutate({
-          shiftId: Number(shiftId),
-          employeeId: Number(editingCell.employeeId),
-          date: shiftData.date,
-          status: shiftData.status,
-          ...(shiftData.leaveType && { leaveType: shiftData.leaveType }),
-          ...(shiftData.startTime && { startTime: shiftData.startTime }),
-          ...(shiftData.endTime && { endTime: shiftData.endTime }),
-        });
+        await trpcClient.shiftDetails.create.mutate(mutationData);
       } else {
         // Update existing shift detail
         await trpcClient.shiftDetails.update.mutate({
           id: editingCell.shiftDetailId,
-          date: shiftData.date,
-          status: shiftData.status,
-          ...(shiftData.leaveType && { leaveType: shiftData.leaveType }),
-          ...(shiftData.startTime && { startTime: shiftData.startTime }),
-          ...(shiftData.endTime && { endTime: shiftData.endTime }),
+          ...mutationData,
         });
       }
 
@@ -204,7 +224,7 @@ export function ShiftTableView({
       window.location.reload();
     } catch (error) {
       console.error("Failed to save shift detail:", error);
-      toast.error("シフトの更新に失敗しました");
+      toast.error(`シフトの更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsSaving(false);
     }
@@ -212,61 +232,7 @@ export function ShiftTableView({
 
   const handleOptionChange = (value: string) => {
     setSelectedOption(value);
-
-    // Auto-save for non-custom time options
-    if (value !== "時間指定") {
-      handleSave(value);
-    }
-  };
-
-  const formatTimeOptions = (hour: number, minute: number) => {
-    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-  };
-
-  const handleTimeInputChange = (type: "start" | "end", value: string) => {
-    if (type === "start") {
-      setCustomStartTime(value);
-    } else {
-      setCustomEndTime(value);
-    }
-  };
-
-  const renderTimeInput = (type: "start" | "end") => {
-    const currentValue = type === "start" ? customStartTime : customEndTime;
-    const [hour, minute] = currentValue.split(":").map(Number);
-
-    return (
-      <div className="flex gap-2 items-center">
-        <Input
-          type="number"
-          min="0"
-          max="23"
-          value={hour}
-          onChange={(e) => {
-            const newHour = Math.min(23, Math.max(0, parseInt(e.target.value) || 0));
-            handleTimeInputChange(type, `${String(newHour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
-          }}
-          className="w-16 text-center"
-        />
-        <span>:</span>
-        <Select
-          value={String(minute)}
-          onValueChange={(val) => {
-            handleTimeInputChange(type, `${String(hour).padStart(2, "0")}:${val.padStart(2, "0")}`);
-          }}
-        >
-          <SelectTrigger className="w-16">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0">00</SelectItem>
-            <SelectItem value="15">15</SelectItem>
-            <SelectItem value="30">30</SelectItem>
-            <SelectItem value="45">45</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    );
+    // Don't auto-save, user will click save button
   };
 
   return (
@@ -305,7 +271,7 @@ export function ShiftTableView({
                   return (
                     <TableHead
                       key={day}
-                      className={`text-center min-w-[80px] ${
+                      className={`text-center w-[100px] min-w-[100px] max-w-[100px] ${
                         isHolidayDay
                           ? "bg-red-50/50"
                           : isSunday
@@ -361,7 +327,7 @@ export function ShiftTableView({
                     return (
                       <TableCell
                         key={day}
-                        className={`text-center p-2 ${!isEditingThisCell ? "cursor-pointer hover:bg-primary/5" : ""} transition-colors ${
+                        className={`text-center p-2 w-[100px] min-w-[100px] max-w-[100px] ${!isEditingThisCell ? "cursor-pointer hover:bg-primary/5" : ""} transition-colors ${
                           isHolidayDay
                             ? "bg-red-50/30"
                             : isSunday
@@ -386,10 +352,10 @@ export function ShiftTableView({
                         }}
                       >
                         {isEditingThisCell ? (
-                          <div className="flex flex-col gap-2 p-2 min-w-[200px]" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex flex-col gap-2 p-2 w-[200px]" onClick={(e) => e.stopPropagation()}>
                             <Select value={selectedOption} onValueChange={handleOptionChange} disabled={isSaving}>
-                              <SelectTrigger className="w-full text-xs">
-                                <SelectValue placeholder="選択してください" />
+                              <SelectTrigger className="w-full text-xs h-8">
+                                <SelectValue placeholder="選択" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="休">休</SelectItem>
@@ -399,37 +365,44 @@ export function ShiftTableView({
 
                             {selectedOption === "時間指定" && (
                               <div className="flex flex-col gap-2 bg-muted p-2 rounded">
-                                <div className="text-xs font-medium">開始時刻</div>
-                                {renderTimeInput("start")}
-                                <div className="text-xs font-medium">終了時刻</div>
-                                {renderTimeInput("end")}
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleSave("時間指定")}
+                                <div className="text-xs text-muted-foreground">例: 9-18</div>
+                                <Input
+                                  type="text"
+                                  value={timeInput}
+                                  onChange={(e) => setTimeInput(e.target.value)}
+                                  placeholder="9-18"
+                                  className="text-xs h-8"
                                   disabled={isSaving}
-                                  className="mt-2"
-                                >
-                                  {isSaving ? "保存中..." : "保存"}
-                                </Button>
+                                />
                               </div>
+                            )}
+
+                            {selectedOption && (
+                              <Button
+                                size="sm"
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="h-7 text-xs"
+                              >
+                                {isSaving ? "保存中..." : "保存"}
+                              </Button>
                             )}
                           </div>
                         ) : assignment ? (
                           <div className="flex flex-col items-center gap-1">
-                            {assignment.timeSlotName ? (
+                            {assignment.isVacationRequest ? (
+                              <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                                希望休
+                              </Badge>
+                            ) : assignment.timeSlotName ? (
                               <Badge
-                                variant="default"
-                                className="text-xs px-2 py-0.5"
+                                variant={assignment.timeSlotName === "休" || assignment.timeSlotName === "有休" ? "secondary" : "default"}
+                                className="text-xs px-2 py-0.5 whitespace-nowrap"
                               >
                                 {assignment.timeSlotName}
                               </Badge>
                             ) : (
-                              <Badge
-                                variant={assignment.isVacationRequest ? "destructive" : "secondary"}
-                                className="text-xs px-2 py-0.5"
-                              >
-                                {assignment.isVacationRequest ? "希望休" : "休"}
-                              </Badge>
+                              <div className="text-xs text-muted-foreground">-</div>
                             )}
                             {assignment.hasWarning && (
                               <AlertTriangle className="w-3 h-3 text-amber-600" />
