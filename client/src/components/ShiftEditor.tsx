@@ -154,13 +154,26 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         shiftId: Number(shiftId)
       });
 
-      // 承認済み希望休を取得
-      const leaveRequests = await trpcClient.leaveRequests.getByShift.query({
-        shiftId: Number(shiftId)
-      });
+      // 承認済み希望休を取得（年月でフィルタリング）
+      const allLeaveRequests = await trpcClient.leaveRequests.list.query();
+      console.log('[ShiftEditor] Total leave requests:', allLeaveRequests.length);
 
-      // 承認済み希望休をフィルタリング
-      const approvedLeaveRequests = leaveRequests.filter(req => req.status === 'approved');
+      // 該当月の承認済み希望休をフィルタリング
+      const targetYear = viewYear;
+      const targetMonth = viewMonth;
+
+      const approvedLeaveRequests = allLeaveRequests.filter(req => {
+        if (req.status !== 'approved') return false;
+
+        // startDateまたはendDateが該当月に含まれるかチェック
+        const startDate = new Date(req.startDate);
+        const endDate = new Date(req.endDate);
+        const monthStart = new Date(targetYear, targetMonth - 1, 1);
+        const monthEnd = new Date(targetYear, targetMonth, 0);
+
+        return (startDate <= monthEnd && endDate >= monthStart);
+      });
+      console.log('[ShiftEditor] Approved leave requests for', targetYear, targetMonth, ':', approvedLeaveRequests.length);
 
       // シフト詳細をShiftAssignment形式に変換
       const formattedAssignments: ShiftAssignment[] = shiftDetails.map(detail => {
@@ -196,6 +209,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
 
       // 承認済み希望休をShiftAssignment形式に変換して追加
       const leaveRequestAssignments: ShiftAssignment[] = [];
+      const monthStart = new Date(targetYear, targetMonth - 1, 1);
+      const monthEnd = new Date(targetYear, targetMonth, 0);
 
       for (const request of approvedLeaveRequests) {
         const employee = employeesData.find(emp => emp.id === request.employeeId);
@@ -204,8 +219,16 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         const startDate = new Date(request.startDate);
         const endDate = new Date(request.endDate);
 
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-          const dateStr = d.toISOString().split('T')[0];
+        // 該当月の範囲内で日付を生成
+        const actualStart = startDate < monthStart ? monthStart : startDate;
+        const actualEnd = endDate > monthEnd ? monthEnd : endDate;
+
+        for (let d = new Date(actualStart); d <= actualEnd; d.setDate(d.getDate() + 1)) {
+          // タイムゾーンを考慮してYYYY-MM-DD形式の日付文字列を生成
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const dateStr = `${year}-${month}-${day}`;
 
           // 既にshiftDetailsに存在する日付はスキップ
           const existsInShiftDetails = formattedAssignments.some(
@@ -213,13 +236,23 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           );
 
           if (!existsInShiftDetails) {
+            // 時間指定の希望休の場合
+            let displayName = request.leaveType || "休";
+            if (request.leaveType === "時間指定" && request.startTime && request.endTime) {
+              const formatTime = (time: string) => {
+                const [hour, minute] = time.split(':');
+                return minute === '00' ? hour : time;
+              };
+              displayName = `${formatTime(request.startTime)}-${formatTime(request.endTime)}`;
+            }
+
             leaveRequestAssignments.push({
               date: dateStr,
               employeeId: employee?.employeeId || String(request.employeeId),
               employeeName: employee?.name || "不明",
               positionGroup: "fulltime",
               timeSlotId: null,
-              timeSlotName: request.leaveType || "休",
+              timeSlotName: displayName,
               isVacationRequest: true,
               shiftDetailId: undefined,
               employeeDbId: request.employeeId,
@@ -229,7 +262,9 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
       }
 
       // shiftDetailsとleaveRequestsを統合
+      console.log('[ShiftEditor] Leave request assignments created:', leaveRequestAssignments.length);
       const allAssignments = [...formattedAssignments, ...leaveRequestAssignments];
+      console.log('[ShiftEditor] Total assignments:', allAssignments.length);
       setAssignments(allAssignments);
 
     } catch (error) {
