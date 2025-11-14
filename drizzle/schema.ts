@@ -26,6 +26,7 @@ export const positionGroups = mysqlTable("positionGroups", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   employmentType: mysqlEnum("employmentType", ["fulltime", "parttime"]).notNull(),
+  minDaysOffPerMonth: int("minDaysOffPerMonth").default(0).notNull(), // 月の公休日数（正社員=9、パート=0）
   displayOrder: int("displayOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -48,6 +49,9 @@ export const employees = mysqlTable("employees", {
   canWorkNightShift: boolean("canWorkNightShift").default(false).notNull(),
   workableDays: json("workableDays"), // 勤務可能曜日と時間帯 [{dayOfWeek: 0-6, startTime: "09:00", endTime: "17:00"}]
   additionalConstraints: text("additionalConstraints"), // 追加の制約条件（自然言語）
+  breakTime: int("breakTime").default(60).notNull(), // 休憩時間（0/30/60分）
+  isServiceManager: boolean("isServiceManager").default(false).notNull(), // サービス提供責任者フラグ
+  isOfficeStaff: boolean("isOfficeStaff").default(false).notNull(), // 事務員フラグ
   displayOrder: int("displayOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -106,7 +110,9 @@ export const workplaceRules = mysqlTable("workplaceRules", {
     "min_rest_days",
     "night_shift_quota",
     "post_night_shift_rest",
-    "required_staff_pattern"
+    "required_staff_pattern",
+    "max_consecutive_days", // 連勤上限
+    "fulltime_required_hours" // 正社員配置必須時間
   ]).notNull(),
   employmentType: mysqlEnum("employmentType", ["fulltime", "parttime", "all"]).notNull(),
   ruleValue: json("ruleValue").notNull(), // JSON format for flexible rule storage
