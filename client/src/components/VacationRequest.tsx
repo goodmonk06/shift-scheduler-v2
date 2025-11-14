@@ -608,7 +608,19 @@ export function VacationRequest({
             <TabsContent value="month1">
               <VacationCalendar
                 monthDays={monthDays}
-                requests={requests}
+                requests={new Map(
+                  Array.from(requests.entries())
+                    .filter(([dateKey, request]) => {
+                      // null値（削除マーカー）を除外
+                      if (request === null) return false;
+                      const [year, month] = dateKey.split('-').map(Number);
+                      return year === month1.getFullYear() && month === month1.getMonth() + 1;
+                    })
+                    .map(([dateKey, request]) => {
+                      const day = parseInt(dateKey.split('-')[2]);
+                      return [day, request];
+                    })
+                )}
                 submittedRequests={new Map(existingRequests
                   .filter(req => {
                     const startDate = new Date(req.startDate);
@@ -635,7 +647,19 @@ export function VacationRequest({
             <TabsContent value="month2">
               <VacationCalendar
                 monthDays={monthDays}
-                requests={requests}
+                requests={new Map(
+                  Array.from(requests.entries())
+                    .filter(([dateKey, request]) => {
+                      // null値（削除マーカー）を除外
+                      if (request === null) return false;
+                      const [year, month] = dateKey.split('-').map(Number);
+                      return year === month2.getFullYear() && month === month2.getMonth() + 1;
+                    })
+                    .map(([dateKey, request]) => {
+                      const day = parseInt(dateKey.split('-')[2]);
+                      return [day, request];
+                    })
+                )}
                 submittedRequests={new Map(existingRequests
                   .filter(req => {
                     const startDate = new Date(req.startDate);
