@@ -3,6 +3,7 @@ import { Sparkles, Heart, CheckCircle } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { SparkleIcon } from "./DecorativeElements";
 import { VacationCalendar } from "./VacationCalendar";
@@ -37,8 +38,11 @@ export function VacationRequest({
 }: VacationRequestProps) {
   const toast = useToast();
 
-  // 編集中の希望休（未提出）- 日付をキーにしたMap
-  const [requests, setRequests] = useState<Map<number, DayRequest>>(new Map());
+  // タブで選択中の月（month1=来月、month2=再来月）
+  const [selectedMonth, setSelectedMonth] = useState<"month1" | "month2">("month1");
+
+  // 編集中の希望休（未提出）- キー: `${year}-${month}-${day}`
+  const [requests, setRequests] = useState<Map<string, DayRequest>>(new Map());
   // データベースから取得した既存の希望休
   const [existingRequests, setExistingRequests] = useState<LeaveRequest[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +50,7 @@ export function VacationRequest({
   const [showDayDialog, setShowDayDialog] = useState(false);
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null); // 選択中の日付キー
   const [requestType, setRequestType] = useState<"休" | "有休" | "時間指定">("休");
   const [startHour, setStartHour] = useState("09");
   const [startMinute, setStartMinute] = useState("00");
@@ -53,12 +58,16 @@ export function VacationRequest({
   const [endMinute, setEndMinute] = useState("00");
   const [reason, setReason] = useState("");
 
-  // 来月の情報
+  // 月の計算（来月と再来月）
   const today = new Date();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  const nextMonthYear = nextMonth.getFullYear();
-  const nextMonthNum = nextMonth.getMonth() + 1;
-  const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
+  const month1 = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const month2 = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+
+  // 選択中の月の情報
+  const currentMonthData = selectedMonth === "month1" ? month1 : month2;
+  const nextMonthYear = currentMonthData.getFullYear();
+  const nextMonthNum = currentMonthData.getMonth() + 1;
+  const nextMonthName = currentMonthData.toLocaleDateString("ja-JP", { month: "long" });
   const daysInNextMonth = new Date(nextMonthYear, nextMonthNum, 0).getDate();
   const monthDays = Array.from({ length: daysInNextMonth }, (_, i) => i + 1);
 
@@ -110,18 +119,25 @@ export function VacationRequest({
     }
   );
 
-  // データ取得後、existingRequestsに保存
+  // データ取得後、existingRequestsに保存（来月と再来月の2ヶ月分）
   useEffect(() => {
     if (leaveRequestsData) {
-      // 来月分の希望休のみフィルタリング
-      const nextMonthRequests = leaveRequestsData.filter(req => {
+      // 来月と再来月分の希望休をフィルタリング
+      const month1Year = month1.getFullYear();
+      const month1Num = month1.getMonth() + 1;
+      const month2Year = month2.getFullYear();
+      const month2Num = month2.getMonth() + 1;
+
+      const twoMonthsRequests = leaveRequestsData.filter(req => {
         const startDate = new Date(req.startDate);
-        return startDate.getFullYear() === nextMonthYear &&
-               startDate.getMonth() + 1 === nextMonthNum;
+        const reqYear = startDate.getFullYear();
+        const reqMonth = startDate.getMonth() + 1;
+        return (reqYear === month1Year && reqMonth === month1Num) ||
+               (reqYear === month2Year && reqMonth === month2Num);
       });
-      setExistingRequests(nextMonthRequests);
+      setExistingRequests(twoMonthsRequests);
     }
-  }, [leaveRequestsData, nextMonthYear, nextMonthNum]);
+  }, [leaveRequestsData, month1, month2]);
 
   const deadline = currentShift?.leaveRequestDeadline
     ? new Date(currentShift.leaveRequestDeadline)
@@ -134,6 +150,11 @@ export function VacationRequest({
     onUnsavedChangesChange(requests.size > 0, requests.size);
   }, [requests, onUnsavedChangesChange]);
 
+  // 日付キーを生成するヘルパー関数
+  const makeDateKey = (year: number, month: number, day: number) => {
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
   const handleDateClick = (day: number) => {
     if (!isBeforeDeadline) {
       toast.error("締め切りを過ぎています", {
@@ -143,12 +164,16 @@ export function VacationRequest({
     }
 
     setSelectedDay(day);
+    const dateKey = makeDateKey(nextMonthYear, nextMonthNum, day);
+    setSelectedDayKey(dateKey);
 
     // 編集中のリクエストまたは既存のリクエストを取得
-    const editingRequest = requests.get(day);
+    const editingRequest = requests.get(dateKey);
     const existingRequest = existingRequests.find(req => {
       const startDate = new Date(req.startDate);
-      return startDate.getDate() === day;
+      return startDate.getFullYear() === nextMonthYear &&
+             startDate.getMonth() + 1 === nextMonthNum &&
+             startDate.getDate() === day;
     });
 
     const request = editingRequest || (existingRequest ? {
@@ -191,7 +216,7 @@ export function VacationRequest({
   };
 
   const handleSaveDay = () => {
-    if (selectedDay === null) return;
+    if (selectedDay === null || selectedDayKey === null) return;
 
     if (requestType === "時間指定") {
       if (!startHour || !startMinute || !endHour || !endMinute) {
@@ -219,28 +244,31 @@ export function VacationRequest({
 
     setRequests(prev => {
       const updated = new Map(prev);
-      updated.set(selectedDay, newRequest);
+      updated.set(selectedDayKey, newRequest);
       return updated;
     });
 
     setShowDayDialog(false);
     setSelectedDay(null);
+    setSelectedDayKey(null);
   };
 
   const handleRemoveDay = () => {
-    if (selectedDay === null) return;
+    if (selectedDay === null || selectedDayKey === null) return;
 
     // 編集中のリクエストから削除
     setRequests(prev => {
       const updated = new Map(prev);
-      updated.delete(selectedDay);
+      updated.delete(selectedDayKey);
       return updated;
     });
 
     // 既存のリクエストがあれば、それも削除マークをつける（実際の削除は submit 時）
     const existingRequest = existingRequests.find(req => {
       const startDate = new Date(req.startDate);
-      return startDate.getDate() === selectedDay;
+      return startDate.getFullYear() === nextMonthYear &&
+             startDate.getMonth() + 1 === nextMonthNum &&
+             startDate.getDate() === selectedDay;
     });
 
     if (existingRequest) {
@@ -248,13 +276,14 @@ export function VacationRequest({
       setRequests(prev => {
         const updated = new Map(prev);
         // 削除マーカーとして null を設定
-        updated.set(selectedDay, null as any);
+        updated.set(selectedDayKey, null as any);
         return updated;
       });
     }
 
     setShowDayDialog(false);
     setSelectedDay(null);
+    setSelectedDayKey(null);
   };
 
   const handleSubmit = async () => {
@@ -265,14 +294,20 @@ export function VacationRequest({
     try {
       const promises: Promise<any>[] = [];
 
-      for (const [day, request] of requests.entries()) {
-        const dateStr = `${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      for (const [dateKey, request] of requests.entries()) {
+        const dateStr = dateKey; // dateKeyは既に "YYYY-MM-DD" 形式
 
         // 既存のリクエストがあるか確認
         const existingRequest = existingRequests.find(req => {
-          const startDate = new Date(req.startDate);
-          return startDate.getDate() === day;
+          return req.startDate === dateStr;
         });
+
+        // 該当する年月のシフトを取得（来月または再来月）
+        const [year, month] = dateStr.split('-').map(Number);
+        const targetShift = await trpcClient.shifts.getCurrentMonth.query({
+          year,
+          month
+        }).catch(() => null);
 
         if (request === null) {
           // 削除マーカー: 既存のリクエストを削除
@@ -284,7 +319,7 @@ export function VacationRequest({
           promises.push(
             leaveRequestService.update(existingRequest.id, {
               employeeId,
-              shiftId: currentShift?.id,
+              shiftId: targetShift?.id || existingRequest.shiftId,
               startDate: dateStr,
               endDate: dateStr,
               leaveType: request.type,
@@ -298,7 +333,7 @@ export function VacationRequest({
           promises.push(
             leaveRequestService.create({
               employeeId,
-              shiftId: currentShift?.id,
+              shiftId: targetShift?.id,
               startDate: dateStr,
               endDate: dateStr,
               leaveType: request.type,
@@ -333,8 +368,10 @@ export function VacationRequest({
   };
 
   const getRequestBadge = (day: number) => {
+    const dateKey = makeDateKey(nextMonthYear, nextMonthNum, day);
+
     // 編集中のリクエストを優先
-    const editingRequest = requests.get(day);
+    const editingRequest = requests.get(dateKey);
     if (editingRequest === null) {
       // 削除マーカー
       return null;
@@ -367,8 +404,7 @@ export function VacationRequest({
 
     // 既存のリクエスト（送信済み）
     const existingRequest = existingRequests.find(req => {
-      const startDate = new Date(req.startDate);
-      return startDate.getDate() === day;
+      return req.startDate === dateKey;
     });
 
     if (existingRequest) {
@@ -465,7 +501,7 @@ export function VacationRequest({
                   希望休入力
                   <Sparkles className="w-5 h-5 text-accent" />
                 </h2>
-                <p className="text-muted-foreground">{nextMonthName}の希望する休日を選択してください</p>
+                <p className="text-muted-foreground">来月・再来月の希望する休日を選択してください</p>
               </div>
             </div>
 
@@ -558,24 +594,71 @@ export function VacationRequest({
             </Card>
           )}
 
-          {/* Calendar */}
-          <VacationCalendar
-            monthDays={monthDays}
-            requests={requests}
-            submittedRequests={new Map(existingRequests.map(req => {
-              const startDate = new Date(req.startDate);
-              return [startDate.getDate(), {
-                day: startDate.getDate(),
-                type: req.leaveType,
-                startTime: req.startTime,
-                endTime: req.endTime,
-                reason: req.reason,
-              }];
-            }))}
-            isBeforeDeadline={isBeforeDeadline}
-            onDateClick={handleDateClick}
-            getRequestBadge={getRequestBadge}
-          />
+          {/* Calendar with Month Tabs */}
+          <Tabs value={selectedMonth} onValueChange={(value) => setSelectedMonth(value as "month1" | "month2")}>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="month1" className="flex items-center gap-2">
+                {month1.toLocaleDateString("ja-JP", { month: "long" })}
+              </TabsTrigger>
+              <TabsTrigger value="month2" className="flex items-center gap-2">
+                {month2.toLocaleDateString("ja-JP", { month: "long" })}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="month1">
+              <VacationCalendar
+                monthDays={monthDays}
+                requests={requests}
+                submittedRequests={new Map(existingRequests
+                  .filter(req => {
+                    const startDate = new Date(req.startDate);
+                    return startDate.getFullYear() === month1.getFullYear() &&
+                           startDate.getMonth() === month1.getMonth();
+                  })
+                  .map(req => {
+                    const startDate = new Date(req.startDate);
+                    return [startDate.getDate(), {
+                      day: startDate.getDate(),
+                      type: req.leaveType,
+                      startTime: req.startTime,
+                      endTime: req.endTime,
+                      reason: req.reason,
+                    }];
+                  })
+                )}
+                isBeforeDeadline={isBeforeDeadline}
+                onDateClick={handleDateClick}
+                getRequestBadge={getRequestBadge}
+              />
+            </TabsContent>
+
+            <TabsContent value="month2">
+              <VacationCalendar
+                monthDays={monthDays}
+                requests={requests}
+                submittedRequests={new Map(existingRequests
+                  .filter(req => {
+                    const startDate = new Date(req.startDate);
+                    return startDate.getFullYear() === month2.getFullYear() &&
+                           startDate.getMonth() === month2.getMonth();
+                  })
+                  .map(req => {
+                    const startDate = new Date(req.startDate);
+                    return [startDate.getDate(), {
+                      day: startDate.getDate(),
+                      type: req.leaveType,
+                      startTime: req.startTime,
+                      endTime: req.endTime,
+                      reason: req.reason,
+                    }];
+                  })
+                )}
+                isBeforeDeadline={isBeforeDeadline}
+                onDateClick={handleDateClick}
+                getRequestBadge={getRequestBadge}
+              />
+            </TabsContent>
+          </Tabs>
 
           {/* Notes */}
           <Card className="p-5 bg-gradient-to-br from-secondary/10 to-accent/5 border-2 border-secondary/30">
@@ -625,10 +708,15 @@ export function VacationRequest({
         setReason={setReason}
         onSave={handleSaveDay}
         onRemove={handleRemoveDay}
-        hasRequest={requests.has(selectedDay || 0) || existingRequests.some(req => {
-          const startDate = new Date(req.startDate);
-          return startDate.getDate() === selectedDay;
-        })}
+        hasRequest={
+          (selectedDayKey !== null && requests.has(selectedDayKey)) ||
+          existingRequests.some(req => {
+            const startDate = new Date(req.startDate);
+            return startDate.getFullYear() === nextMonthYear &&
+                   startDate.getMonth() + 1 === nextMonthNum &&
+                   startDate.getDate() === selectedDay;
+          })
+        }
         onTimePickerOpen={() => setShowTimeModal(true)}
       />
 
