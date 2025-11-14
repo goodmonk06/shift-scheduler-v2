@@ -45,6 +45,7 @@ interface ShiftTableViewProps {
   assignments: ShiftAssignment[];
   employees: Employee[];
   shiftId?: string;
+  onRefresh?: () => void; // Callback to refresh data
 }
 
 interface WorkTimeSlot {
@@ -68,6 +69,7 @@ export function ShiftTableView({
   assignments,
   employees,
   shiftId,
+  onRefresh,
 }: ShiftTableViewProps) {
   const toast = useToast();
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
@@ -222,8 +224,10 @@ export function ShiftTableView({
       // Close editor
       setEditingCell(null);
 
-      // Reload page to reflect changes
-      window.location.reload();
+      // Refresh data to reflect changes
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error("Failed to save shift detail:", error);
       toast.error(`シフトの更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`);

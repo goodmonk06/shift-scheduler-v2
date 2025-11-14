@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Sparkles, Save, FileDown, AlertCircle,
   ChevronLeft, ChevronRight, Settings, MessageSquare,
@@ -134,71 +134,70 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // 職員データとシフト詳細を取得
-  useEffect(() => {
-    const loadData = async () => {
-      if (!shiftId) return;
+  const loadData = useCallback(async () => {
+    if (!shiftId) return;
 
-      try {
-        setIsLoadingData(true);
+    try {
+      setIsLoadingData(true);
 
-        // 職員データを取得
-        const employeesData = await trpcClient.employees.list.query();
-        const formattedEmployees: Employee[] = employeesData.map(emp => ({
-          id: emp.employeeId, // Display ID (e.g., "EMP001")
-          name: emp.name,
-          dbId: emp.id, // Database numeric ID
-        }));
-        setEmployees(formattedEmployees);
+      // 職員データを取得
+      const employeesData = await trpcClient.employees.list.query();
+      const formattedEmployees: Employee[] = employeesData.map(emp => ({
+        id: emp.employeeId, // Display ID (e.g., "EMP001")
+        name: emp.name,
+        dbId: emp.id, // Database numeric ID
+      }));
+      setEmployees(formattedEmployees);
 
-        // シフト詳細を取得
-        const shiftDetails = await trpcClient.shiftDetails.getByShift.query({
-          shiftId: Number(shiftId)
-        });
+      // シフト詳細を取得
+      const shiftDetails = await trpcClient.shiftDetails.getByShift.query({
+        shiftId: Number(shiftId)
+      });
 
-        // シフト詳細をShiftAssignment形式に変換
-        const formattedAssignments: ShiftAssignment[] = shiftDetails.map(detail => {
-          const employee = employeesData.find(emp => emp.id === detail.employeeId);
+      // シフト詳細をShiftAssignment形式に変換
+      const formattedAssignments: ShiftAssignment[] = shiftDetails.map(detail => {
+        const employee = employeesData.find(emp => emp.id === detail.employeeId);
 
-          // Determine display name based on leaveType and times
-          let displayName = null;
-          if (detail.leaveType === "時間指定" && detail.startTime && detail.endTime) {
-            // Format time display (remove :00 for clean display)
-            const formatTime = (time: string) => {
-              const [hour, minute] = time.split(':');
-              return minute === '00' ? hour : time;
-            };
-            displayName = `${formatTime(detail.startTime)}-${formatTime(detail.endTime)}`;
-          } else if (detail.leaveType) {
-            displayName = detail.leaveType;
-          } else if (detail.timeSlotId) {
-            displayName = "勤務"; // TODO: 実際の時間枠名を取得
-          }
-
-          return {
-            date: detail.date,
-            employeeId: employee?.employeeId || String(detail.employeeId),
-            employeeName: employee?.name || "不明",
-            positionGroup: "fulltime", // TODO: 実際のデータから取得
-            timeSlotId: detail.timeSlotId?.toString() || null,
-            timeSlotName: displayName,
-            isVacationRequest: detail.status === "requested_off",
-            shiftDetailId: detail.id, // Include the ID for editing
-            employeeDbId: detail.employeeId, // Database numeric ID
+        // Determine display name based on leaveType and times
+        let displayName = null;
+        if (detail.leaveType === "時間指定" && detail.startTime && detail.endTime) {
+          // Format time display (remove :00 for clean display)
+          const formatTime = (time: string) => {
+            const [hour, minute] = time.split(':');
+            return minute === '00' ? hour : time;
           };
-        });
-        setAssignments(formattedAssignments);
+          displayName = `${formatTime(detail.startTime)}-${formatTime(detail.endTime)}`;
+        } else if (detail.leaveType) {
+          displayName = detail.leaveType;
+        } else if (detail.timeSlotId) {
+          displayName = "勤務"; // TODO: 実際の時間枠名を取得
+        }
 
-      } catch (error) {
-        console.error('[ShiftEditor] Failed to load data:', error);
-        toast.error('データの取得に失敗しました');
-      } finally {
-        setIsLoadingData(false);
-      }
-    };
+        return {
+          date: detail.date,
+          employeeId: employee?.employeeId || String(detail.employeeId),
+          employeeName: employee?.name || "不明",
+          positionGroup: "fulltime", // TODO: 実際のデータから取得
+          timeSlotId: detail.timeSlotId?.toString() || null,
+          timeSlotName: displayName,
+          isVacationRequest: detail.status === "requested_off",
+          shiftDetailId: detail.id, // Include the ID for editing
+          employeeDbId: detail.employeeId, // Database numeric ID
+        };
+      });
+      setAssignments(formattedAssignments);
 
+    } catch (error) {
+      console.error('[ShiftEditor] Failed to load data:', error);
+      toast.error('データの取得に失敗しました');
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [shiftId, toast]);
+
+  useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shiftId]);
+  }, [loadData]);
 
   // 統計情報（動的に計算）
   const calculateStats = () => {
@@ -748,6 +747,7 @@ ${aiConfig.customInstructions || "なし"}
             assignments={assignments}
             employees={employees}
             shiftId={shiftId}
+            onRefresh={loadData}
           />
         )}
       </div>
