@@ -540,15 +540,22 @@ export const appRouter = router({
         previousTimeSlotId: z.number().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
-        // Convert empty strings to null for database compatibility
-        const sanitizedInput = {
-          ...input,
-          timeSlotId: input.timeSlotId || null,
-          leaveType: input.leaveType || null,
-          startTime: input.startTime || null,
-          endTime: input.endTime || null,
-          previousTimeSlotId: input.previousTimeSlotId || null,
+        // Build sanitized input - only include fields with actual values
+        const sanitizedInput: any = {
+          shiftId: input.shiftId,
+          employeeId: input.employeeId,
+          date: input.date,
+          status: input.status,
         };
+
+        // Only include optional fields if they have values
+        if (input.timeSlotId) sanitizedInput.timeSlotId = input.timeSlotId;
+        if (input.leaveType) sanitizedInput.leaveType = input.leaveType;
+        if (input.startTime) sanitizedInput.startTime = input.startTime;
+        if (input.endTime) sanitizedInput.endTime = input.endTime;
+        if (input.isChanged !== undefined) sanitizedInput.isChanged = input.isChanged;
+        if (input.previousTimeSlotId) sanitizedInput.previousTimeSlotId = input.previousTimeSlotId;
+
         return await db.createShiftDetail(sanitizedInput);
       }),
     update: protectedProcedure
@@ -565,15 +572,28 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        // Convert empty strings to null for database compatibility
-        const sanitizedData = {
-          ...data,
-          timeSlotId: data.timeSlotId || null,
-          leaveType: data.leaveType || null,
-          startTime: data.startTime || null,
-          endTime: data.endTime || null,
-          previousTimeSlotId: data.previousTimeSlotId || null,
-        };
+        // Build sanitized data - only include fields that are explicitly set
+        const sanitizedData: any = {};
+
+        if (data.date !== undefined) sanitizedData.date = data.date;
+        if (data.status !== undefined) sanitizedData.status = data.status;
+        if (data.timeSlotId !== undefined && data.timeSlotId !== null && data.timeSlotId !== "") {
+          sanitizedData.timeSlotId = data.timeSlotId;
+        }
+        if (data.leaveType !== undefined && data.leaveType !== null && data.leaveType !== "") {
+          sanitizedData.leaveType = data.leaveType;
+        }
+        if (data.startTime !== undefined && data.startTime !== null && data.startTime !== "") {
+          sanitizedData.startTime = data.startTime;
+        }
+        if (data.endTime !== undefined && data.endTime !== null && data.endTime !== "") {
+          sanitizedData.endTime = data.endTime;
+        }
+        if (data.isChanged !== undefined) sanitizedData.isChanged = data.isChanged;
+        if (data.previousTimeSlotId !== undefined && data.previousTimeSlotId !== null) {
+          sanitizedData.previousTimeSlotId = data.previousTimeSlotId;
+        }
+
         return await db.updateShiftDetail(id, sanitizedData);
       }),
     delete: protectedProcedure
