@@ -10,6 +10,7 @@
     "migrate": "tsx scripts/apply-migration.ts",
     "add-columns": "tsx scripts/add-employee-columns.ts",
     "bulk-import": "tsx scripts/bulk-import-employees.ts",
+    "reorder": "tsx scripts/reorder-employees.ts",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
