@@ -57,6 +57,16 @@ export interface CreateLeaveRequestInput {
 
 export interface LeaveRequestService {
   /**
+   * 全希望休一覧を取得（管理者用）
+   */
+  getAll(): Promise<LeaveRequest[]>;
+
+  /**
+   * 指定シフトの希望休一覧を取得
+   */
+  getByShift(shiftId: number): Promise<LeaveRequest[]>;
+
+  /**
    * 指定シフトの希望休提出状況を取得（管理者用）
    */
   getSubmissionStatus(shiftId: number): Promise<SubmissionStatus>;
@@ -85,6 +95,16 @@ export interface LeaveRequestService {
    * 希望休を削除
    */
   delete(id: number): Promise<void>;
+
+  /**
+   * 希望休を承認
+   */
+  approve(id: number): Promise<LeaveRequest>;
+
+  /**
+   * 希望休を却下
+   */
+  reject(id: number): Promise<LeaveRequest>;
 }
 
 // ===========================
@@ -92,6 +112,14 @@ export interface LeaveRequestService {
 // ===========================
 
 class LeaveRequestServiceMock implements LeaveRequestService {
+  async getAll(): Promise<LeaveRequest[]> {
+    return [];
+  }
+
+  async getByShift(shiftId: number): Promise<LeaveRequest[]> {
+    return [];
+  }
+
   async getSubmissionStatus(shiftId: number): Promise<SubmissionStatus> {
     // モックデータ
     return {
@@ -159,6 +187,34 @@ class LeaveRequestServiceMock implements LeaveRequestService {
   async delete(id: number): Promise<void> {
     // モックでは何もしない
   }
+
+  async approve(id: number): Promise<LeaveRequest> {
+    return {
+      id,
+      employeeId: 1,
+      shiftId: null,
+      startDate: "",
+      endDate: "",
+      leaveType: "休",
+      isAdditional: false,
+      status: "approved",
+      submittedAt: new Date().toISOString(),
+    };
+  }
+
+  async reject(id: number): Promise<LeaveRequest> {
+    return {
+      id,
+      employeeId: 1,
+      shiftId: null,
+      startDate: "",
+      endDate: "",
+      leaveType: "休",
+      isAdditional: false,
+      status: "rejected",
+      submittedAt: new Date().toISOString(),
+    };
+  }
 }
 
 // ===========================
@@ -194,6 +250,26 @@ class LeaveRequestServiceProduction implements LeaveRequestService {
       return await response.json();
     } catch (error) {
       console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  async getAll(): Promise<LeaveRequest[]> {
+    try {
+      const result = await trpcClient.leaveRequests.list.query();
+      return result || [];
+    } catch (error) {
+      console.error('Failed to fetch all leave requests:', error);
+      throw error;
+    }
+  }
+
+  async getByShift(shiftId: number): Promise<LeaveRequest[]> {
+    try {
+      const result = await trpcClient.leaveRequests.getByShift.query({ shiftId });
+      return result || [];
+    } catch (error) {
+      console.error('Failed to fetch shift leave requests:', error);
       throw error;
     }
   }
@@ -259,6 +335,26 @@ class LeaveRequestServiceProduction implements LeaveRequestService {
       await trpcClient.leaveRequests.delete.mutate({ id });
     } catch (error) {
       console.error('Failed to delete leave request:', error);
+      throw error;
+    }
+  }
+
+  async approve(id: number): Promise<LeaveRequest> {
+    try {
+      const result = await trpcClient.leaveRequests.approve.mutate({ id });
+      return result as LeaveRequest;
+    } catch (error) {
+      console.error('Failed to approve leave request:', error);
+      throw error;
+    }
+  }
+
+  async reject(id: number): Promise<LeaveRequest> {
+    try {
+      const result = await trpcClient.leaveRequests.reject.mutate({ id });
+      return result as LeaveRequest;
+    } catch (error) {
+      console.error('Failed to reject leave request:', error);
       throw error;
     }
   }

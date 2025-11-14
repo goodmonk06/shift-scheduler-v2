@@ -1,25 +1,24 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Clock, Check, X, Sparkles, Settings, Users, CheckCheck } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { VacationRequestCard } from "./VacationRequestCard";
-import { useVacation } from "../contexts/VacationContext";
-import { leaveRequestService, type SubmissionStatus } from "../services/leaveRequestService";
+import { leaveRequestService, type SubmissionStatus, type LeaveRequest } from "../services/leaveRequestService";
 import { formatDeadline } from "../utils/vacationManagementHelpers";
 import { StatsCards } from "./vacation/StatsCards";
 import { RequestDetailDialog } from "./vacation/RequestDetailDialog";
 import { DeadlineSettingDialog } from "./vacation/DeadlineSettingDialog";
 import { SubmissionStatusDialog } from "./vacation/SubmissionStatusDialog";
-import { useMutation } from "../hooks/useAsync";
+import { useAsync, useMutation } from "../hooks/useAsync";
 import { useToast } from "../hooks/useToast";
 import { LoadingInline } from "./ui/loading-spinner";
 import { EmptyState } from "./ui/error-state";
+import { trpcClient } from "../lib/trpc";
 
 export function VacationManagement() {
   const toast = useToast();
-  const { vacationRequests, approveRequest, rejectRequest, deadline, setDeadline } = useVacation();
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showDeadlineDialog, setShowDeadlineDialog] = useState(false);
@@ -29,28 +28,177 @@ export function VacationManagement() {
   const [showAdditionalOnly, setShowAdditionalOnly] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState<SubmissionStatus | null>(null);
 
-  // 現在のシフトIDを取得（仮で1を使用、実際にはpropsやcontextから取得）
-  const currentShiftId = 1;
+  // 次月の年月を計算
+  const today = new Date();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const nextMonthYear = nextMonth.getFullYear();
+  const nextMonthNum = nextMonth.getMonth() + 1;
 
-  // TODO: バックエンドのデータに isAdditionalRequest フラグを追加する必要がある
+  // 現在のシフト情報を取得
+  const {
+    data: currentShift,
+    isLoading: isLoadingShift,
+    isError: isShiftError,
+    error: shiftError,
+    refetch: refetchShift,
+  } = useAsync(
+    async () => {
+      return await trpcClient.shifts.getCurrentMonth.query({
+        year: nextMonthYear,
+        month: nextMonthNum
+      });
+    },
+    {
+      onError: (error) => {
+        console.error("シフト情報の取得に失敗:", error);
+      },
+    }
+  );
+
+  const currentShiftId = currentShift?.id || 1;
+  const deadline = currentShift?.leaveRequestDeadline
+    ? new Date(currentShift.leaveRequestDeadline)
+    : new Date(nextMonthYear, nextMonthNum - 1, 20, 23, 59);
+
+  // 希望休データを取得
+  const {
+    data: leaveRequestsData,
+    isLoading: isLoadingRequests,
+    isError: isRequestsError,
+    error: requestsError,
+    refetch: refetchRequests,
+  } = useAsync(
+    async () => {
+      if (!currentShift) return [];
+      return await leaveRequestService.getByShift(currentShift.id);
+    },
+    {
+      onError: () => toast.error("希望休データの取得に失敗しました"),
+      deps: [currentShift?.id],
+    }
+  );
+
+  // 従業員データを取得
+  const {
+    data: employeesData,
+    isLoading: isLoadingEmployees,
+  } = useAsync(
+    async () => {
+      return await trpcClient.employees.list.query();
+    },
+    {
+      onError: () => toast.error("従業員データの取得に失敗しました"),
+    }
+  );
+
+  const employees = employeesData || [];
+
+  // LeaveRequestを職員ごとにグループ化してVacationRequest形式に変換
+  const vacationRequests = useMemo(() => {
+    if (!leaveRequestsData || !employees.length) return [];
+
+    const grouped = new Map<number, LeaveRequest[]>();
+
+    leaveRequestsData.forEach((req) => {
+      if (!grouped.has(req.employeeId)) {
+        grouped.set(req.employeeId, []);
+      }
+      grouped.get(req.employeeId)!.push(req);
+    });
+
+    return Array.from(grouped.entries()).map(([employeeId, requests]) => {
+      const employee = employees.find((e) => e.id === employeeId);
+      const firstRequest = requests[0];
+      const startDate = new Date(firstRequest.startDate);
+
+      return {
+        id: employeeId, // 職員IDを使用
+        staffName: employee?.name || "不明",
+        staffId: String(employeeId),
+        month: `${startDate.getFullYear()}年${startDate.getMonth() + 1}月`,
+        requests: requests.map((req) => ({
+          day: new Date(req.startDate).getDate(),
+          type: req.leaveType,
+          startTime: req.startTime,
+          endTime: req.endTime,
+          reason: req.reason,
+        })),
+        status: firstRequest.status,
+        submittedAt: new Date(firstRequest.submittedAt),
+        rawData: requests, // デバッグ用に元データも保持
+      };
+    });
+  }, [leaveRequestsData, employees]);
+
+  // 希望休をステータスごとにフィルタリング
   const pendingRequests = vacationRequests.filter((req) => req.status === "pending");
   const approvedRequests = vacationRequests.filter((req) => req.status === "approved");
   const rejectedRequests = vacationRequests.filter((req) => req.status === "rejected");
-  
-  // 追加希望のみフィルタ（将来的にバックエンドから取得）
-  const additionalRequests = vacationRequests.filter((req) => {
-    // TODO: req.isAdditionalRequest でフィルタ
-    return false; // 現在は追加希望データがないため空配列
-  });
+
+  // 追加希望のみフィルタ（元データがisAdditional=trueのもの）
+  const additionalRequests = vacationRequests.filter((req) =>
+    (req as any).rawData?.some((r: LeaveRequest) => r.isAdditional === true)
+  );
+
+  // 承認・却下のミューテーション
+  const { mutate: approveRequestMutation, isLoading: isApproving } = useMutation(
+    async (id: number) => {
+      await leaveRequestService.approve(id);
+    },
+    {
+      onSuccess: () => {
+        toast.success("希望休を承認しました");
+        refetchRequests();
+        setShowDetailDialog(false);
+      },
+      onError: () => toast.error("承認に失敗しました"),
+    }
+  );
+
+  const { mutate: rejectRequestMutation, isLoading: isRejecting } = useMutation(
+    async (id: number) => {
+      await leaveRequestService.reject(id);
+    },
+    {
+      onSuccess: () => {
+        toast.success("希望休を却下しました");
+        refetchRequests();
+        setShowDetailDialog(false);
+      },
+      onError: () => toast.error("却下に失敗しました"),
+    }
+  );
 
   const handleApprove = (id: string) => {
-    approveRequest(id);
-    setShowDetailDialog(false);
+    // 職員IDに対応する全てのLeaveRequestを承認
+    const selectedVacationRequest = vacationRequests.find((req) => req.staffId === id);
+    if (selectedVacationRequest && (selectedVacationRequest as any).rawData) {
+      const leaveRequests = (selectedVacationRequest as any).rawData as LeaveRequest[];
+      // 全てのLeaveRequestを承認
+      Promise.all(leaveRequests.map((req) => leaveRequestService.approve(req.id)))
+        .then(() => {
+          toast.success("希望休を承認しました");
+          refetchRequests();
+          setShowDetailDialog(false);
+        })
+        .catch(() => toast.error("承認に失敗しました"));
+    }
   };
 
   const handleReject = (id: string) => {
-    rejectRequest(id);
-    setShowDetailDialog(false);
+    // 職員IDに対応する全てのLeaveRequestを却下
+    const selectedVacationRequest = vacationRequests.find((req) => req.staffId === id);
+    if (selectedVacationRequest && (selectedVacationRequest as any).rawData) {
+      const leaveRequests = (selectedVacationRequest as any).rawData as LeaveRequest[];
+      // 全てのLeaveRequestを却下
+      Promise.all(leaveRequests.map((req) => leaveRequestService.reject(req.id)))
+        .then(() => {
+          toast.success("希望休を却下しました");
+          refetchRequests();
+          setShowDetailDialog(false);
+        })
+        .catch(() => toast.error("却下に失敗しました"));
+    }
   };
 
   const openDetail = (id: string) => {
@@ -58,7 +206,7 @@ export function VacationManagement() {
     setShowDetailDialog(true);
   };
 
-  const selectedRequestData = vacationRequests.find((req) => req.id === selectedRequest);
+  const selectedRequestData = vacationRequests.find((req) => req.staffId === selectedRequest);
 
   const openDeadlineDialog = () => {
     // deadline が undefined の場合はデフォルト値を使用
@@ -70,28 +218,50 @@ export function VacationManagement() {
     setShowDeadlineDialog(true);
   };
 
-  const handleSaveDeadline = () => {
-    if (!tempDeadlineDate || !tempDeadlineTime) {
-      toast.error("日付と時刻を入力してください");
-      return;
-    }
+  const { mutate: saveDeadline, isLoading: isSavingDeadline } = useMutation(
+    async () => {
+      if (!tempDeadlineDate || !tempDeadlineTime) {
+        throw new Error("日付と時刻を入力してください");
+      }
 
-    const [hours, minutes] = tempDeadlineTime.split(':');
-    const newDeadline = new Date(tempDeadlineDate);
-    newDeadline.setHours(parseInt(hours), parseInt(minutes), 59);
-    
-    setDeadline(newDeadline);
-    setShowDeadlineDialog(false);
-    
-    toast.success("締切日を更新しました", {
-      description: newDeadline.toLocaleString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-    });
+      const [hours, minutes] = tempDeadlineTime.split(':');
+      const newDeadline = new Date(tempDeadlineDate);
+      newDeadline.setHours(parseInt(hours), parseInt(minutes), 59);
+
+      if (!currentShift) {
+        throw new Error("シフトが見つかりません");
+      }
+
+      // シフトの締切日を更新
+      await trpcClient.shifts.update.mutate({
+        id: currentShift.id,
+        leaveRequestDeadline: newDeadline.toISOString(),
+      });
+
+      return newDeadline;
+    },
+    {
+      onSuccess: (newDeadline) => {
+        setShowDeadlineDialog(false);
+        refetchShift();
+        toast.success("締切日を更新しました", {
+          description: newDeadline.toLocaleString('ja-JP', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        });
+      },
+      onError: (error: Error) => {
+        toast.error(error.message || "締切日の更新に失敗しました");
+      },
+    }
+  );
+
+  const handleSaveDeadline = () => {
+    saveDeadline();
   };
 
 
@@ -109,7 +279,7 @@ export function VacationManagement() {
   );
 
   // 一括承認 - useMutationに移行
-  const { mutate: handleBulkApproval, isLoading: isApproving } = useMutation(
+  const { mutate: handleBulkApproval, isLoading: isBulkApproving } = useMutation(
     async () => {
       if (new Date() < deadline) {
         throw new Error("締切前は一括承認できません");
@@ -127,8 +297,8 @@ export function VacationManagement() {
         toast.success(`${result.approved}件の希望休を承認しました`, {
           description: `全${result.total}件中、承認待ちの${result.approved}件を承認しました`,
         });
-        // ページをリロードして最新データを取得
-        window.location.reload();
+        // データを再取得
+        refetchRequests();
       },
       onError: (error: Error) => {
         if (error.message === "締切前は一括承認できません") {
@@ -141,6 +311,34 @@ export function VacationManagement() {
       },
     }
   );
+
+  // ローディング中
+  if (isLoadingShift || isLoadingRequests || isLoadingEmployees) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="flex items-center justify-center h-64">
+            <LoadingInline message="読み込み中..." size="lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // エラー状態
+  if (isRequestsError) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="max-w-7xl mx-auto pt-20">
+          <EmptyState
+            type="network"
+            error={requestsError}
+            onRetry={refetchRequests}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -174,9 +372,9 @@ export function VacationManagement() {
               onClick={() => handleBulkApproval()}
               variant="outline"
               className="rounded-xl border-2 bg-gradient-to-br from-success/5 to-success/5 hover:from-success/10 hover:to-success/10"
-              disabled={isApproving || new Date() < deadline}
+              disabled={isBulkApproving || new Date() < deadline}
             >
-              {isApproving ? (
+              {isBulkApproving ? (
                 <LoadingInline message="承認中..." size="sm" />
               ) : (
                 <>
@@ -208,7 +406,7 @@ export function VacationManagement() {
                 </Badge>
               </h4>
               <p className="text-muted-foreground">
-                {formatDeadline()}まで
+                {formatDeadline(deadline)}まで
               </p>
             </div>
             <Button
