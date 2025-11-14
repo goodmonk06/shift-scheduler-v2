@@ -49,7 +49,15 @@ async function runMigrations() {
 
     // Close the pool
     await poolConnection.end();
-  } catch (error) {
+  } catch (error: any) {
+    // If tables already exist, just log a warning and continue
+    if (error?.cause?.code === 'ER_TABLE_EXISTS_ERROR' ||
+        error?.message?.includes('already exists')) {
+      console.warn("[Migration] ⚠ Some tables already exist, skipping migration");
+      console.warn("[Migration] This is expected if database was previously migrated");
+      return;
+    }
+
     console.error("[Migration] Failed to run migrations:", error);
     throw error;
   }
