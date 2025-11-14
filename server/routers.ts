@@ -540,17 +540,17 @@ export const appRouter = router({
         previousTimeSlotId: z.number().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
-        // Build sanitized input - set explicit null for all nullable fields
+        // Build sanitized input - convert empty strings to null
         const sanitizedInput = {
           shiftId: input.shiftId,
           employeeId: input.employeeId,
           date: input.date,
           status: input.status,
-          timeSlotId: input.timeSlotId ?? null,
-          leaveType: input.leaveType ?? null,
-          startTime: input.startTime ?? null,
-          endTime: input.endTime ?? null,
-          previousTimeSlotId: input.previousTimeSlotId ?? null,
+          timeSlotId: input.timeSlotId || null,
+          leaveType: input.leaveType || null,
+          startTime: input.startTime || null,
+          endTime: input.endTime || null,
+          previousTimeSlotId: input.previousTimeSlotId || null,
         };
 
         return await db.createShiftDetail(sanitizedInput);
@@ -569,17 +569,17 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        // Build sanitized data with explicit null for nullable fields
+        // Build sanitized data - convert empty strings to null
         const sanitizedData: any = {};
 
         if (data.date !== undefined) sanitizedData.date = data.date;
         if (data.status !== undefined) sanitizedData.status = data.status;
-        if (data.timeSlotId !== undefined) sanitizedData.timeSlotId = data.timeSlotId ?? null;
-        if (data.leaveType !== undefined) sanitizedData.leaveType = data.leaveType ?? null;
-        if (data.startTime !== undefined) sanitizedData.startTime = data.startTime ?? null;
-        if (data.endTime !== undefined) sanitizedData.endTime = data.endTime ?? null;
+        if (data.timeSlotId !== undefined) sanitizedData.timeSlotId = data.timeSlotId || null;
+        if (data.leaveType !== undefined) sanitizedData.leaveType = data.leaveType || null;
+        if (data.startTime !== undefined) sanitizedData.startTime = data.startTime || null;
+        if (data.endTime !== undefined) sanitizedData.endTime = data.endTime || null;
         if (data.isChanged !== undefined) sanitizedData.isChanged = data.isChanged;
-        if (data.previousTimeSlotId !== undefined) sanitizedData.previousTimeSlotId = data.previousTimeSlotId ?? null;
+        if (data.previousTimeSlotId !== undefined) sanitizedData.previousTimeSlotId = data.previousTimeSlotId || null;
 
         return await db.updateShiftDetail(id, sanitizedData);
       }),
