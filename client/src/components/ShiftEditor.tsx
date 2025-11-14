@@ -165,6 +165,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
             timeSlotId: detail.timeSlotId?.toString() || null,
             timeSlotName: detail.timeSlotId ? "勤務" : null, // TODO: 実際の時間枠名を取得
             isVacationRequest: detail.status === "requested_off",
+            shiftDetailId: detail.id, // Include the ID for editing
           };
         });
         setAssignments(formattedAssignments);
@@ -728,7 +729,7 @@ ${aiConfig.customInstructions || "なし"}
             viewMonth={viewMonth}
             assignments={assignments}
             employees={employees}
-            readOnly={currentShift.status === "ai_generated"}
+            shiftId={shiftId}
           />
         )}
       </div>

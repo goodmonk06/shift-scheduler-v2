@@ -179,6 +179,9 @@ export const shiftDetails = mysqlTable("shiftDetails", {
   date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
   status: mysqlEnum("status", ["working", "off", "requested_off", "emergency_off"]).notNull(),
   timeSlotId: int("timeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
+  leaveType: mysqlEnum("leaveType", ["休", "有休", "時間指定"]), // 休みの種類（勤務日はnull）
+  startTime: varchar("startTime", { length: 5 }), // HH:MM format (時間指定の場合のみ)
+  endTime: varchar("endTime", { length: 5 }), // HH:MM format (時間指定の場合のみ)
   generatedBy: mysqlEnum("generatedBy", ["manual", "ai", "leave_request"]).default("manual").notNull(), // Track if shift was manually created, AI-generated, or from leave request
   isChanged: boolean("isChanged").default(false).notNull(),
   previousTimeSlotId: int("previousTimeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable

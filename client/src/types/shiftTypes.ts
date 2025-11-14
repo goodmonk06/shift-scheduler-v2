@@ -19,6 +19,7 @@ export interface ShiftAssignment {
   isVacationRequest: boolean;
   hasWarning?: boolean;
   warningMessage?: string;
+  shiftDetailId?: number; // ID of the shift detail record for editing
 }
 
 export interface AIGenerationConfig {

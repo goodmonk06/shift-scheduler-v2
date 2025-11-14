@@ -544,9 +544,12 @@ export const appRouter = router({
         id: z.number(),
         date: z.string().optional(),
         status: z.enum(["working", "off", "requested_off", "emergency_off"]).optional(),
-        timeSlotId: z.number().optional(),
+        timeSlotId: z.number().nullable().optional(),
+        leaveType: z.enum(["休", "有休", "時間指定"]).nullable().optional(),
+        startTime: z.string().nullable().optional(), // HH:MM format
+        endTime: z.string().nullable().optional(), // HH:MM format
         isChanged: z.boolean().optional(),
-        previousTimeSlotId: z.number().optional(),
+        previousTimeSlotId: z.number().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;

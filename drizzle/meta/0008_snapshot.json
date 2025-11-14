@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "1954f570-d8d1-47c5-bce1-1216fdac76d4",
+  "id": "3603e2ac-09ff-4cbd-a160-b56185be6f24",
   "prevId": "e1cfbbc8-1f98-4f3d-98c3-e369c63a277d",
   "tables": {
     "auditLogs": {
@@ -1106,6 +1106,27 @@
         "timeSlotId": {
           "name": "timeSlotId",
           "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "leaveType": {
+          "name": "leaveType",
+          "type": "enum('休','有休','時間指定')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "startTime": {
+          "name": "startTime",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "endTime": {
+          "name": "endTime",
+          "type": "varchar(5)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
