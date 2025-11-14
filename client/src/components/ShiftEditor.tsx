@@ -154,6 +154,14 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         shiftId: Number(shiftId)
       });
 
+      // 承認済み希望休を取得
+      const leaveRequests = await trpcClient.leaveRequests.getByShift.query({
+        shiftId: Number(shiftId)
+      });
+
+      // 承認済み希望休をフィルタリング
+      const approvedLeaveRequests = leaveRequests.filter(req => req.status === 'approved');
+
       // シフト詳細をShiftAssignment形式に変換
       const formattedAssignments: ShiftAssignment[] = shiftDetails.map(detail => {
         const employee = employeesData.find(emp => emp.id === detail.employeeId);
@@ -185,7 +193,44 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           employeeDbId: detail.employeeId, // Database numeric ID
         };
       });
-      setAssignments(formattedAssignments);
+
+      // 承認済み希望休をShiftAssignment形式に変換して追加
+      const leaveRequestAssignments: ShiftAssignment[] = [];
+
+      for (const request of approvedLeaveRequests) {
+        const employee = employeesData.find(emp => emp.id === request.employeeId);
+
+        // startDateからendDateまでの各日付に対してassignmentを作成
+        const startDate = new Date(request.startDate);
+        const endDate = new Date(request.endDate);
+
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+
+          // 既にshiftDetailsに存在する日付はスキップ
+          const existsInShiftDetails = formattedAssignments.some(
+            a => a.date === dateStr && a.employeeDbId === request.employeeId
+          );
+
+          if (!existsInShiftDetails) {
+            leaveRequestAssignments.push({
+              date: dateStr,
+              employeeId: employee?.employeeId || String(request.employeeId),
+              employeeName: employee?.name || "不明",
+              positionGroup: "fulltime",
+              timeSlotId: null,
+              timeSlotName: request.leaveType || "休",
+              isVacationRequest: true,
+              shiftDetailId: undefined,
+              employeeDbId: request.employeeId,
+            });
+          }
+        }
+      }
+
+      // shiftDetailsとleaveRequestsを統合
+      const allAssignments = [...formattedAssignments, ...leaveRequestAssignments];
+      setAssignments(allAssignments);
 
     } catch (error) {
       console.error('[ShiftEditor] Failed to load data:', error);
