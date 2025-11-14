@@ -31,7 +31,7 @@ export function StaffTable({ employees, onViewDetail, onEdit, onDeleteClick }: S
                 <TableCell>
                   <div className="space-y-1">
                     <div>{employee.name}</div>
-                    <div className="text-xs text-muted-foreground">{employee.id}</div>
+                    <div className="text-xs text-muted-foreground">ID: {employee.employeeId || '未設定'}</div>
                   </div>
                 </TableCell>
                 <TableCell>

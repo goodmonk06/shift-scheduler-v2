@@ -40,9 +40,8 @@ export function StaffManagement() {
         positionGroupName: emp.positionGroup?.name || "",
         skillLevel: emp.skillLevel || 100,
         canWorkNight: emp.canWorkNightShift || false,
-        minDaysOffPerWeek: 2,
-        maxConsecutiveWorkDays: 5,
-        additionalConstraints: "",
+        workableDays: emp.workableDays || [],
+        additionalConstraints: emp.additionalConstraints || "",
         createdAt: emp.createdAt,
         updatedAt: emp.updatedAt,
       }));
@@ -86,8 +85,7 @@ export function StaffManagement() {
       positionGroupId: employee.positionGroupId,
       skillLevel: employee.skillLevel,
       canWorkNight: employee.canWorkNight,
-      minDaysOffPerWeek: employee.minDaysOffPerWeek || 2,
-      maxConsecutiveWorkDays: employee.maxConsecutiveWorkDays || 5,
+      workableDays: employee.workableDays || [],
       additionalConstraints: employee.additionalConstraints || "",
     });
     setIsDialogOpen(true);

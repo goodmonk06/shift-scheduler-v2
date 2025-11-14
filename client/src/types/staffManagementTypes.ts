@@ -1,3 +1,9 @@
+export interface WorkableDay {
+  dayOfWeek: number; // 0=日曜, 1=月曜, ..., 6=土曜
+  startTime: string; // "09:00"
+  endTime: string; // "17:00"
+}
+
 export interface Employee {
   id: string;
   employeeId?: string; // ログイン用ID (1-4桁)
@@ -6,9 +12,8 @@ export interface Employee {
   positionGroupName: string; // 表示用
   skillLevel: number; // 50-100
   canWorkNight: boolean;
-  // AI生成用の制約条件
-  minDaysOffPerWeek?: number;
-  maxConsecutiveWorkDays?: number;
+  // 勤務可能曜日と時間帯
+  workableDays?: WorkableDay[];
   additionalConstraints?: string;
   createdAt: string;
   updatedAt: string;
@@ -25,8 +30,7 @@ export interface EmployeeFormData {
   positionGroupId: string;
   skillLevel: number;
   canWorkNight: boolean;
-  minDaysOffPerWeek: number;
-  maxConsecutiveWorkDays: number;
+  workableDays: WorkableDay[];
   additionalConstraints: string;
 }
 

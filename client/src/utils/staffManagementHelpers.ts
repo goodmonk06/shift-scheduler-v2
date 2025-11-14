@@ -19,8 +19,7 @@ export const getInitialFormData = (): EmployeeFormData => ({
   positionGroupId: "1",
   skillLevel: 100,
   canWorkNight: false,
-  minDaysOffPerWeek: 2,
-  maxConsecutiveWorkDays: 5,
+  workableDays: [],
   additionalConstraints: "",
 });
 
