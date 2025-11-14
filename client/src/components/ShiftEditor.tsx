@@ -95,7 +95,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     };
 
     loadShiftData();
-  }, [shiftId, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shiftId]);
 
   // AI生成設定
   const [aiConfig, setAiConfig] = useState<AIGenerationConfig>({
@@ -173,7 +174,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     };
 
     loadData();
-  }, [shiftId, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shiftId]);
 
   // 統計情報（動的に計算）
   const calculateStats = () => {
