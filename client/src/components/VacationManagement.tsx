@@ -60,7 +60,7 @@ export function VacationManagement() {
     ? new Date(currentShift.leaveRequestDeadline)
     : new Date(nextMonthYear, nextMonthNum - 1, 20, 23, 59);
 
-  // 希望休データを取得
+  // 希望休データを取得 - 全データを取得して12月でフィルタ
   const {
     data: leaveRequestsData,
     isLoading: isLoadingRequests,
@@ -69,12 +69,17 @@ export function VacationManagement() {
     refetch: refetchRequests,
   } = useAsync(
     async () => {
-      if (!currentShift) return [];
-      return await leaveRequestService.getByShift(currentShift.id);
+      // 全ての希望休を取得
+      const allRequests = await leaveRequestService.getAll();
+      // 12月のデータのみフィルタ
+      return allRequests.filter(req => {
+        const date = new Date(req.startDate);
+        return date.getFullYear() === nextMonthYear && (date.getMonth() + 1) === nextMonthNum;
+      });
     },
     {
       onError: () => toast.error("希望休データの取得に失敗しました"),
-      deps: [currentShift?.id],
+      deps: [],
     }
   );
 
