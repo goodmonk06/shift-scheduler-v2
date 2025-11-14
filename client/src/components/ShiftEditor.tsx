@@ -53,6 +53,10 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
   const [viewMonth, setViewMonth] = useState(currentMonth);
   const [isLoadingShift, setIsLoadingShift] = useState(false);
 
+  // Phase management - store all shifts for the same month
+  const [monthShifts, setMonthShifts] = useState<Record<string, ShiftData>>({});
+  const [selectedPhase, setSelectedPhase] = useState<ShiftStatus>("draft");
+
   // shiftIdが渡された場合、実際のシフトデータを取得
   useEffect(() => {
     const loadShiftData = async () => {
@@ -310,7 +314,7 @@ ${aiConfig.customInstructions || "なし"}
 
   // AI自動生成を実行 - useMutationに移行
   const { mutate: generateAI, isLoading: isGeneratingAI } = useMutation(
-    async () => {
+    async (prompt?: string) => {
       if (!shiftId) {
         throw new Error("シフトIDが指定されていません");
       }
@@ -320,15 +324,23 @@ ${aiConfig.customInstructions || "なし"}
         throw new Error("無効なシフトIDです");
       }
 
-      await trpcClient.shifts.generateAI.mutate({ shiftId: numericShiftId });
+      const result = await trpcClient.shifts.generateAI.mutate({
+        shiftId: numericShiftId,
+        prompt,
+      });
+      return result;
     },
     {
-      onSuccess: () => {
+      onSuccess: (result) => {
         toast.success("AI生成が完了しました", {
-          description: "シフトを確認してください",
+          description: "AI生成シフトを確認してください",
         });
-        // ページをリロードして最新データを取得
-        window.location.reload();
+        // Navigate to the new AI-generated shift
+        if (result.newShiftId) {
+          window.location.href = `/shifts/${result.newShiftId}`;
+        } else {
+          window.location.reload();
+        }
       },
       onError: (error: Error) => {
         toast.error("AI生成に失敗しました", {
@@ -346,6 +358,46 @@ ${aiConfig.customInstructions || "なし"}
     });
     generateAI();
   };
+
+  // Phase transition mutation
+  const { mutate: transitionPhase, isLoading: isTransitioning } = useMutation(
+    async (targetStatus: "tentative" | "tentative_revised" | "confirmed" | "actual") => {
+      if (!shiftId) {
+        throw new Error("シフトIDが指定されていません");
+      }
+
+      const numericShiftId = parseInt(shiftId);
+      if (isNaN(numericShiftId)) {
+        throw new Error("無効なシフトIDです");
+      }
+
+      const result = await trpcClient.shifts.transitionPhase.mutate({
+        sourceShiftId: numericShiftId,
+        targetStatus,
+      });
+      return result;
+    },
+    {
+      onSuccess: (result, targetStatus) => {
+        const statusLabels: Record<string, string> = {
+          tentative: "仮確定",
+          tentative_revised: "仮確定改",
+          confirmed: "最終確定",
+          actual: "実績",
+        };
+        toast.success(`${statusLabels[targetStatus]}シフトを作成しました`);
+        // Navigate to the new shift
+        if (result.newShiftId) {
+          window.location.href = `/shifts/${result.newShiftId}`;
+        }
+      },
+      onError: (error: Error) => {
+        toast.error("フェーズ遷移に失敗しました", {
+          description: error.message,
+        });
+      },
+    }
+  );
 
   const handleExportPDF = () => {
     toast.info("PDF出力機能（実装予定）");
@@ -413,14 +465,35 @@ ${aiConfig.customInstructions || "なし"}
             </div>
           </div>
           <div className="flex gap-2">
+            {currentShift.status === "ai_generated" && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                <Info className="w-3 h-3 mr-1" />
+                読み取り専用
+              </Badge>
+            )}
+            {currentShift.status === "draft" && (
+              <Button
+                onClick={handleOpenAIPrompt}
+                disabled={isGeneratingAI}
+                className="rounded-xl bg-purple-600 hover:bg-purple-700"
+              >
+                {isGeneratingAI ? (
+                  <><LoadingInline /> AI生成中...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4 mr-2" /> AI生成</>
+                )}
+              </Button>
+            )}
             <Button variant="outline" onClick={handleExportPDF} className="rounded-xl">
               <FileDown className="w-4 h-4 mr-2" />
               PDF出力
             </Button>
-            <Button variant="outline" onClick={handleSave} className="rounded-xl">
-              <Save className="w-4 h-4 mr-2" />
-              保存
-            </Button>
+            {currentShift.status !== "ai_generated" && (
+              <Button variant="outline" onClick={handleSave} className="rounded-xl">
+                <Save className="w-4 h-4 mr-2" />
+                保存
+              </Button>
+            )}
           </div>
         </div>
 
@@ -462,6 +535,74 @@ ${aiConfig.customInstructions || "なし"}
             <p className="text-2xl text-red-700">{stats.warnings}件</p>
           </Card>
         </div>
+
+        {/* Phase Transition Actions */}
+        {currentShift.status !== "draft" && currentShift.status !== "archived" && (
+          <Card className="p-4 rounded-2xl border-blue-200 bg-blue-50/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-blue-600" />
+                <div>
+                  <h3 className="text-sm text-gray-900">次のフェーズへ進む</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {currentShift.status === "ai_generated" && "仮確定シフトを作成して編集を開始します"}
+                    {currentShift.status === "tentative" && "スタッフの要望を反映した仮確定改、または最終確定シフトを作成します"}
+                    {currentShift.status === "tentative_revised" && "最終確定シフトを作成します"}
+                    {currentShift.status === "confirmed" && "実績シフトを作成します"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {currentShift.status === "ai_generated" && (
+                  <Button
+                    onClick={() => transitionPhase("tentative")}
+                    disabled={isTransitioning}
+                    className="rounded-xl bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isTransitioning ? <LoadingInline /> : "仮確定へ進む"}
+                  </Button>
+                )}
+                {currentShift.status === "tentative" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => transitionPhase("tentative_revised")}
+                      disabled={isTransitioning}
+                      className="rounded-xl"
+                    >
+                      {isTransitioning ? <LoadingInline /> : "仮確定改を作成"}
+                    </Button>
+                    <Button
+                      onClick={() => transitionPhase("confirmed")}
+                      disabled={isTransitioning}
+                      className="rounded-xl bg-green-600 hover:bg-green-700"
+                    >
+                      {isTransitioning ? <LoadingInline /> : "最終確定へ進む"}
+                    </Button>
+                  </>
+                )}
+                {currentShift.status === "tentative_revised" && (
+                  <Button
+                    onClick={() => transitionPhase("confirmed")}
+                    disabled={isTransitioning}
+                    className="rounded-xl bg-green-600 hover:bg-green-700"
+                  >
+                    {isTransitioning ? <LoadingInline /> : "最終確定へ進む"}
+                  </Button>
+                )}
+                {currentShift.status === "confirmed" && (
+                  <Button
+                    onClick={() => transitionPhase("actual")}
+                    disabled={isTransitioning}
+                    className="rounded-xl bg-amber-600 hover:bg-amber-700"
+                  >
+                    {isTransitioning ? <LoadingInline /> : "実績シフトを作成"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* シフト生成フロー */}
         <Card className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/5 to-pink-500/5">
@@ -575,9 +716,20 @@ ${aiConfig.customInstructions || "なし"}
 
         {/* シフト表示 */}
         {viewMode === "calendar" ? (
-          <ShiftCalendarView viewYear={viewYear} viewMonth={viewMonth} assignments={assignments} />
+          <ShiftCalendarView
+            viewYear={viewYear}
+            viewMonth={viewMonth}
+            assignments={assignments}
+            readOnly={currentShift.status === "ai_generated"}
+          />
         ) : (
-          <ShiftTableView viewYear={viewYear} viewMonth={viewMonth} assignments={assignments} employees={employees} />
+          <ShiftTableView
+            viewYear={viewYear}
+            viewMonth={viewMonth}
+            assignments={assignments}
+            employees={employees}
+            readOnly={currentShift.status === "ai_generated"}
+          />
         )}
       </div>
 

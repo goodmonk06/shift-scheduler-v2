@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "f0d096ee-814b-43c9-9cf8-f946c2793f46",
+  "id": "1954f570-d8d1-47c5-bce1-1216fdac76d4",
   "prevId": "e1cfbbc8-1f98-4f3d-98c3-e369c63a277d",
   "tables": {
     "auditLogs": {
@@ -901,6 +901,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "staffingDetails": {
+          "name": "staffingDetails",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
@@ -1329,6 +1336,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "parentShiftId": {
+          "name": "parentShiftId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "year": {
           "name": "year",
           "type": "int",
@@ -1352,7 +1366,7 @@
         },
         "status": {
           "name": "status",
-          "type": "enum('draft','tentative','tentative_revised','confirmed','actual','archived')",
+          "type": "enum('draft','ai_generated','tentative','tentative_revised','confirmed','actual','archived')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1454,6 +1468,19 @@
             "id"
           ],
           "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "shifts_parentShiftId_shifts_id_fk": {
+          "name": "shifts_parentShiftId_shifts_id_fk",
+          "tableFrom": "shifts",
+          "tableTo": "shifts",
+          "columnsFrom": [
+            "parentShiftId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

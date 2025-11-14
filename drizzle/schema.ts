@@ -148,10 +148,11 @@ export type InsertRequiredStaffing = typeof requiredStaffing.$inferInsert;
 export const shifts = mysqlTable("shifts", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").references(() => users.id, { onDelete: 'restrict' }), // FK to users - creator (nullable)
+  parentShiftId: int("parentShiftId").references(() => shifts.id, { onDelete: 'set null' }), // 親シフトID（どのシフトから派生したか）
   year: int("year").notNull(),
   month: int("month").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
-  status: mysqlEnum("status", ["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).default("draft").notNull(), // 6段階ステータス
+  status: mysqlEnum("status", ["draft", "ai_generated", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).default("draft").notNull(), // 7段階ステータス
   generatedBy: mysqlEnum("generatedBy", ["manual", "ai"]).default("manual").notNull(),
   leaveRequestDeadline: timestamp("leaveRequestDeadline"), // 通常の希望休締め切り
   additionalRequestDeadline: timestamp("additionalRequestDeadline"), // 追加希望締め切り（仮確定後）

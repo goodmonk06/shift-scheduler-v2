@@ -2,7 +2,7 @@
   "version": "5",
   "dialect": "mysql",
   "id": "e2810db8-8754-4881-b233-47995bde8bfd",
-  "prevId": "e1cfbbc8-1f98-4f3d-98c3-e369c63a277d",
+  "prevId": "f0d096ee-814b-43c9-9cf8-f946c2793f46",
   "tables": {
     "auditLogs": {
       "name": "auditLogs",

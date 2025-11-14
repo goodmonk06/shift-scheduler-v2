@@ -1,1 +1,0 @@
-ALTER TABLE `employees` MODIFY COLUMN `additionalConstraints` json;

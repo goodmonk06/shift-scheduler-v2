@@ -57,20 +57,6 @@
       "when": 1763144116868,
       "tag": "0015_flashy_zodiak",
       "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1763145867863,
-      "tag": "0008_brief_phalanx",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1763147835835,
-      "tag": "0009_lean_mentallo",
-      "breakpoints": true
     }
   ]
 }

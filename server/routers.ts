@@ -280,8 +280,9 @@ export const appRouter = router({
         year: z.number(),
         month: z.number(),
         name: z.string(),
-        status: z.enum(["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
+        status: z.enum(["draft", "ai_generated", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
         generatedBy: z.enum(["manual", "ai"]).optional(),
+        parentShiftId: z.number().optional(), // 親シフトID
         leaveRequestDeadline: z.string().optional(), // ISO文字列として受け取る
         additionalRequestDeadline: z.string().optional(), // ISO文字列として受け取る
       }))
@@ -307,7 +308,8 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         name: z.string().optional(),
-        status: z.enum(["draft", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
+        status: z.enum(["draft", "ai_generated", "tentative", "tentative_revised", "confirmed", "actual", "archived"]).optional(),
+        parentShiftId: z.number().optional(), // 親シフトID
         leaveRequestDeadline: z.string().optional(), // ISO文字列
         additionalRequestDeadline: z.string().optional(), // ISO文字列
         tentativePublishedAt: z.string().optional(), // ISO文字列
@@ -334,7 +336,8 @@ export const appRouter = router({
 
           // ステータス遷移ルール
           const allowedTransitions: Record<string, string[]> = {
-            'draft': ['tentative'],
+            'draft': ['ai_generated'], // AI生成へ
+            'ai_generated': ['tentative'], // 仮確定へ
             'tentative': ['tentative_revised', 'confirmed'],
             'tentative_revised': ['confirmed'],
             'confirmed': ['actual'],
@@ -386,16 +389,109 @@ export const appRouter = router({
         });
       }),
     generateAI: protectedProcedure
-      .input(z.object({ shiftId: z.number() }))
-      .mutation(async ({ input }) => {
-        const shift = await db.getShiftById(input.shiftId);
-        if (!shift) throw new Error("Shift not found");
-        await generateShiftWithAI({
-          shiftId: input.shiftId,
-          year: shift.year,
-          month: shift.month,
+      .input(z.object({
+        shiftId: z.number(),
+        prompt: z.string().optional(), // Optional custom prompt for AI
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const draftShift = await db.getShiftById(input.shiftId);
+        if (!draftShift) throw new Error("Shift not found");
+
+        // Verify the source shift is in draft status
+        if (draftShift.status !== "draft") {
+          throw new Error("AI generation can only be run on draft shifts");
+        }
+
+        // Create a new shift record with ai_generated status
+        const aiShift = await db.createShift({
+          year: draftShift.year,
+          month: draftShift.month,
+          name: `${draftShift.name} (AI生成)`,
+          status: "ai_generated",
+          generatedBy: "ai",
+          parentShiftId: draftShift.id,
+          leaveRequestDeadline: draftShift.leaveRequestDeadline,
+          additionalRequestDeadline: draftShift.additionalRequestDeadline,
+          userId: ctx.user?.id || null,
         });
-        return { success: true };
+
+        // Run AI generation on the new shift
+        await generateShiftWithAI({
+          shiftId: aiShift.id,
+          year: aiShift.year,
+          month: aiShift.month,
+        });
+
+        return {
+          success: true,
+          newShiftId: aiShift.id,
+        };
+      }),
+    transitionPhase: protectedProcedure
+      .input(z.object({
+        sourceShiftId: z.number(),
+        targetStatus: z.enum(["tentative", "tentative_revised", "confirmed", "actual"]),
+        name: z.string().optional(), // Custom name for the new phase
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const sourceShift = await db.getShiftById(input.sourceShiftId);
+        if (!sourceShift) throw new Error("Source shift not found");
+
+        // Validate status transition
+        const allowedTransitions: Record<string, string[]> = {
+          'ai_generated': ['tentative'],
+          'tentative': ['tentative_revised', 'confirmed'],
+          'tentative_revised': ['confirmed'],
+          'confirmed': ['actual'],
+        };
+
+        const allowed = allowedTransitions[sourceShift.status] || [];
+        if (!allowed.includes(input.targetStatus)) {
+          throw new Error(
+            `Invalid transition: ${sourceShift.status} → ${input.targetStatus}`
+          );
+        }
+
+        // Determine the new shift name
+        const statusNameMap: Record<string, string> = {
+          'tentative': '仮確定',
+          'tentative_revised': '仮確定改',
+          'confirmed': '最終',
+          'actual': '実績',
+        };
+        const defaultName = `${sourceShift.year}年${sourceShift.month}月シフト (${statusNameMap[input.targetStatus]})`;
+
+        // Create new shift record with the target status
+        const newShift = await db.createShift({
+          year: sourceShift.year,
+          month: sourceShift.month,
+          name: input.name || defaultName,
+          status: input.targetStatus,
+          generatedBy: sourceShift.generatedBy || "manual",
+          parentShiftId: sourceShift.id,
+          leaveRequestDeadline: sourceShift.leaveRequestDeadline,
+          additionalRequestDeadline: sourceShift.additionalRequestDeadline,
+          userId: ctx.user?.id || null,
+        });
+
+        // Copy all shift details from source to new shift
+        const sourceDetails = await db.getShiftDetails(input.sourceShiftId);
+        for (const detail of sourceDetails) {
+          await db.createShiftDetail({
+            shiftId: newShift.id,
+            employeeId: detail.employeeId,
+            date: detail.date,
+            workTimeSlotId: detail.workTimeSlotId,
+            isLeave: detail.isLeave,
+            leaveType: detail.leaveType,
+            notes: detail.notes,
+          });
+        }
+
+        return {
+          success: true,
+          newShiftId: newShift.id,
+        };
       }),
     exportPDF: protectedProcedure
       .input(z.object({ shiftId: z.number() }))
