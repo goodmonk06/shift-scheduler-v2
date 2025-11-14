@@ -21,6 +21,10 @@ export function VacationCalendar({
     ? nextMonth.toLocaleDateString("ja-JP", { month: "long" })
     : "";
 
+  // デバッグ用
+  console.log('[VacationCalendar] Props:', { year, month, monthDays: monthDays?.length, requestsSize: requests?.size });
+  console.log('[VacationCalendar] Calculated:', { nextMonthYear, nextMonthNum, nextMonthName });
+
   // 祝日データを取得
   const holidays = getHolidaysForMonth(nextMonthYear, nextMonthNum);
   const holidaySet = new Set(holidays.map(h => h.day));

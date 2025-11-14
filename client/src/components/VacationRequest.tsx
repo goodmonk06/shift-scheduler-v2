@@ -382,6 +382,8 @@ export function VacationRequest({
 
     // 編集中のリクエストを優先
     const editingRequest = requests.get(dateKey);
+    console.log('[createGetRequestBadge]', { dateKey, editingRequest: editingRequest ? 'exists' : 'null/undefined' });
+
     if (editingRequest === null) {
       // 削除マーカー
       return null;
@@ -389,13 +391,16 @@ export function VacationRequest({
 
     if (editingRequest) {
       // 編集中（未送信）
-      const timeText = editingRequest.type === "時間指定" && editingRequest.startTime && editingRequest.endTime
+      const reqType = String(editingRequest.type || '');
+      const timeText = reqType === "時間指定" && editingRequest.startTime && editingRequest.endTime
         ? `${String(editingRequest.startTime)}\n〜${String(editingRequest.endTime)}`
         : "";
       const isMultiLine = timeText.includes("\n");
-      const emoji = editingRequest.type === "休" ? "🌸" : editingRequest.type === "有休" ? "💐" : "⏰";
-      const text = editingRequest.type === "時間指定" ? timeText : String(editingRequest.type);
+      const emoji = reqType === "休" ? "🌸" : reqType === "有休" ? "💐" : "⏰";
+      const text = reqType === "時間指定" ? timeText : reqType;
       const color = "bg-warning";
+
+      console.log('[Badge editingRequest]', { emoji: typeof emoji, text: typeof text, emoji, text });
 
       return (
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
@@ -418,12 +423,15 @@ export function VacationRequest({
     });
 
     if (existingRequest) {
-      const timeText = existingRequest.leaveType === "時間指定" && existingRequest.startTime && existingRequest.endTime
+      const reqType = String(existingRequest.leaveType || '');
+      const timeText = reqType === "時間指定" && existingRequest.startTime && existingRequest.endTime
         ? `${String(existingRequest.startTime)}\n〜${String(existingRequest.endTime)}`
         : "";
       const isMultiLine = timeText.includes("\n");
-      const emoji = existingRequest.leaveType === "休" ? "🌸" : existingRequest.leaveType === "有休" ? "💐" : "⏰";
-      const text = existingRequest.leaveType === "時間指定" ? timeText : String(existingRequest.leaveType);
+      const emoji = reqType === "休" ? "🌸" : reqType === "有休" ? "💐" : "⏰";
+      const text = reqType === "時間指定" ? timeText : reqType;
+
+      console.log('[Badge existingRequest]', { emoji: typeof emoji, text: typeof text, emoji, text, status: existingRequest.status });
 
       // ステータスに応じた色
       const color = existingRequest.status === "approved"
