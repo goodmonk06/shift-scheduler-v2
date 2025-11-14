@@ -276,7 +276,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     } finally {
       setIsLoadingData(false);
     }
-  }, [shiftId, viewYear, viewMonth, toast]);
+  }, [shiftId, viewYear, viewMonth]);
 
   useEffect(() => {
     loadData();
