@@ -26,9 +26,10 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Register Service Worker -->
+    <!-- Register Service Worker (disabled in development) -->
     <script>
-      if ('serviceWorker' in navigator) {
+      // Only register service worker in production (when location is not localhost)
+      if ('serviceWorker' in navigator && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js')
             .then(registration => console.log('SW registered:', registration))

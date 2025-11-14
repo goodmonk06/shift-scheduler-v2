@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sparkles, Save, FileDown, AlertCircle,
   ChevronLeft, ChevronRight, Settings, MessageSquare,
@@ -27,6 +27,7 @@ import { useToast } from "../hooks/useToast";
 import { LoadingInline } from "./ui/loading-spinner";
 import { trpcClient } from "../lib/trpc";
 import { useMutation } from "../hooks/useAsync";
+import { shiftService } from "../services/shiftService";
 
 interface ShiftEditorProps {
   shiftId?: string;
@@ -50,6 +51,51 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
   const [viewMode, setViewMode] = useState<"calendar" | "table">("table");
   const [viewYear, setViewYear] = useState(currentYear);
   const [viewMonth, setViewMonth] = useState(currentMonth);
+  const [isLoadingShift, setIsLoadingShift] = useState(false);
+
+  // shiftIdが渡された場合、実際のシフトデータを取得
+  useEffect(() => {
+    const loadShiftData = async () => {
+      console.log('[ShiftEditor] shiftId:', shiftId);
+      if (shiftId) {
+        try {
+          setIsLoadingShift(true);
+          console.log('[ShiftEditor] Fetching shift data for ID:', shiftId);
+          const shiftData = await shiftService.getShiftById(Number(shiftId));
+          console.log('[ShiftEditor] Fetched shift data:', shiftData);
+          if (shiftData) {
+            // シフトデータを設定
+            const newShift = {
+              id: shiftData.id.toString(),
+              year: shiftData.year,
+              month: shiftData.month,
+              status: shiftData.status as ShiftStatus,
+              createdAt: shiftData.createdAt.toString(),
+              updatedAt: shiftData.updatedAt.toString(),
+            };
+            console.log('[ShiftEditor] Setting currentShift:', newShift);
+            setCurrentShift(newShift);
+            // 表示年月も更新
+            console.log('[ShiftEditor] Setting viewYear/viewMonth:', shiftData.year, shiftData.month);
+            setViewYear(shiftData.year);
+            setViewMonth(shiftData.month);
+          } else {
+            console.warn('[ShiftEditor] Shift not found');
+            toast.error("シフトが見つかりませんでした");
+          }
+        } catch (error) {
+          console.error('[ShiftEditor] Failed to load shift data:', error);
+          toast.error("シフトの読み込みに失敗しました");
+        } finally {
+          setIsLoadingShift(false);
+        }
+      } else {
+        console.log('[ShiftEditor] No shiftId provided, using default values');
+      }
+    };
+
+    loadShiftData();
+  }, [shiftId, toast]);
 
   // AI生成設定
   const [aiConfig, setAiConfig] = useState<AIGenerationConfig>({
@@ -86,122 +132,134 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     { id: "EMP005", name: "高橋 健太" },
   ];
 
-  // シフト割り当てデータ（モック）
-  const [assignments, setAssignments] = useState<ShiftAssignment[]>([
-    // 希望休
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-10`,
-      employeeId: "EMP001",
-      employeeName: "山田 太郎",
-      positionGroup: "fulltime",
-      timeSlotId: null,
-      timeSlotName: null,
-      isVacationRequest: true,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-15`,
-      employeeId: "EMP002",
-      employeeName: "佐藤 花子",
-      positionGroup: "fulltime",
-      timeSlotId: null,
-      timeSlotName: null,
-      isVacationRequest: true,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-20`,
-      employeeId: "EMP003",
-      employeeName: "鈴木 一郎",
-      positionGroup: "parttime",
-      timeSlotId: null,
-      timeSlotName: null,
-      isVacationRequest: true,
-    },
-    // 通常勤務
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
-      employeeId: "EMP001",
-      employeeName: "山田 太郎",
-      positionGroup: "fulltime",
-      timeSlotId: "TS001",
-      timeSlotName: "早番",
-      isVacationRequest: false,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
-      employeeId: "EMP002",
-      employeeName: "佐藤 花子",
-      positionGroup: "fulltime",
-      timeSlotId: "TS002",
-      timeSlotName: "遅番",
-      isVacationRequest: false,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
-      employeeId: "EMP004",
-      employeeName: "田中 美咲",
-      positionGroup: "parttime",
-      timeSlotId: "TS003",
-      timeSlotName: "夜勤",
-      isVacationRequest: false,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-02`,
-      employeeId: "EMP001",
-      employeeName: "山田 太郎",
-      positionGroup: "fulltime",
-      timeSlotId: "TS001",
-      timeSlotName: "早番",
-      isVacationRequest: false,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-02`,
-      employeeId: "EMP003",
-      employeeName: "鈴木 一郎",
-      positionGroup: "parttime",
-      timeSlotId: "TS002",
-      timeSlotName: "遅番",
-      isVacationRequest: false,
-      hasWarning: true,
-      warningMessage: "スキルレベル80%の職員が配置されています",
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-03`,
-      employeeId: "EMP002",
-      employeeName: "佐藤 花子",
-      positionGroup: "fulltime",
-      timeSlotId: "TS001",
-      timeSlotName: "早番",
-      isVacationRequest: false,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-03`,
-      employeeId: "EMP005",
-      employeeName: "高橋 健太",
-      positionGroup: "parttime",
-      timeSlotId: "TS003",
-      timeSlotName: "夜勤",
-      isVacationRequest: false,
-    },
-    // 休み
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
-      employeeId: "EMP003",
-      employeeName: "鈴木 一郎",
-      positionGroup: "parttime",
-      timeSlotId: null,
-      timeSlotName: null,
-      isVacationRequest: false,
-    },
-    {
-      date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`,
-      employeeId: "EMP005",
-      employeeName: "高橋 健太",
-      positionGroup: "parttime",
-      timeSlotId: null,
-      timeSlotName: null,
-      isVacationRequest: false,
-    },
-  ]);
+  // シフト割り当てデータ（モック）を生成する関数
+  const generateMockAssignments = (year: number, month: number): ShiftAssignment[] => {
+    const yearMonthStr = `${year}-${String(month).padStart(2, "0")}`;
+    return [
+      // 希望休
+      {
+        date: `${yearMonthStr}-10`,
+        employeeId: "EMP001",
+        employeeName: "山田 太郎",
+        positionGroup: "fulltime",
+        timeSlotId: null,
+        timeSlotName: null,
+        isVacationRequest: true,
+      },
+      {
+        date: `${yearMonthStr}-15`,
+        employeeId: "EMP002",
+        employeeName: "佐藤 花子",
+        positionGroup: "fulltime",
+        timeSlotId: null,
+        timeSlotName: null,
+        isVacationRequest: true,
+      },
+      {
+        date: `${yearMonthStr}-20`,
+        employeeId: "EMP003",
+        employeeName: "鈴木 一郎",
+        positionGroup: "parttime",
+        timeSlotId: null,
+        timeSlotName: null,
+        isVacationRequest: true,
+      },
+      // 通常勤務
+      {
+        date: `${yearMonthStr}-01`,
+        employeeId: "EMP001",
+        employeeName: "山田 太郎",
+        positionGroup: "fulltime",
+        timeSlotId: "TS001",
+        timeSlotName: "早番",
+        isVacationRequest: false,
+      },
+      {
+        date: `${yearMonthStr}-01`,
+        employeeId: "EMP002",
+        employeeName: "佐藤 花子",
+        positionGroup: "fulltime",
+        timeSlotId: "TS002",
+        timeSlotName: "遅番",
+        isVacationRequest: false,
+      },
+      {
+        date: `${yearMonthStr}-01`,
+        employeeId: "EMP004",
+        employeeName: "田中 美咲",
+        positionGroup: "parttime",
+        timeSlotId: "TS003",
+        timeSlotName: "夜勤",
+        isVacationRequest: false,
+      },
+      {
+        date: `${yearMonthStr}-02`,
+        employeeId: "EMP001",
+        employeeName: "山田 太郎",
+        positionGroup: "fulltime",
+        timeSlotId: "TS001",
+        timeSlotName: "早番",
+        isVacationRequest: false,
+      },
+      {
+        date: `${yearMonthStr}-02`,
+        employeeId: "EMP003",
+        employeeName: "鈴木 一郎",
+        positionGroup: "parttime",
+        timeSlotId: "TS002",
+        timeSlotName: "遅番",
+        isVacationRequest: false,
+        hasWarning: true,
+        warningMessage: "スキルレベル80%の職員が配置されています",
+      },
+      {
+        date: `${yearMonthStr}-03`,
+        employeeId: "EMP002",
+        employeeName: "佐藤 花子",
+        positionGroup: "fulltime",
+        timeSlotId: "TS001",
+        timeSlotName: "早番",
+        isVacationRequest: false,
+      },
+      {
+        date: `${yearMonthStr}-03`,
+        employeeId: "EMP005",
+        employeeName: "高橋 健太",
+        positionGroup: "parttime",
+        timeSlotId: "TS003",
+        timeSlotName: "夜勤",
+        isVacationRequest: false,
+      },
+      // 休み
+      {
+        date: `${yearMonthStr}-01`,
+        employeeId: "EMP003",
+        employeeName: "鈴木 一郎",
+        positionGroup: "parttime",
+        timeSlotId: null,
+        timeSlotName: null,
+        isVacationRequest: false,
+      },
+      {
+        date: `${yearMonthStr}-01`,
+        employeeId: "EMP005",
+        employeeName: "高橋 健太",
+        positionGroup: "parttime",
+        timeSlotId: null,
+        timeSlotName: null,
+        isVacationRequest: false,
+      },
+    ];
+  };
+
+  const [assignments, setAssignments] = useState<ShiftAssignment[]>(
+    generateMockAssignments(currentShift.year, currentShift.month)
+  );
+
+  // currentShiftが更新されたらassignmentsも更新
+  useEffect(() => {
+    setAssignments(generateMockAssignments(currentShift.year, currentShift.month));
+  }, [currentShift.year, currentShift.month]);
 
   // 統計情報（動的に計算）
   const calculateStats = () => {
@@ -402,6 +460,16 @@ ${aiConfig.customInstructions || "なし"}
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        {/* デバッグ情報 */}
+        {shiftId && (
+          <Alert className="bg-yellow-50 border-yellow-200">
+            <AlertCircle className="w-4 h-4 text-yellow-600" />
+            <AlertDescription className="text-sm text-yellow-900">
+              DEBUG: ShiftID = {shiftId}, 表示年月 = {currentShift.year}年{currentShift.month}月, viewYear = {viewYear}, viewMonth = {viewMonth}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* 戻るボタン（AdminApp統合時に表示） */}
         {onBack && (
           <Button variant="ghost" onClick={onBack} className="rounded-xl">

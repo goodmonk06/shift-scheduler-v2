@@ -54,8 +54,10 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
 
   // シフト編集画面へ遷移
   const handleEditShift = (shiftId: string) => {
+    console.log('[AdminApp] handleEditShift called with shiftId:', shiftId);
     setEditingShiftId(shiftId);
     setAdminView("shift-editor");
+    console.log('[AdminApp] editingShiftId set to:', shiftId, 'view changed to: shift-editor');
   };
 
   // シフト一覧に戻る
@@ -83,6 +85,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       case "shifts":
         return <ShiftYearlyView onEditShift={handleEditShift} />;
       case "shift-editor":
+        console.log('[AdminApp] Rendering shift-editor, editingShiftId:', editingShiftId);
         return editingShiftId ? (
           <ShiftEditor shiftId={editingShiftId} onBack={handleBackToShiftList} />
         ) : (
