@@ -18,6 +18,7 @@ import { WorkTimeSlots } from "./components/WorkTimeSlots";
 import { WorkplaceRules } from "./components/WorkplaceRules";
 import { RequiredStaffing } from "./components/RequiredStaffing";
 import { ShiftList } from "./components/ShiftList";
+import { ShiftYearlyView } from "./components/ShiftYearlyView";
 import { ChangeProposals } from "./components/ChangeProposals";
 import { Statistics } from "./components/Statistics";
 import { EmergencyNotifications } from "./components/EmergencyNotifications";
@@ -80,7 +81,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       case "required-staffing":
         return <RequiredStaffing />;
       case "shifts":
-        return <ShiftList onEditShift={handleEditShift} />;
+        return <ShiftYearlyView onEditShift={handleEditShift} />;
       case "shift-editor":
         return editingShiftId ? (
           <ShiftEditor shiftId={editingShiftId} onBack={handleBackToShiftList} />
