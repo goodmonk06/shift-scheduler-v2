@@ -175,8 +175,8 @@ export function VacationManagement() {
   );
 
   const handleApprove = (id: string) => {
-    // 職員IDに対応する全てのLeaveRequestを承認
-    const selectedVacationRequest = vacationRequests.find((req) => req.staffId === id);
+    // 職員IDに対応する全てのLeaveRequestを承認（締め切り前でも可能）
+    const selectedVacationRequest = vacationRequests.find((req) => String(req.id) === String(id));
     if (selectedVacationRequest && (selectedVacationRequest as any).rawData) {
       const leaveRequests = (selectedVacationRequest as any).rawData as LeaveRequest[];
       // 全てのLeaveRequestを承認
@@ -186,13 +186,19 @@ export function VacationManagement() {
           refetchRequests();
           setShowDetailDialog(false);
         })
-        .catch(() => toast.error("承認に失敗しました"));
+        .catch((error) => {
+          console.error("Approval error:", error);
+          toast.error("承認に失敗しました");
+        });
+    } else {
+      console.error("Request not found for id:", id, "Available requests:", vacationRequests);
+      toast.error("希望休が見つかりませんでした");
     }
   };
 
   const handleReject = (id: string) => {
-    // 職員IDに対応する全てのLeaveRequestを却下
-    const selectedVacationRequest = vacationRequests.find((req) => req.staffId === id);
+    // 職員IDに対応する全てのLeaveRequestを却下（締め切り前でも可能）
+    const selectedVacationRequest = vacationRequests.find((req) => String(req.id) === String(id));
     if (selectedVacationRequest && (selectedVacationRequest as any).rawData) {
       const leaveRequests = (selectedVacationRequest as any).rawData as LeaveRequest[];
       // 全てのLeaveRequestを却下
@@ -202,7 +208,13 @@ export function VacationManagement() {
           refetchRequests();
           setShowDetailDialog(false);
         })
-        .catch(() => toast.error("却下に失敗しました"));
+        .catch((error) => {
+          console.error("Rejection error:", error);
+          toast.error("却下に失敗しました");
+        });
+    } else {
+      console.error("Request not found for id:", id, "Available requests:", vacationRequests);
+      toast.error("希望休が見つかりませんでした");
     }
   };
 
@@ -283,13 +295,9 @@ export function VacationManagement() {
     }
   );
 
-  // 一括承認 - useMutationに移行
+  // 一括承認 - 締め切り前でも可能
   const { mutate: handleBulkApproval, isLoading: isBulkApproving } = useMutation(
     async () => {
-      if (new Date() < deadline) {
-        throw new Error("締切前は一括承認できません");
-      }
-
       if (pendingRequests.length === 0) {
         throw new Error("承認待ちの申請がありません");
       }
@@ -306,9 +314,7 @@ export function VacationManagement() {
         refetchRequests();
       },
       onError: (error: Error) => {
-        if (error.message === "締切前は一括承認できません") {
-          toast.error(error.message, { description: "締切後に実行してください" });
-        } else if (error.message === "承認待ちの申請がありません") {
+        if (error.message === "承認待ちの申請がありません") {
           toast.info(error.message);
         } else {
           toast.error("一括承認に失敗しました");
@@ -377,14 +383,14 @@ export function VacationManagement() {
               onClick={() => handleBulkApproval()}
               variant="outline"
               className="rounded-xl border-2 bg-gradient-to-br from-success/5 to-success/5 hover:from-success/10 hover:to-success/10"
-              disabled={isBulkApproving || new Date() < deadline}
+              disabled={isBulkApproving}
             >
               {isBulkApproving ? (
                 <LoadingInline message="承認中..." size="sm" />
               ) : (
                 <>
                   <CheckCheck className="w-4 h-4 mr-2" />
-                  一括承認
+                  一括承認（締切前でも可能）
                 </>
               )}
             </Button>
