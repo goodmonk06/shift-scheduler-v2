@@ -12,6 +12,8 @@ export interface VacationRequestProps {
 }
 
 export interface VacationCalendarProps {
+  year: number;
+  month: number;
   monthDays: number[];
   requests: Map<number, DayRequest>;
   submittedRequests: Map<number, DayRequest>;

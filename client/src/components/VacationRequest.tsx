@@ -63,13 +63,22 @@ export function VacationRequest({
   const month1 = new Date(today.getFullYear(), today.getMonth() + 1, 1);
   const month2 = new Date(today.getFullYear(), today.getMonth() + 2, 1);
 
+  // 各月の日数を計算
+  const month1Year = month1.getFullYear();
+  const month1Num = month1.getMonth() + 1;
+  const daysInMonth1 = new Date(month1Year, month1Num, 0).getDate();
+  const month1Days = Array.from({ length: daysInMonth1 }, (_, i) => i + 1);
+
+  const month2Year = month2.getFullYear();
+  const month2Num = month2.getMonth() + 1;
+  const daysInMonth2 = new Date(month2Year, month2Num, 0).getDate();
+  const month2Days = Array.from({ length: daysInMonth2 }, (_, i) => i + 1);
+
   // 選択中の月の情報
   const currentMonthData = selectedMonth === "month1" ? month1 : month2;
   const nextMonthYear = currentMonthData.getFullYear();
   const nextMonthNum = currentMonthData.getMonth() + 1;
   const nextMonthName = currentMonthData.toLocaleDateString("ja-JP", { month: "long" });
-  const daysInNextMonth = new Date(nextMonthYear, nextMonthNum, 0).getDate();
-  const monthDays = Array.from({ length: daysInNextMonth }, (_, i) => i + 1);
 
   // 来月の祝日を取得
   const holidays = useMemo(() => {
@@ -607,7 +616,9 @@ export function VacationRequest({
 
             <TabsContent value="month1">
               <VacationCalendar
-                monthDays={monthDays}
+                year={month1.getFullYear()}
+                month={month1.getMonth() + 1}
+                monthDays={month1Days}
                 requests={new Map(
                   Array.from(requests.entries())
                     .filter(([dateKey, request]) => {
@@ -646,7 +657,9 @@ export function VacationRequest({
 
             <TabsContent value="month2">
               <VacationCalendar
-                monthDays={monthDays}
+                year={month2.getFullYear()}
+                month={month2.getMonth() + 1}
+                monthDays={month2Days}
                 requests={new Map(
                   Array.from(requests.entries())
                     .filter(([dateKey, request]) => {

@@ -5,6 +5,8 @@ import type { VacationCalendarProps } from "../types/vacationTypes";
 import { getHolidaysForMonth } from "../constants/employeeHomeConstants";
 
 export function VacationCalendar({
+  year,
+  month,
   monthDays,
   requests,
   submittedRequests,
@@ -12,10 +14,9 @@ export function VacationCalendar({
   onDateClick,
   getRequestBadge,
 }: VacationCalendarProps) {
-  const today = new Date();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  const nextMonthYear = nextMonth.getFullYear();
-  const nextMonthNum = nextMonth.getMonth() + 1;
+  const nextMonthYear = year;
+  const nextMonthNum = month;
+  const nextMonth = new Date(year, month - 1, 1);
   const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
 
   // 祝日データを取得
