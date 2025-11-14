@@ -617,6 +617,7 @@ export function VacationRequest({
 
             <TabsContent value="month1">
               <VacationCalendar
+                key={`calendar-${month1Year}-${month1Num}`}
                 year={month1.getFullYear()}
                 month={month1.getMonth() + 1}
                 monthDays={month1Days}
@@ -658,6 +659,7 @@ export function VacationRequest({
 
             <TabsContent value="month2">
               <VacationCalendar
+                key={`calendar-${month2Year}-${month2Num}`}
                 year={month2.getFullYear()}
                 month={month2.getMonth() + 1}
                 monthDays={month2Days}
