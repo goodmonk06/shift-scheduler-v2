@@ -532,9 +532,12 @@ export const appRouter = router({
         employeeId: z.number(),
         date: z.string(),
         status: z.enum(["working", "off", "requested_off", "emergency_off"]),
-        timeSlotId: z.number().optional(),
+        timeSlotId: z.number().nullable().optional(),
+        leaveType: z.enum(["休", "有休", "時間指定"]).nullable().optional(),
+        startTime: z.string().nullable().optional(),
+        endTime: z.string().nullable().optional(),
         isChanged: z.boolean().optional(),
-        previousTimeSlotId: z.number().optional(),
+        previousTimeSlotId: z.number().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
         return await db.createShiftDetail(input);

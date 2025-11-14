@@ -155,8 +155,7 @@ export function ShiftTableView({
 
       const dateStr = `${viewYear}-${String(viewMonth).padStart(2, "0")}-${String(editingCell.day).padStart(2, "0")}`;
 
-      let updateData: any = {
-        id: editingCell.shiftDetailId,
+      let shiftData: any = {
         date: dateStr,
       };
 
@@ -164,8 +163,8 @@ export function ShiftTableView({
       if (optionValue.startsWith("timeslot_")) {
         // Work time slot selected
         const slotId = parseInt(optionValue.replace("timeslot_", ""));
-        updateData = {
-          ...updateData,
+        shiftData = {
+          ...shiftData,
           status: "working",
           timeSlotId: slotId,
           leaveType: null,
@@ -173,8 +172,8 @@ export function ShiftTableView({
           endTime: null,
         };
       } else if (optionValue === "休") {
-        updateData = {
-          ...updateData,
+        shiftData = {
+          ...shiftData,
           status: "off",
           timeSlotId: null,
           leaveType: "休",
@@ -182,8 +181,8 @@ export function ShiftTableView({
           endTime: null,
         };
       } else if (optionValue === "有休") {
-        updateData = {
-          ...updateData,
+        shiftData = {
+          ...shiftData,
           status: "off",
           timeSlotId: null,
           leaveType: "有休",
@@ -191,8 +190,8 @@ export function ShiftTableView({
           endTime: null,
         };
       } else if (optionValue === "時間指定") {
-        updateData = {
-          ...updateData,
+        shiftData = {
+          ...shiftData,
           status: "working",
           timeSlotId: null,
           leaveType: "時間指定",
@@ -201,8 +200,21 @@ export function ShiftTableView({
         };
       }
 
-      // Call API to update
-      await trpcClient.shiftDetails.update.mutate(updateData);
+      // Call API - create or update
+      if (editingCell.shiftDetailId === null) {
+        // Create new shift detail
+        await trpcClient.shiftDetails.create.mutate({
+          ...shiftData,
+          shiftId: Number(shiftId),
+          employeeId: Number(editingCell.employeeId),
+        });
+      } else {
+        // Update existing shift detail
+        await trpcClient.shiftDetails.update.mutate({
+          ...shiftData,
+          id: editingCell.shiftDetailId,
+        });
+      }
 
       toast.success("シフトを更新しました");
 
