@@ -155,64 +155,43 @@ export function ShiftTableView({
 
       const dateStr = `${viewYear}-${String(viewMonth).padStart(2, "0")}-${String(editingCell.day).padStart(2, "0")}`;
 
+      // Build shift data - only include fields that have values (no null)
       let shiftData: any = {
         date: dateStr,
       };
 
-      // Handle different option types
-      if (optionValue.startsWith("timeslot_")) {
-        // Work time slot selected
-        const slotId = parseInt(optionValue.replace("timeslot_", ""));
-        shiftData = {
-          ...shiftData,
-          status: "working",
-          timeSlotId: slotId,
-          leaveType: null,
-          startTime: null,
-          endTime: null,
-        };
-      } else if (optionValue === "休") {
-        shiftData = {
-          ...shiftData,
-          status: "off",
-          timeSlotId: null,
-          leaveType: "休",
-          startTime: null,
-          endTime: null,
-        };
-      } else if (optionValue === "有休") {
-        shiftData = {
-          ...shiftData,
-          status: "off",
-          timeSlotId: null,
-          leaveType: "有休",
-          startTime: null,
-          endTime: null,
-        };
+      // Handle different option types - only send fields with actual values
+      if (optionValue === "休") {
+        shiftData.status = "off";
+        shiftData.leaveType = "休";
       } else if (optionValue === "時間指定") {
-        shiftData = {
-          ...shiftData,
-          status: "working",
-          timeSlotId: null,
-          leaveType: "時間指定",
-          startTime: customStartTime,
-          endTime: customEndTime,
-        };
+        shiftData.status = "working";
+        shiftData.leaveType = "時間指定";
+        shiftData.startTime = customStartTime;
+        shiftData.endTime = customEndTime;
       }
 
       // Call API - create or update
       if (editingCell.shiftDetailId === null) {
         // Create new shift detail
         await trpcClient.shiftDetails.create.mutate({
-          ...shiftData,
           shiftId: Number(shiftId),
           employeeId: Number(editingCell.employeeId),
+          date: shiftData.date,
+          status: shiftData.status,
+          ...(shiftData.leaveType && { leaveType: shiftData.leaveType }),
+          ...(shiftData.startTime && { startTime: shiftData.startTime }),
+          ...(shiftData.endTime && { endTime: shiftData.endTime }),
         });
       } else {
         // Update existing shift detail
         await trpcClient.shiftDetails.update.mutate({
-          ...shiftData,
           id: editingCell.shiftDetailId,
+          date: shiftData.date,
+          status: shiftData.status,
+          ...(shiftData.leaveType && { leaveType: shiftData.leaveType }),
+          ...(shiftData.startTime && { startTime: shiftData.startTime }),
+          ...(shiftData.endTime && { endTime: shiftData.endTime }),
         });
       }
 
@@ -414,13 +393,7 @@ export function ShiftTableView({
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="休">休</SelectItem>
-                                <SelectItem value="有休">有休</SelectItem>
                                 <SelectItem value="時間指定">時間指定</SelectItem>
-                                {workTimeSlots.map((slot) => (
-                                  <SelectItem key={slot.id} value={`timeslot_${slot.id}`}>
-                                    {slot.displayLabel}
-                                  </SelectItem>
-                                ))}
                               </SelectContent>
                             </Select>
 
