@@ -214,6 +214,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
 
       for (const request of approvedLeaveRequests) {
         const employee = employeesData.find(emp => emp.id === request.employeeId);
+        console.log('[ShiftEditor] Processing request:', request.id, 'employeeId:', request.employeeId, 'dates:', request.startDate, 'to', request.endDate);
 
         // startDateからendDateまでの各日付に対してassignmentを作成
         const startDate = new Date(request.startDate);
@@ -222,6 +223,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         // 該当月の範囲内で日付を生成
         const actualStart = startDate < monthStart ? monthStart : startDate;
         const actualEnd = endDate > monthEnd ? monthEnd : endDate;
+        console.log('[ShiftEditor] Date range:', actualStart.toISOString(), 'to', actualEnd.toISOString());
 
         for (let d = new Date(actualStart); d <= actualEnd; d.setDate(d.getDate() + 1)) {
           // タイムゾーンを考慮してYYYY-MM-DD形式の日付文字列を生成
@@ -234,6 +236,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           const existsInShiftDetails = formattedAssignments.some(
             a => a.date === dateStr && a.employeeDbId === request.employeeId
           );
+          console.log('[ShiftEditor] Date:', dateStr, 'exists in shiftDetails:', existsInShiftDetails);
 
           if (!existsInShiftDetails) {
             // 時間指定の希望休の場合
@@ -273,7 +276,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     } finally {
       setIsLoadingData(false);
     }
-  }, [shiftId, toast]);
+  }, [shiftId, viewYear, viewMonth, toast]);
 
   useEffect(() => {
     loadData();
