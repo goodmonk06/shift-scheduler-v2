@@ -376,8 +376,9 @@ export function VacationRequest({
     }
   };
 
-  const getRequestBadge = (day: number) => {
-    const dateKey = makeDateKey(nextMonthYear, nextMonthNum, day);
+  // 指定された年月のバッジを取得する関数を生成
+  const createGetRequestBadge = (year: number, month: number) => (day: number) => {
+    const dateKey = makeDateKey(year, month, day);
 
     // 編集中のリクエストを優先
     const editingRequest = requests.get(dateKey);
@@ -651,7 +652,7 @@ export function VacationRequest({
                 )}
                 isBeforeDeadline={isBeforeDeadline}
                 onDateClick={handleDateClick}
-                getRequestBadge={getRequestBadge}
+                getRequestBadge={createGetRequestBadge(month1Year, month1Num)}
               />
             </TabsContent>
 
@@ -692,7 +693,7 @@ export function VacationRequest({
                 )}
                 isBeforeDeadline={isBeforeDeadline}
                 onDateClick={handleDateClick}
-                getRequestBadge={getRequestBadge}
+                getRequestBadge={createGetRequestBadge(month2Year, month2Num)}
               />
             </TabsContent>
           </Tabs>
