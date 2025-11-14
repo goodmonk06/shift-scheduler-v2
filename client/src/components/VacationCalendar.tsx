@@ -102,7 +102,7 @@ export function VacationCalendar({
                     : "bg-gradient-to-br from-card to-secondary/5 hover:from-secondary/20 hover:to-accent/10"}
                 `}
               >
-                <span className={textColor}>{day}</span>
+                <span className={textColor}>{String(day)}</span>
                 {getRequestBadge(day)}
                 {hasSubmittedRequest && !hasEditingRequest && (
                   <Edit className="absolute top-1 right-1 w-3 h-3 text-success opacity-60" />

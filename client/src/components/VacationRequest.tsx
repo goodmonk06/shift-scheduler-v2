@@ -399,13 +399,13 @@ export function VacationRequest({
 
       return (
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
-          <span className="text-[0.5rem]">{emoji}</span>
-          {text && (
+          <span className="text-[0.5rem]">{String(emoji)}</span>
+          {text && typeof text === 'string' && text.length > 0 && (
             <span
               className="leading-tight whitespace-pre-line text-center"
               style={{ fontSize: isMultiLine ? '0.5rem' : '0.55rem' }}
             >
-              {text}
+              {String(text)}
             </span>
           )}
         </div>
@@ -434,16 +434,15 @@ export function VacationRequest({
 
       return (
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
-          <span className="text-[0.5rem]">{emoji}</span>
-          {text && (
+          <span className="text-[0.5rem]">{String(emoji)}</span>
+          {text && typeof text === 'string' && text.length > 0 && (
             <span
               className="leading-tight whitespace-pre-line text-center"
               style={{ fontSize: isMultiLine ? '0.5rem' : '0.55rem' }}
             >
-              {text}
+              {String(text)}
             </span>
           )}
-          {existingRequest.status === "approved" && <CheckCircle className="w-2.5 h-2.5" />}
         </div>
       );
     }
