@@ -10,6 +10,7 @@ import { useToast } from "../hooks/useToast";
 import { EmptyState } from "./ui/error-state";
 import { trpcClient } from "../lib/trpc";
 import { useMutation } from "../hooks/useAsync";
+import { generateConstraintDescription, type EmployeeWorkConstraints } from "../types/employeeConstraints";
 
 export function StaffManagement() {
   const toast = useToast();
@@ -32,19 +33,31 @@ export function StaffManagement() {
       ]);
 
       // データ変換
-      const mappedEmployees: Employee[] = employeesData.map((emp: any) => ({
-        id: emp.id.toString(),
-        employeeId: emp.employeeId,
-        name: emp.name,
-        positionGroupId: emp.positionGroupId.toString(),
-        positionGroupName: emp.positionGroup?.name || "",
-        skillLevel: emp.skillLevel || 100,
-        canWorkNight: emp.canWorkNightShift || false,
-        workableDays: emp.workableDays || [],
-        additionalConstraints: emp.additionalConstraints || "",
-        createdAt: emp.createdAt,
-        updatedAt: emp.updatedAt,
-      }));
+      const mappedEmployees: Employee[] = employeesData.map((emp: any) => {
+        // additionalConstraintsが JSONオブジェクトの場合、人間が読める形式に変換
+        let constraintsDisplay = "";
+        if (emp.additionalConstraints) {
+          if (typeof emp.additionalConstraints === "object") {
+            constraintsDisplay = generateConstraintDescription(emp.additionalConstraints as EmployeeWorkConstraints);
+          } else if (typeof emp.additionalConstraints === "string") {
+            constraintsDisplay = emp.additionalConstraints;
+          }
+        }
+
+        return {
+          id: emp.id.toString(),
+          employeeId: emp.employeeId,
+          name: emp.name,
+          positionGroupId: emp.positionGroupId.toString(),
+          positionGroupName: emp.positionGroup?.name || "",
+          skillLevel: emp.skillLevel || 100,
+          canWorkNight: emp.canWorkNightShift || false,
+          workableDays: emp.workableDays || [],
+          additionalConstraints: constraintsDisplay,
+          createdAt: emp.createdAt,
+          updatedAt: emp.updatedAt,
+        };
+      });
 
       const mappedGroups: PositionGroup[] = positionGroupsData.map((group: any) => ({
         id: group.id.toString(),
@@ -101,7 +114,7 @@ export function StaffManagement() {
 
     try {
       if (editingEmployee) {
-        // 更新
+        // 更新（additionalConstraints は変更しない = JSON データを保護）
         await trpcClient.employees.update.mutate({
           id: parseInt(editingEmployee.id),
           name: formData.name,
@@ -110,7 +123,7 @@ export function StaffManagement() {
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
           workableDays: formData.workableDays,
-          additionalConstraints: formData.additionalConstraints,
+          // additionalConstraints は送信しない（既存の JSON データを保護）
         });
         toast.success("職員情報を更新しました");
       } else {
@@ -122,7 +135,7 @@ export function StaffManagement() {
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
           workableDays: formData.workableDays,
-          additionalConstraints: formData.additionalConstraints,
+          additionalConstraints: "", // 新規作成時は空文字列
         });
         toast.success("職員を追加しました");
       }

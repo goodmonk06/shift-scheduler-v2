@@ -200,19 +200,17 @@ export function StaffFormDialog({
             </div>
 
             <div className="space-y-2 pt-3">
-              <Label htmlFor="additionalConstraints">追加の制約(任意)</Label>
+              <Label htmlFor="additionalConstraints">個別勤務条件</Label>
               <Textarea
                 id="additionalConstraints"
-                placeholder="例: 第2・第4土曜日は不可。"
+                placeholder="設定されている個別条件がここに表示されます"
                 value={formData.additionalConstraints}
-                onChange={(e) =>
-                  setFormData({ ...formData, additionalConstraints: e.target.value })
-                }
-                className="rounded-xl"
-                rows={3}
+                readOnly
+                className="rounded-xl bg-muted/50"
+                rows={5}
               />
               <p className="text-xs text-muted-foreground">
-                AIが理解できるように、自然言語で具体的に記入してください
+                ※ 個別勤務条件はシフト自動生成時にAIが参照します。編集が必要な場合は開発チームにご連絡ください。
               </p>
             </div>
           </div>
