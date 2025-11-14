@@ -92,6 +92,12 @@ export const appRouter = router({
         positionGroupId: z.number(),
         skillLevel: z.number().optional(),
         canWorkNightShift: z.boolean().optional(),
+        workableDays: z.array(z.object({
+          dayOfWeek: z.number(),
+          startTime: z.string(),
+          endTime: z.string(),
+        })).optional(),
+        additionalConstraints: z.string().optional(),
         displayOrder: z.number().optional(),
         userId: z.number().optional(),
       }))
@@ -102,9 +108,16 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         name: z.string().optional(),
+        employeeId: z.string().optional(),
         positionGroupId: z.number().optional(),
         skillLevel: z.number().optional(),
         canWorkNightShift: z.boolean().optional(),
+        workableDays: z.array(z.object({
+          dayOfWeek: z.number(),
+          startTime: z.string(),
+          endTime: z.string(),
+        })).optional(),
+        additionalConstraints: z.string().optional(),
         displayOrder: z.number().optional(),
         userId: z.number().optional(),
       }))

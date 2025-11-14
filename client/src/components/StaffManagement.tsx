@@ -109,6 +109,8 @@ export function StaffManagement() {
           positionGroupId: parseInt(formData.positionGroupId),
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
+          workableDays: formData.workableDays,
+          additionalConstraints: formData.additionalConstraints,
         });
         toast.success("職員情報を更新しました");
       } else {
@@ -119,6 +121,8 @@ export function StaffManagement() {
           positionGroupId: parseInt(formData.positionGroupId),
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
+          workableDays: formData.workableDays,
+          additionalConstraints: formData.additionalConstraints,
         });
         toast.success("職員を追加しました");
       }

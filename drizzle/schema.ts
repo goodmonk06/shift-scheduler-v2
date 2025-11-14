@@ -46,6 +46,8 @@ export const employees = mysqlTable("employees", {
   positionGroupId: int("positionGroupId").notNull().references(() => positionGroups.id, { onDelete: 'restrict' }), // FK to positionGroups
   skillLevel: int("skillLevel").default(100).notNull(), // 50-100 (0.5人前〜1人前を0.5-1で50-100で表現)
   canWorkNightShift: boolean("canWorkNightShift").default(false).notNull(),
+  workableDays: json("workableDays"), // 勤務可能曜日と時間帯 [{dayOfWeek: 0-6, startTime: "09:00", endTime: "17:00"}]
+  additionalConstraints: text("additionalConstraints"), // 追加の制約条件（自然言語）
   displayOrder: int("displayOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
