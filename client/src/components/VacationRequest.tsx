@@ -390,11 +390,11 @@ export function VacationRequest({
     if (editingRequest) {
       // 編集中（未送信）
       const timeText = editingRequest.type === "時間指定" && editingRequest.startTime && editingRequest.endTime
-        ? `${editingRequest.startTime}\n〜${editingRequest.endTime}`
+        ? `${String(editingRequest.startTime)}\n〜${String(editingRequest.endTime)}`
         : "";
       const isMultiLine = timeText.includes("\n");
       const emoji = editingRequest.type === "休" ? "🌸" : editingRequest.type === "有休" ? "💐" : "⏰";
-      const text = editingRequest.type === "時間指定" ? timeText : editingRequest.type;
+      const text = editingRequest.type === "時間指定" ? timeText : String(editingRequest.type);
       const color = "bg-warning";
 
       return (
@@ -419,11 +419,11 @@ export function VacationRequest({
 
     if (existingRequest) {
       const timeText = existingRequest.leaveType === "時間指定" && existingRequest.startTime && existingRequest.endTime
-        ? `${existingRequest.startTime}\n〜${existingRequest.endTime}`
+        ? `${String(existingRequest.startTime)}\n〜${String(existingRequest.endTime)}`
         : "";
       const isMultiLine = timeText.includes("\n");
       const emoji = existingRequest.leaveType === "休" ? "🌸" : existingRequest.leaveType === "有休" ? "💐" : "⏰";
-      const text = existingRequest.leaveType === "時間指定" ? timeText : existingRequest.leaveType;
+      const text = existingRequest.leaveType === "時間指定" ? timeText : String(existingRequest.leaveType);
 
       // ステータスに応じた色
       const color = existingRequest.status === "approved"
@@ -645,9 +645,9 @@ export function VacationRequest({
                     return [startDate.getDate(), {
                       day: startDate.getDate(),
                       type: req.leaveType,
-                      startTime: req.startTime,
-                      endTime: req.endTime,
-                      reason: req.reason,
+                      startTime: req.startTime || undefined,
+                      endTime: req.endTime || undefined,
+                      reason: req.reason || undefined,
                     }];
                   })
                 )}
@@ -687,9 +687,9 @@ export function VacationRequest({
                     return [startDate.getDate(), {
                       day: startDate.getDate(),
                       type: req.leaveType,
-                      startTime: req.startTime,
-                      endTime: req.endTime,
-                      reason: req.reason,
+                      startTime: req.startTime || undefined,
+                      endTime: req.endTime || undefined,
+                      reason: req.reason || undefined,
                     }];
                   })
                 )}
