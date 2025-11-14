@@ -473,7 +473,7 @@ ${aiConfig.customInstructions || "なし"}
             )}
             {currentShift.status === "draft" && (
               <Button
-                onClick={handleOpenAIPrompt}
+                onClick={handlePreviewAIPrompt}
                 disabled={isGeneratingAI}
                 className="rounded-xl bg-purple-600 hover:bg-purple-700"
               >
