@@ -19,7 +19,14 @@ interface EmployeeAppProps {
 }
 
 export function EmployeeApp({ hasNotifications = false, onLogout, employeeName = "ゲスト", employeeId = 1 }: EmployeeAppProps) {
-  const [employeeView, setEmployeeView] = useState<EmployeeView>("home");
+  // 画面状態をlocalStorageから復元（デフォルトは"home"）
+  const [employeeView, setEmployeeView] = useState<EmployeeView>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('employeeCurrentView');
+      return (saved as EmployeeView) || 'home';
+    }
+    return 'home';
+  });
   // 未保存の変更があるかどうか（VacationRequestから受け取る）
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [unsavedCount, setUnsavedCount] = useState(0);
@@ -85,6 +92,11 @@ export function EmployeeApp({ hasNotifications = false, onLogout, employeeName =
     }
     localStorage.setItem('employeeFontSize', selectedFontSize);
   }, [selectedFontSize]);
+
+  // 画面状態をlocalStorageに保存
+  useEffect(() => {
+    localStorage.setItem('employeeCurrentView', employeeView);
+  }, [employeeView]);
 
   const currentHeaderImageUrl = headerImages.find(img => img.id === selectedImage)?.url || headerImages[0].url;
 

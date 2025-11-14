@@ -17,11 +17,22 @@ export function VacationCalendar({
   const nextMonthYear = nextMonth.getFullYear();
   const nextMonthNum = nextMonth.getMonth() + 1;
   const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
-  const firstDayOfWeek = nextMonth.getDay(); // 月初の曜日
 
   // 祝日データを取得
   const holidays = getHolidaysForMonth(nextMonthYear, nextMonthNum);
   const holidaySet = new Set(holidays.map(h => h.day));
+
+  // 各日付の曜日を正しく計算するヘルパー関数
+  const getDayOfWeek = (day: number) => {
+    const date = new Date(nextMonthYear, nextMonthNum - 1, day);
+    return date.getDay(); // 0=日曜, 1=月曜, ..., 6=土曜
+  };
+
+  // 月の1日の曜日を取得（0=日曜, 1=月曜, ...）
+  const firstDayOfWeek = getDayOfWeek(1);
+
+  // 空白セルの配列を作成（1日の前に表示する空白）
+  const emptyDays = Array.from({ length: firstDayOfWeek }, (_, i) => i);
 
   return (
     <Card className="p-6 bg-gradient-to-br from-white to-secondary/5 border-2 border-secondary/30 shadow-xl">
@@ -42,18 +53,23 @@ export function VacationCalendar({
           {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => (
             <div
               key={day}
-              className={`text-center py-2 ${index === 0 ? 'text-destructive' : index === 6 ? 'text-accent' : 'text-muted-foreground'}`}
+              className={`text-center py-2 ${index === 0 ? 'text-destructive' : index === 6 ? 'text-blue-600' : 'text-muted-foreground'}`}
             >
               {day}
             </div>
           ))}
-          {monthDays.map((day, index) => {
+          {/* 月の1日の前の空白セル */}
+          {emptyDays.map((i) => (
+            <div key={`empty-${i}`} className="aspect-square" />
+          ))}
+          {/* 実際の日付 */}
+          {monthDays.map((day) => {
             const hasEditingRequest = requests.has(day);
             const hasSubmittedRequest = submittedRequests.has(day);
             const hasRequest = hasEditingRequest || hasSubmittedRequest;
 
-            // 曜日を計算（0=日曜, 6=土曜）
-            const dayOfWeek = (firstDayOfWeek + index) % 7;
+            // 曜日を正しく計算（0=日曜, 6=土曜）
+            const dayOfWeek = getDayOfWeek(day);
             const isSunday = dayOfWeek === 0;
             const isSaturday = dayOfWeek === 6;
             const isHoliday = holidaySet.has(day);
