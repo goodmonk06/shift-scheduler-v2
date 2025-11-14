@@ -1,4 +1,4 @@
-import { Info, Sparkles, Phone, Mail, BookOpen, LogOut } from "lucide-react";
+import { Info, Sparkles, BookOpen, LogOut } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
@@ -23,32 +23,6 @@ export function AppInfoCard({ onShowTutorial, onShowLogout }: AppInfoCardProps) 
               <div>
                 <p className="text-sm">バージョン</p>
                 <p className="text-xs text-muted-foreground">Version 1.0.0</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Phone */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
-                <Phone className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm">お問い合わせ</p>
-                <p className="text-xs text-muted-foreground">0120-XXX-XXX</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Email */}
-          <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/80 to-accent flex items-center justify-center">
-                <Mail className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm">メールでのお問い合わせ</p>
-                <p className="text-xs text-muted-foreground">support@example.com</p>
               </div>
             </div>
           </div>
