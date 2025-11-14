@@ -150,26 +150,36 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
       setEmployees(formattedEmployees);
 
       // シフト詳細を取得
-      const shiftDetails = await trpcClient.shiftDetails.getByShift.query({
+      const allShiftDetails = await trpcClient.shiftDetails.getByShift.query({
         shiftId: Number(shiftId)
       });
+
+      // 該当月の日付範囲を計算
+      const targetYear = viewYear;
+      const targetMonth = viewMonth;
+      const monthStart = new Date(targetYear, targetMonth - 1, 1);
+      const monthEnd = new Date(targetYear, targetMonth, 0);
+      const monthStartStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
+      const monthEndDay = monthEnd.getDate();
+      const monthEndStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(monthEndDay).padStart(2, '0')}`;
+
+      // shiftDetailsを表示月でフィルタリング（viewYear/viewMonthと一致する日付のみ）
+      const shiftDetails = allShiftDetails.filter(detail => {
+        return detail.date >= monthStartStr && detail.date <= monthEndStr;
+      });
+      console.log('[ShiftEditor] Shift details for', targetYear, targetMonth, ':', shiftDetails.length, '/', allShiftDetails.length);
 
       // 承認済み希望休を取得（年月でフィルタリング）
       const allLeaveRequests = await trpcClient.leaveRequests.list.query();
       console.log('[ShiftEditor] Total leave requests:', allLeaveRequests.length);
 
       // 該当月の承認済み希望休をフィルタリング
-      const targetYear = viewYear;
-      const targetMonth = viewMonth;
-
       const approvedLeaveRequests = allLeaveRequests.filter(req => {
         if (req.status !== 'approved') return false;
 
         // startDateまたはendDateが該当月に含まれるかチェック
         const startDate = new Date(req.startDate);
         const endDate = new Date(req.endDate);
-        const monthStart = new Date(targetYear, targetMonth - 1, 1);
-        const monthEnd = new Date(targetYear, targetMonth, 0);
 
         return (startDate <= monthEnd && endDate >= monthStart);
       });
@@ -209,8 +219,6 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
 
       // 承認済み希望休をShiftAssignment形式に変換して追加
       const leaveRequestAssignments: ShiftAssignment[] = [];
-      const monthStart = new Date(targetYear, targetMonth - 1, 1);
-      const monthEnd = new Date(targetYear, targetMonth, 0);
 
       for (const request of approvedLeaveRequests) {
         const employee = employeesData.find(emp => emp.id === request.employeeId);
