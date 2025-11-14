@@ -253,6 +253,7 @@ export const appRouter = router({
         dayOfWeek: z.number(),
         hour: z.number(),
         requiredCount: z.number(),
+        staffingDetails: z.any().optional(), // JSON data (role groups, office staff)
       }))
       .mutation(async ({ input }) => {
         return await db.upsertRequiredStaffing(input);

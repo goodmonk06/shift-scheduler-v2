@@ -13,11 +13,13 @@ import {
 } from "./ui/table";
 import { Alert, AlertDescription } from "./ui/alert";
 import { useToast } from "../hooks/useToast";
+import { trpcClient } from "../lib/trpc";
 
 interface RequiredStaffingData {
   dayOfWeek: number; // 0-6 (日曜=0)
   hour: number; // 0-23
   requiredCount: number;
+  staffingDetails?: any;
 }
 
 export function RequiredStaffing() {
@@ -25,11 +27,48 @@ export function RequiredStaffing() {
   const daysOfWeek = ["日", "月", "火", "水", "木", "金", "土"];
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   // 24×7のマトリクスデータ（168セル）
   const [staffingMatrix, setStaffingMatrix] = useState<number[][]>(() => {
     // 初期値: すべて3人
     return Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 3));
   });
+
+  // データベースからデータを読み込み
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await trpcClient.requiredStaffing.list.query();
+
+      // データをマトリクスに変換
+      const newMatrix = Array.from({ length: 7 }, () =>
+        Array.from({ length: 24 }, () => 3)
+      );
+
+      data.forEach((item: any) => {
+        if (
+          item.dayOfWeek >= 0 &&
+          item.dayOfWeek <= 6 &&
+          item.hour >= 0 &&
+          item.hour <= 23
+        ) {
+          newMatrix[item.dayOfWeek][item.hour] = item.requiredCount;
+        }
+      });
+
+      setStaffingMatrix(newMatrix);
+    } catch (error) {
+      console.error("データ読み込みエラー:", error);
+      toast.error("データの読み込みに失敗しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // セルの値を更新
   const updateCell = (dayIndex: number, hour: number, value: string) => {
@@ -81,16 +120,31 @@ export function RequiredStaffing() {
         });
       });
 
-      // ここでAPI呼び出し: Promise.all で168回の upsert を実行
-      // await Promise.all(
-      //   dataToSave.map(data => trpc.requiredStaffing.upsert.mutate(data))
-      // );
+      // Promise.all で168回の upsert を実行
+      await Promise.all(
+        dataToSave.map((data) =>
+          trpcClient.requiredStaffing.upsert.mutate(data)
+        )
+      );
 
       toast.success("必要人数設定を保存しました");
-    } catch (error) {
-      toast.error("保存に失敗しました");
+      await loadData(); // データを再読み込み
+    } catch (error: any) {
+      console.error("保存エラー:", error);
+      toast.error(error.message || "保存に失敗しました");
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">データを読み込んでいます...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
