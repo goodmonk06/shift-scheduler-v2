@@ -11,6 +11,9 @@ import { serveStatic, setupVite } from "./vite";
 import { simpleLogin, simpleLogout, getSimpleAuthUser } from "../simpleAuth";
 import { adminLogin, adminLogout, getAdminAuthUser } from "../adminAuth";
 import serverRouter from "../routes/server";
+import { drizzle } from "drizzle-orm/mysql2";
+import { migrate } from "drizzle-orm/mysql2/migrator";
+import mysql from "mysql2/promise";
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (reason, promise) => {
@@ -22,6 +25,35 @@ process.on("uncaughtException", (error) => {
   console.error("[FATAL] Uncaught Exception:", error);
   process.exit(1);
 });
+
+async function runMigrations() {
+  if (!process.env.DATABASE_URL) {
+    console.warn("[Migration] DATABASE_URL not found, skipping migrations");
+    return;
+  }
+
+  try {
+    console.log("[Migration] Starting database migrations...");
+
+    // Remove ssl-mode parameter if present (not supported by mysql2)
+    const connectionString = process.env.DATABASE_URL.replace(/[?&]ssl-mode=[^&]*/g, '');
+
+    // Create connection pool
+    const poolConnection = mysql.createPool(connectionString);
+    const db = drizzle(poolConnection);
+
+    // Run migrations from drizzle folder
+    await migrate(db, { migrationsFolder: "./drizzle" });
+
+    console.log("[Migration] ✓ All migrations applied successfully");
+
+    // Close the pool
+    await poolConnection.end();
+  } catch (error) {
+    console.error("[Migration] Failed to run migrations:", error);
+    throw error;
+  }
+}
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,6 +75,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Run database migrations first
+  await runMigrations();
+
   const app = express();
   const server = createServer(app);
 
