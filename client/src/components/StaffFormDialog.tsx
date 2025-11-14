@@ -1,4 +1,4 @@
-import { Save, X, Plus, Trash2 } from "lucide-react";
+import { Save, X } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -6,7 +6,7 @@ import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import type { StaffFormDialogProps, WorkableDay } from "../types/staffManagementTypes";
+import type { StaffFormDialogProps } from "../types/staffManagementTypes";
 
 export function StaffFormDialog({
   open,
@@ -116,90 +116,6 @@ export function StaffFormDialog({
           </div>
 
           <div className="space-y-2 pt-4 border-t">
-            <h4 className="text-sm">勤務可能曜日と時間帯</h4>
-            <p className="text-xs text-muted-foreground">
-              曜日ごとに勤務可能な時間帯を設定してください
-            </p>
-
-            <div className="space-y-2">
-              {formData.workableDays.map((day, index) => {
-                const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
-                return (
-                  <div key={index} className="flex items-center gap-2 p-2 border rounded-lg">
-                    <Select
-                      value={day.dayOfWeek.toString()}
-                      onValueChange={(value) => {
-                        const newDays = [...formData.workableDays];
-                        newDays[index].dayOfWeek = parseInt(value);
-                        setFormData({ ...formData, workableDays: newDays });
-                      }}
-                    >
-                      <SelectTrigger className="w-24 rounded-lg">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {dayNames.map((name, i) => (
-                          <SelectItem key={i} value={i.toString()}>
-                            {name}曜日
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="time"
-                      value={day.startTime}
-                      onChange={(e) => {
-                        const newDays = [...formData.workableDays];
-                        newDays[index].startTime = e.target.value;
-                        setFormData({ ...formData, workableDays: newDays });
-                      }}
-                      className="w-32 rounded-lg"
-                    />
-                    <span className="text-sm text-muted-foreground">〜</span>
-                    <Input
-                      type="time"
-                      value={day.endTime}
-                      onChange={(e) => {
-                        const newDays = [...formData.workableDays];
-                        newDays[index].endTime = e.target.value;
-                        setFormData({ ...formData, workableDays: newDays });
-                      }}
-                      className="w-32 rounded-lg"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const newDays = formData.workableDays.filter((_, i) => i !== index);
-                        setFormData({ ...formData, workableDays: newDays });
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                );
-              })}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFormData({
-                    ...formData,
-                    workableDays: [
-                      ...formData.workableDays,
-                      { dayOfWeek: 1, startTime: "09:00", endTime: "17:00" }
-                    ],
-                  });
-                }}
-                className="rounded-lg w-full"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                曜日を追加
-              </Button>
-            </div>
-
-            <div className="space-y-2 pt-3">
               <Label htmlFor="additionalConstraints">個別勤務条件</Label>
               <Textarea
                 id="additionalConstraints"
