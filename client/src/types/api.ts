@@ -19,6 +19,7 @@ export interface User {
   email: string | null;
   role: "admin" | "user";
   openId: string;
+  employeePrimaryId?: number; // Employee.id (primary key) - for employee users only
   createdAt: Date;
   updatedAt: Date;
   lastSignedIn: Date;

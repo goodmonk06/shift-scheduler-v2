@@ -266,6 +266,7 @@ class AuthServiceProduction implements AuthService {
       email: data.user.email,
       role: 'user',
       openId: data.user.employeeId,
+      employeePrimaryId: data.user.employeePrimaryId, // Employee.id (primary key)
       createdAt: new Date(),
       updatedAt: new Date(),
       lastSignedIn: new Date(),
@@ -342,6 +343,7 @@ class AuthServiceProduction implements AuthService {
             email: data.user.email,
             role: 'user',
             openId: data.user.employeeId,
+            employeePrimaryId: data.user.employeePrimaryId, // Employee.id (primary key)
             createdAt: new Date(),
             updatedAt: new Date(),
             lastSignedIn: new Date(),

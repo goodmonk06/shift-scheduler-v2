@@ -11,6 +11,7 @@ const SIMPLE_AUTH_SECRET = ENV.jwtSecret;
 export interface SimpleAuthUser {
   id: number;
   employeeId: string;
+  employeePrimaryId: number; // Employee.id (primary key)
   name: string;
   email: string | null;
   role: "employee";
@@ -82,6 +83,7 @@ export async function simpleLogin(req: Request, res: Response) {
     const user: SimpleAuthUser = {
       id: userRecord.id, // Use User.id instead of Employee.id
       employeeId: employee.employeeId,
+      employeePrimaryId: employee.id, // Employee.id (primary key for leave requests, etc.)
       name: employee.name,
       email: employee.email,
       role: "employee",

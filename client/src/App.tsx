@@ -36,6 +36,7 @@ interface User {
   name: string;
   role: UserRole;
   email?: string;
+  employeePrimaryId?: number; // Employee.id (primary key) - for employee users only
 }
 
 export default function App() {
@@ -56,8 +57,11 @@ export default function App() {
         // role を employee | admin に正規化
         const normalizedRole = currentUser.role === 'user' ? 'employee' : currentUser.role as UserRole;
         setUser({
-          ...currentUser,
+          id: currentUser.id,
+          name: currentUser.name,
           role: normalizedRole,
+          email: currentUser.email || undefined,
+          employeePrimaryId: currentUser.employeePrimaryId, // Employee.id (primary key)
         });
       }
     } catch (error) {
@@ -78,6 +82,7 @@ export default function App() {
           name: response.user.name,
           role: "employee",
           email: response.user.email,
+          employeePrimaryId: response.user.employeePrimaryId, // Employee.id (primary key)
         });
       }
 
@@ -161,7 +166,7 @@ export default function App() {
               hasNotifications={hasNotifications}
               onLogout={handleLogout}
               employeeName={user.name}
-              employeeId={user.id}
+              employeeId={user.employeePrimaryId || user.id}
             />
           ) : (
             <AdminApp
