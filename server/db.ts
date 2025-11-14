@@ -276,6 +276,27 @@ export async function deleteWorkplaceRule(id: number) {
   return await db.delete(workplaceRules).where(eq(workplaceRules.id, id));
 }
 
+export async function upsertWorkplaceRules(rules: InsertWorkplaceRule[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // 各ルールタイプに対して、既存を削除して新規挿入
+  for (const rule of rules) {
+    // 同じruleTypeの既存ルールを削除
+    await db.delete(workplaceRules).where(
+      and(
+        eq(workplaceRules.ruleType, rule.ruleType),
+        eq(workplaceRules.employmentType, rule.employmentType)
+      )
+    );
+
+    // 新規挿入
+    await db.insert(workplaceRules).values(rule);
+  }
+
+  return { success: true };
+}
+
 // ========== Required Staffing ==========
 
 export async function getAllRequiredStaffing() {

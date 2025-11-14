@@ -201,7 +201,7 @@ export const appRouter = router({
     }),
     create: protectedProcedure
       .input(z.object({
-        ruleType: z.enum(["min_rest_days", "night_shift_quota", "post_night_shift_rest", "required_staff_pattern"]),
+        ruleType: z.enum(["min_rest_days", "night_shift_quota", "post_night_shift_rest", "required_staff_pattern", "max_consecutive_days", "fulltime_required_hours"]),
         employmentType: z.enum(["fulltime", "parttime", "all"]),
         ruleValue: z.any(),
         description: z.string().optional(),
@@ -213,7 +213,7 @@ export const appRouter = router({
     update: protectedProcedure
       .input(z.object({
         id: z.number(),
-        ruleType: z.enum(["min_rest_days", "night_shift_quota", "post_night_shift_rest", "required_staff_pattern"]).optional(),
+        ruleType: z.enum(["min_rest_days", "night_shift_quota", "post_night_shift_rest", "required_staff_pattern", "max_consecutive_days", "fulltime_required_hours"]).optional(),
         employmentType: z.enum(["fulltime", "parttime", "all"]).optional(),
         ruleValue: z.any().optional(),
         description: z.string().optional(),
@@ -222,6 +222,19 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         return await db.updateWorkplaceRule(id, data);
+      }),
+    upsert: protectedProcedure
+      .input(z.object({
+        rules: z.array(z.object({
+          ruleType: z.enum(["min_rest_days", "night_shift_quota", "post_night_shift_rest", "required_staff_pattern", "max_consecutive_days", "fulltime_required_hours"]),
+          employmentType: z.enum(["fulltime", "parttime", "all"]),
+          ruleValue: z.any(),
+          description: z.string().optional(),
+          isActive: z.boolean().optional(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.upsertWorkplaceRules(input.rules);
       }),
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
