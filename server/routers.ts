@@ -540,7 +540,16 @@ export const appRouter = router({
         previousTimeSlotId: z.number().nullable().optional(),
       }))
       .mutation(async ({ input }) => {
-        return await db.createShiftDetail(input);
+        // Convert empty strings to null for database compatibility
+        const sanitizedInput = {
+          ...input,
+          timeSlotId: input.timeSlotId || null,
+          leaveType: input.leaveType || null,
+          startTime: input.startTime || null,
+          endTime: input.endTime || null,
+          previousTimeSlotId: input.previousTimeSlotId || null,
+        };
+        return await db.createShiftDetail(sanitizedInput);
       }),
     update: protectedProcedure
       .input(z.object({
@@ -556,7 +565,16 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        return await db.updateShiftDetail(id, data);
+        // Convert empty strings to null for database compatibility
+        const sanitizedData = {
+          ...data,
+          timeSlotId: data.timeSlotId || null,
+          leaveType: data.leaveType || null,
+          startTime: data.startTime || null,
+          endTime: data.endTime || null,
+          previousTimeSlotId: data.previousTimeSlotId || null,
+        };
+        return await db.updateShiftDetail(id, sanitizedData);
       }),
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
