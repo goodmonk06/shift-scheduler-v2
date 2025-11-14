@@ -3,7 +3,6 @@ import { Sparkles, Heart, CheckCircle } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { SparkleIcon } from "./DecorativeElements";
 import { VacationCalendar } from "./VacationCalendar";
@@ -38,9 +37,6 @@ export function VacationRequest({
 }: VacationRequestProps) {
   const toast = useToast();
 
-  // タブで選択中の月（month1=来月、month2=再来月）
-  const [selectedMonth, setSelectedMonth] = useState<"month1" | "month2">("month1");
-
   // 編集中の希望休（未提出）- キー: `${year}-${month}-${day}`
   const [requests, setRequests] = useState<Map<string, DayRequest>>(new Map());
   // データベースから取得した既存の希望休
@@ -58,27 +54,16 @@ export function VacationRequest({
   const [endMinute, setEndMinute] = useState("00");
   const [reason, setReason] = useState("");
 
-  // 月の計算（来月と再来月）
+  // 月の計算（来月のみ）
   const today = new Date();
-  const month1 = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  const month2 = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
-  // 各月の日数を計算
-  const month1Year = month1.getFullYear();
-  const month1Num = month1.getMonth() + 1;
-  const daysInMonth1 = new Date(month1Year, month1Num, 0).getDate();
-  const month1Days = Array.from({ length: daysInMonth1 }, (_, i) => i + 1);
-
-  const month2Year = month2.getFullYear();
-  const month2Num = month2.getMonth() + 1;
-  const daysInMonth2 = new Date(month2Year, month2Num, 0).getDate();
-  const month2Days = Array.from({ length: daysInMonth2 }, (_, i) => i + 1);
-
-  // 選択中の月の情報
-  const currentMonthData = selectedMonth === "month1" ? month1 : month2;
-  const nextMonthYear = currentMonthData.getFullYear();
-  const nextMonthNum = currentMonthData.getMonth() + 1;
-  const nextMonthName = currentMonthData.toLocaleDateString("ja-JP", { month: "long" });
+  // 来月の日数を計算
+  const nextMonthYear = nextMonth.getFullYear();
+  const nextMonthNum = nextMonth.getMonth() + 1;
+  const daysInNextMonth = new Date(nextMonthYear, nextMonthNum, 0).getDate();
+  const monthDays = Array.from({ length: daysInNextMonth }, (_, i) => i + 1);
+  const nextMonthName = nextMonth.toLocaleDateString("ja-JP", { month: "long" });
 
   // 来月の祝日を取得
   const holidays = useMemo(() => {
@@ -128,25 +113,19 @@ export function VacationRequest({
     }
   );
 
-  // データ取得後、existingRequestsに保存（来月と再来月の2ヶ月分）
+  // データ取得後、existingRequestsに保存（来月分のみ）
   useEffect(() => {
     if (leaveRequestsData) {
-      // 来月と再来月分の希望休をフィルタリング
-      const month1Year = month1.getFullYear();
-      const month1Num = month1.getMonth() + 1;
-      const month2Year = month2.getFullYear();
-      const month2Num = month2.getMonth() + 1;
-
-      const twoMonthsRequests = leaveRequestsData.filter(req => {
+      // 来月分の希望休をフィルタリング
+      const nextMonthRequests = leaveRequestsData.filter(req => {
         const startDate = new Date(req.startDate);
         const reqYear = startDate.getFullYear();
         const reqMonth = startDate.getMonth() + 1;
-        return (reqYear === month1Year && reqMonth === month1Num) ||
-               (reqYear === month2Year && reqMonth === month2Num);
+        return reqYear === nextMonthYear && reqMonth === nextMonthNum;
       });
-      setExistingRequests(twoMonthsRequests);
+      setExistingRequests(nextMonthRequests);
     }
-  }, [leaveRequestsData, month1, month2]);
+  }, [leaveRequestsData, nextMonthYear, nextMonthNum]);
 
   const deadline = currentShift?.leaveRequestDeadline
     ? new Date(currentShift.leaveRequestDeadline)
@@ -518,7 +497,7 @@ export function VacationRequest({
                   希望休入力
                   <Sparkles className="w-5 h-5 text-accent" />
                 </h2>
-                <p className="text-muted-foreground">来月・再来月の希望する休日を選択してください</p>
+                <p className="text-muted-foreground">来月の希望する休日を選択してください</p>
               </div>
             </div>
 
@@ -611,101 +590,46 @@ export function VacationRequest({
             </Card>
           )}
 
-          {/* Calendar with Month Tabs */}
-          <Tabs value={selectedMonth} onValueChange={(value) => setSelectedMonth(value as "month1" | "month2")}>
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="month1" className="flex items-center gap-2">
-                {month1.toLocaleDateString("ja-JP", { month: "long" })}
-              </TabsTrigger>
-              <TabsTrigger value="month2" className="flex items-center gap-2">
-                {month2.toLocaleDateString("ja-JP", { month: "long" })}
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="month1">
-              <VacationCalendar
-                key={`calendar-${month1Year}-${month1Num}`}
-                year={month1.getFullYear()}
-                month={month1.getMonth() + 1}
-                monthDays={month1Days}
-                requests={new Map(
-                  Array.from(requests.entries())
-                    .filter(([dateKey, request]) => {
-                      // null値（削除マーカー）を除外
-                      if (request === null) return false;
-                      const [year, month] = dateKey.split('-').map(Number);
-                      return year === month1.getFullYear() && month === month1.getMonth() + 1;
-                    })
-                    .map(([dateKey, request]) => {
-                      const day = parseInt(dateKey.split('-')[2]);
-                      return [day, request];
-                    })
-                )}
-                submittedRequests={new Map(existingRequests
-                  .filter(req => {
-                    const startDate = new Date(req.startDate);
-                    return startDate.getFullYear() === month1.getFullYear() &&
-                           startDate.getMonth() === month1.getMonth();
-                  })
-                  .map(req => {
-                    const startDate = new Date(req.startDate);
-                    return [startDate.getDate(), {
-                      day: startDate.getDate(),
-                      type: req.leaveType,
-                      startTime: req.startTime || undefined,
-                      endTime: req.endTime || undefined,
-                      reason: req.reason || undefined,
-                    }];
-                  })
-                )}
-                isBeforeDeadline={isBeforeDeadline}
-                onDateClick={handleDateClick}
-                getRequestBadge={createGetRequestBadge(month1Year, month1Num)}
-              />
-            </TabsContent>
-
-            <TabsContent value="month2">
-              <VacationCalendar
-                key={`calendar-${month2Year}-${month2Num}`}
-                year={month2.getFullYear()}
-                month={month2.getMonth() + 1}
-                monthDays={month2Days}
-                requests={new Map(
-                  Array.from(requests.entries())
-                    .filter(([dateKey, request]) => {
-                      // null値（削除マーカー）を除外
-                      if (request === null) return false;
-                      const [year, month] = dateKey.split('-').map(Number);
-                      return year === month2.getFullYear() && month === month2.getMonth() + 1;
-                    })
-                    .map(([dateKey, request]) => {
-                      const day = parseInt(dateKey.split('-')[2]);
-                      return [day, request];
-                    })
-                )}
-                submittedRequests={new Map(existingRequests
-                  .filter(req => {
-                    const startDate = new Date(req.startDate);
-                    return startDate.getFullYear() === month2.getFullYear() &&
-                           startDate.getMonth() === month2.getMonth();
-                  })
-                  .map(req => {
-                    const startDate = new Date(req.startDate);
-                    return [startDate.getDate(), {
-                      day: startDate.getDate(),
-                      type: req.leaveType,
-                      startTime: req.startTime || undefined,
-                      endTime: req.endTime || undefined,
-                      reason: req.reason || undefined,
-                    }];
-                  })
-                )}
-                isBeforeDeadline={isBeforeDeadline}
-                onDateClick={handleDateClick}
-                getRequestBadge={createGetRequestBadge(month2Year, month2Num)}
-              />
-            </TabsContent>
-          </Tabs>
+          {/* Calendar */}
+          <VacationCalendar
+            key={`calendar-${nextMonthYear}-${nextMonthNum}`}
+            year={nextMonthYear}
+            month={nextMonthNum}
+            monthDays={monthDays}
+            requests={new Map(
+              Array.from(requests.entries())
+                .filter(([dateKey, request]) => {
+                  // null値（削除マーカー）を除外
+                  if (request === null) return false;
+                  const [year, month] = dateKey.split('-').map(Number);
+                  return year === nextMonthYear && month === nextMonthNum;
+                })
+                .map(([dateKey, request]) => {
+                  const day = parseInt(dateKey.split('-')[2]);
+                  return [day, request];
+                })
+            )}
+            submittedRequests={new Map(existingRequests
+              .filter(req => {
+                const startDate = new Date(req.startDate);
+                return startDate.getFullYear() === nextMonthYear &&
+                       startDate.getMonth() === nextMonthNum - 1;
+              })
+              .map(req => {
+                const startDate = new Date(req.startDate);
+                return [startDate.getDate(), {
+                  day: startDate.getDate(),
+                  type: req.leaveType,
+                  startTime: req.startTime || undefined,
+                  endTime: req.endTime || undefined,
+                  reason: req.reason || undefined,
+                }];
+              })
+            )}
+            isBeforeDeadline={isBeforeDeadline}
+            onDateClick={handleDateClick}
+            getRequestBadge={createGetRequestBadge(nextMonthYear, nextMonthNum)}
+          />
 
           {/* Notes */}
           <Card className="p-5 bg-gradient-to-br from-secondary/10 to-accent/5 border-2 border-secondary/30">
