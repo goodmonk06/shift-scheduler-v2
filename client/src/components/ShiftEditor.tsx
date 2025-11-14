@@ -123,143 +123,57 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     toast.info(`${employeeName} - ${day}日のシフト編集（実装予定）`);
   };
 
-  // 全職員を取得（モック）
-  const employees: Employee[] = [
-    { id: "EMP001", name: "山田 太郎" },
-    { id: "EMP002", name: "佐藤 花子" },
-    { id: "EMP003", name: "鈴木 一郎" },
-    { id: "EMP004", name: "田中 美咲" },
-    { id: "EMP005", name: "高橋 健太" },
-  ];
+  // 職員データとシフト割り当てデータ
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [assignments, setAssignments] = useState<ShiftAssignment[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
-  // シフト割り当てデータ（モック）を生成する関数
-  const generateMockAssignments = (year: number, month: number): ShiftAssignment[] => {
-    const yearMonthStr = `${year}-${String(month).padStart(2, "0")}`;
-    return [
-      // 希望休
-      {
-        date: `${yearMonthStr}-10`,
-        employeeId: "EMP001",
-        employeeName: "山田 太郎",
-        positionGroup: "fulltime",
-        timeSlotId: null,
-        timeSlotName: null,
-        isVacationRequest: true,
-      },
-      {
-        date: `${yearMonthStr}-15`,
-        employeeId: "EMP002",
-        employeeName: "佐藤 花子",
-        positionGroup: "fulltime",
-        timeSlotId: null,
-        timeSlotName: null,
-        isVacationRequest: true,
-      },
-      {
-        date: `${yearMonthStr}-20`,
-        employeeId: "EMP003",
-        employeeName: "鈴木 一郎",
-        positionGroup: "parttime",
-        timeSlotId: null,
-        timeSlotName: null,
-        isVacationRequest: true,
-      },
-      // 通常勤務
-      {
-        date: `${yearMonthStr}-01`,
-        employeeId: "EMP001",
-        employeeName: "山田 太郎",
-        positionGroup: "fulltime",
-        timeSlotId: "TS001",
-        timeSlotName: "早番",
-        isVacationRequest: false,
-      },
-      {
-        date: `${yearMonthStr}-01`,
-        employeeId: "EMP002",
-        employeeName: "佐藤 花子",
-        positionGroup: "fulltime",
-        timeSlotId: "TS002",
-        timeSlotName: "遅番",
-        isVacationRequest: false,
-      },
-      {
-        date: `${yearMonthStr}-01`,
-        employeeId: "EMP004",
-        employeeName: "田中 美咲",
-        positionGroup: "parttime",
-        timeSlotId: "TS003",
-        timeSlotName: "夜勤",
-        isVacationRequest: false,
-      },
-      {
-        date: `${yearMonthStr}-02`,
-        employeeId: "EMP001",
-        employeeName: "山田 太郎",
-        positionGroup: "fulltime",
-        timeSlotId: "TS001",
-        timeSlotName: "早番",
-        isVacationRequest: false,
-      },
-      {
-        date: `${yearMonthStr}-02`,
-        employeeId: "EMP003",
-        employeeName: "鈴木 一郎",
-        positionGroup: "parttime",
-        timeSlotId: "TS002",
-        timeSlotName: "遅番",
-        isVacationRequest: false,
-        hasWarning: true,
-        warningMessage: "スキルレベル80%の職員が配置されています",
-      },
-      {
-        date: `${yearMonthStr}-03`,
-        employeeId: "EMP002",
-        employeeName: "佐藤 花子",
-        positionGroup: "fulltime",
-        timeSlotId: "TS001",
-        timeSlotName: "早番",
-        isVacationRequest: false,
-      },
-      {
-        date: `${yearMonthStr}-03`,
-        employeeId: "EMP005",
-        employeeName: "高橋 健太",
-        positionGroup: "parttime",
-        timeSlotId: "TS003",
-        timeSlotName: "夜勤",
-        isVacationRequest: false,
-      },
-      // 休み
-      {
-        date: `${yearMonthStr}-01`,
-        employeeId: "EMP003",
-        employeeName: "鈴木 一郎",
-        positionGroup: "parttime",
-        timeSlotId: null,
-        timeSlotName: null,
-        isVacationRequest: false,
-      },
-      {
-        date: `${yearMonthStr}-01`,
-        employeeId: "EMP005",
-        employeeName: "高橋 健太",
-        positionGroup: "parttime",
-        timeSlotId: null,
-        timeSlotName: null,
-        isVacationRequest: false,
-      },
-    ];
-  };
-
-  const [assignments, setAssignments] = useState<ShiftAssignment[]>(
-    generateMockAssignments(currentShift.year, currentShift.month)
-  );
-
-  // currentShiftが更新されたらassignmentsも更新
+  // 職員データとシフト詳細を取得
   useEffect(() => {
-    setAssignments(generateMockAssignments(currentShift.year, currentShift.month));
-  }, [currentShift.year, currentShift.month]);
+    const loadData = async () => {
+      if (!shiftId) return;
+
+      try {
+        setIsLoadingData(true);
+
+        // 職員データを取得
+        const employeesData = await trpcClient.employees.list.query();
+        const formattedEmployees: Employee[] = employeesData.map(emp => ({
+          id: emp.employeeId,
+          name: emp.name,
+        }));
+        setEmployees(formattedEmployees);
+
+        // シフト詳細を取得
+        const shiftDetails = await trpcClient.shiftDetails.getByShift.query({
+          shiftId: Number(shiftId)
+        });
+
+        // シフト詳細をShiftAssignment形式に変換
+        const formattedAssignments: ShiftAssignment[] = shiftDetails.map(detail => {
+          const employee = employeesData.find(emp => emp.id === detail.employeeId);
+          return {
+            date: detail.date,
+            employeeId: employee?.employeeId || String(detail.employeeId),
+            employeeName: employee?.name || "不明",
+            positionGroup: "fulltime", // TODO: 実際のデータから取得
+            timeSlotId: detail.timeSlotId?.toString() || null,
+            timeSlotName: detail.timeSlotId ? "勤務" : null, // TODO: 実際の時間枠名を取得
+            isVacationRequest: detail.status === "requested_off",
+          };
+        });
+        setAssignments(formattedAssignments);
+
+      } catch (error) {
+        console.error('[ShiftEditor] Failed to load data:', error);
+        toast.error('データの取得に失敗しました');
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    loadData();
+  }, [shiftId, toast]);
 
   // 統計情報（動的に計算）
   const calculateStats = () => {
