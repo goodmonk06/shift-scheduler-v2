@@ -144,8 +144,9 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         // 職員データを取得
         const employeesData = await trpcClient.employees.list.query();
         const formattedEmployees: Employee[] = employeesData.map(emp => ({
-          id: emp.employeeId,
+          id: emp.employeeId, // Display ID (e.g., "EMP001")
           name: emp.name,
+          dbId: emp.id, // Database numeric ID
         }));
         setEmployees(formattedEmployees);
 
@@ -182,6 +183,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
             timeSlotName: displayName,
             isVacationRequest: detail.status === "requested_off",
             shiftDetailId: detail.id, // Include the ID for editing
+            employeeDbId: detail.employeeId, // Database numeric ID
           };
         });
         setAssignments(formattedAssignments);

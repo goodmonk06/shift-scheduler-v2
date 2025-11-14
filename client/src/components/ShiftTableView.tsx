@@ -56,7 +56,8 @@ interface WorkTimeSlot {
 }
 
 interface EditingCell {
-  employeeId: string;
+  employeeId: string; // Display ID
+  employeeDbId: number; // Database numeric ID
   day: number;
   shiftDetailId: number | null;
 }
@@ -86,6 +87,7 @@ export function ShiftTableView({
   const [showLeaveRequestWarning, setShowLeaveRequestWarning] = useState(false);
   const [pendingEdit, setPendingEdit] = useState<{
     employeeId: string;
+    employeeDbId: number;
     day: number;
     shiftDetailId: number | null;
   } | null>(null);
@@ -114,25 +116,25 @@ export function ShiftTableView({
     return assignments.find((a) => a.date === dateStr && a.employeeId === employeeId);
   };
 
-  const handleCellClick = (employeeId: string, day: number, shiftDetailId: number | null, isVacationRequest: boolean) => {
+  const handleCellClick = (employeeId: string, employeeDbId: number, day: number, shiftDetailId: number | null, isVacationRequest: boolean) => {
     // Check if this is a vacation request - show warning
     if (isVacationRequest) {
-      setPendingEdit({ employeeId, day, shiftDetailId });
+      setPendingEdit({ employeeId, employeeDbId, day, shiftDetailId });
       setShowLeaveRequestWarning(true);
     } else {
-      startEditing(employeeId, day, shiftDetailId);
+      startEditing(employeeId, employeeDbId, day, shiftDetailId);
     }
   };
 
-  const startEditing = (employeeId: string, day: number, shiftDetailId: number | null) => {
-    setEditingCell({ employeeId, day, shiftDetailId });
+  const startEditing = (employeeId: string, employeeDbId: number, day: number, shiftDetailId: number | null) => {
+    setEditingCell({ employeeId, employeeDbId, day, shiftDetailId });
     setSelectedOption("");
     setTimeInput("9-18");
   };
 
   const handleWarningConfirm = () => {
     if (pendingEdit) {
-      startEditing(pendingEdit.employeeId, pendingEdit.day, pendingEdit.shiftDetailId);
+      startEditing(pendingEdit.employeeId, pendingEdit.employeeDbId, pendingEdit.day, pendingEdit.shiftDetailId);
     }
     setShowLeaveRequestWarning(false);
     setPendingEdit(null);
@@ -154,7 +156,7 @@ export function ShiftTableView({
       // Prepare data based on selected option
       let mutationData: any = {
         shiftId: Number(shiftId),
-        employeeId: Number(editingCell.employeeId),
+        employeeId: editingCell.employeeDbId, // Use database numeric ID
         date: dateStr,
       };
 
@@ -342,12 +344,17 @@ export function ShiftTableView({
                         }`}
                         onClick={() => {
                           if (!isEditingThisCell) {
-                            handleCellClick(
-                              employee.id,
-                              day,
-                              assignment?.shiftDetailId ?? null,
-                              assignment?.isVacationRequest ?? false
-                            );
+                            // Get employeeDbId from assignment or from employee
+                            const employeeDbId = assignment?.employeeDbId || employee.dbId;
+                            if (employeeDbId) {
+                              handleCellClick(
+                                employee.id,
+                                employeeDbId,
+                                day,
+                                assignment?.shiftDetailId ?? null,
+                                assignment?.isVacationRequest ?? false
+                              );
+                            }
                           }
                         }}
                       >

@@ -11,7 +11,7 @@ export interface ShiftData {
 
 export interface ShiftAssignment {
   date: string;
-  employeeId: string;
+  employeeId: string; // Display ID (e.g., "EMP001")
   employeeName: string;
   positionGroup?: "fulltime" | "parttime";
   timeSlotId: string | null;
@@ -20,6 +20,7 @@ export interface ShiftAssignment {
   hasWarning?: boolean;
   warningMessage?: string;
   shiftDetailId?: number; // ID of the shift detail record for editing
+  employeeDbId?: number; // Database numeric ID
 }
 
 export interface AIGenerationConfig {
@@ -31,8 +32,9 @@ export interface AIGenerationConfig {
 }
 
 export interface Employee {
-  id: string;
+  id: string; // Display ID (e.g., "EMP001")
   name: string;
+  dbId?: number; // Database numeric ID
 }
 
 export interface ShiftStatistics {
