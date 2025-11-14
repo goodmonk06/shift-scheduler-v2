@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "c6159b39-417d-4b67-a37b-ca5c8603df20",
-  "prevId": "4eb97b85-e520-439b-80bb-1334def06d27",
+  "id": "e2810db8-8754-4881-b233-47995bde8bfd",
+  "prevId": "e1cfbbc8-1f98-4f3d-98c3-e369c63a277d",
   "tables": {
     "auditLogs": {
       "name": "auditLogs",
@@ -52,7 +52,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "auditLogs_actorUserId_users_id_fk": {
+          "name": "auditLogs_actorUserId_users_id_fk",
+          "tableFrom": "auditLogs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "actorUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "auditLogs_id": {
           "name": "auditLogs_id",
@@ -158,7 +172,60 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "changeProposals_employeeId_employees_id_fk": {
+          "name": "changeProposals_employeeId_employees_id_fk",
+          "tableFrom": "changeProposals",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employeeId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "changeProposals_shiftId_shifts_id_fk": {
+          "name": "changeProposals_shiftId_shifts_id_fk",
+          "tableFrom": "changeProposals",
+          "tableTo": "shifts",
+          "columnsFrom": [
+            "shiftId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "changeProposals_currentTimeSlotId_workTimeSlots_id_fk": {
+          "name": "changeProposals_currentTimeSlotId_workTimeSlots_id_fk",
+          "tableFrom": "changeProposals",
+          "tableTo": "workTimeSlots",
+          "columnsFrom": [
+            "currentTimeSlotId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "changeProposals_proposedTimeSlotId_workTimeSlots_id_fk": {
+          "name": "changeProposals_proposedTimeSlotId_workTimeSlots_id_fk",
+          "tableFrom": "changeProposals",
+          "tableTo": "workTimeSlots",
+          "columnsFrom": [
+            "proposedTimeSlotId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "changeProposals_id": {
           "name": "changeProposals_id",
@@ -304,7 +371,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "employeeConstraints_employeeId_employees_id_fk": {
+          "name": "employeeConstraints_employeeId_employees_id_fk",
+          "tableFrom": "employeeConstraints",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employeeId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "employeeConstraints_id": {
           "name": "employeeConstraints_id",
@@ -377,6 +458,44 @@
           "autoincrement": false,
           "default": false
         },
+        "workableDays": {
+          "name": "workableDays",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "additionalConstraints": {
+          "name": "additionalConstraints",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "breakTime": {
+          "name": "breakTime",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 60
+        },
+        "isServiceManager": {
+          "name": "isServiceManager",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "isOfficeStaff": {
+          "name": "isOfficeStaff",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
         "displayOrder": {
           "name": "displayOrder",
           "type": "int",
@@ -404,7 +523,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "employees_userId_users_id_fk": {
+          "name": "employees_userId_users_id_fk",
+          "tableFrom": "employees",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "employees_positionGroupId_positionGroups_id_fk": {
+          "name": "employees_positionGroupId_positionGroups_id_fk",
+          "tableFrom": "employees",
+          "tableTo": "positionGroups",
+          "columnsFrom": [
+            "positionGroupId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "employees_id": {
           "name": "employees_id",
@@ -540,7 +686,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "leaveRequests_employeeId_employees_id_fk": {
+          "name": "leaveRequests_employeeId_employees_id_fk",
+          "tableFrom": "leaveRequests",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employeeId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "leaveRequests_shiftId_shifts_id_fk": {
+          "name": "leaveRequests_shiftId_shifts_id_fk",
+          "tableFrom": "leaveRequests",
+          "tableTo": "shifts",
+          "columnsFrom": [
+            "shiftId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "leaveRequests_id": {
           "name": "leaveRequests_id",
@@ -575,6 +748,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "minDaysOffPerMonth": {
+          "name": "minDaysOffPerMonth",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
         "displayOrder": {
           "name": "displayOrder",
@@ -663,7 +844,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "pushSubscriptions_userId_users_id_fk": {
+          "name": "pushSubscriptions_userId_users_id_fk",
+          "tableFrom": "pushSubscriptions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "pushSubscriptions_id": {
           "name": "pushSubscriptions_id",
@@ -704,6 +899,13 @@
           "type": "int",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "staffingDetails": {
+          "name": "staffingDetails",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "createdAt": {
@@ -824,7 +1026,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "shiftActuals_shiftDetailId_shiftDetails_id_fk": {
+          "name": "shiftActuals_shiftDetailId_shiftDetails_id_fk",
+          "tableFrom": "shiftActuals",
+          "tableTo": "shiftDetails",
+          "columnsFrom": [
+            "shiftDetailId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shiftActuals_approvedBy_users_id_fk": {
+          "name": "shiftActuals_approvedBy_users_id_fk",
+          "tableFrom": "shiftActuals",
+          "tableTo": "users",
+          "columnsFrom": [
+            "approvedBy"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "shiftActuals_id": {
           "name": "shiftActuals_id",
@@ -883,7 +1112,7 @@
         },
         "generatedBy": {
           "name": "generatedBy",
-          "type": "enum('manual','ai')",
+          "type": "enum('manual','ai','leave_request')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -923,7 +1152,60 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "shiftDetails_shiftId_shifts_id_fk": {
+          "name": "shiftDetails_shiftId_shifts_id_fk",
+          "tableFrom": "shiftDetails",
+          "tableTo": "shifts",
+          "columnsFrom": [
+            "shiftId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shiftDetails_employeeId_employees_id_fk": {
+          "name": "shiftDetails_employeeId_employees_id_fk",
+          "tableFrom": "shiftDetails",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employeeId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shiftDetails_timeSlotId_workTimeSlots_id_fk": {
+          "name": "shiftDetails_timeSlotId_workTimeSlots_id_fk",
+          "tableFrom": "shiftDetails",
+          "tableTo": "workTimeSlots",
+          "columnsFrom": [
+            "timeSlotId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "shiftDetails_previousTimeSlotId_workTimeSlots_id_fk": {
+          "name": "shiftDetails_previousTimeSlotId_workTimeSlots_id_fk",
+          "tableFrom": "shiftDetails",
+          "tableTo": "workTimeSlots",
+          "columnsFrom": [
+            "previousTimeSlotId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "shiftDetails_id": {
           "name": "shiftDetails_id",
@@ -998,7 +1280,34 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "shiftFeedback_shiftId_shifts_id_fk": {
+          "name": "shiftFeedback_shiftId_shifts_id_fk",
+          "tableFrom": "shiftFeedback",
+          "tableTo": "shifts",
+          "columnsFrom": [
+            "shiftId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shiftFeedback_createdBy_users_id_fk": {
+          "name": "shiftFeedback_createdBy_users_id_fk",
+          "tableFrom": "shiftFeedback",
+          "tableTo": "users",
+          "columnsFrom": [
+            "createdBy"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "shiftFeedback_id": {
           "name": "shiftFeedback_id",
@@ -1024,7 +1333,7 @@
           "name": "userId",
           "type": "int",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "year": {
@@ -1140,7 +1449,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "shifts_userId_users_id_fk": {
+          "name": "shifts_userId_users_id_fk",
+          "tableFrom": "shifts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "shifts_id": {
           "name": "shifts_id",
@@ -1212,7 +1535,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "staffSettings_employeeId_employees_id_fk": {
+          "name": "staffSettings_employeeId_employees_id_fk",
+          "tableFrom": "staffSettings",
+          "tableTo": "employees",
+          "columnsFrom": [
+            "employeeId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "staffSettings_id": {
           "name": "staffSettings_id",
@@ -1412,7 +1749,7 @@
         },
         "ruleType": {
           "name": "ruleType",
-          "type": "enum('min_rest_days','night_shift_quota','post_night_shift_rest','required_staff_pattern')",
+          "type": "enum('min_rest_days','night_shift_quota','post_night_shift_rest','required_staff_pattern','max_consecutive_days','fulltime_required_hours')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false

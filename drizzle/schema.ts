@@ -134,6 +134,7 @@ export const requiredStaffing = mysqlTable("requiredStaffing", {
   dayOfWeek: int("dayOfWeek").notNull(), // 0-6 (0=Sunday)
   hour: int("hour").notNull(), // 0-23
   requiredCount: int("requiredCount").notNull(),
+  staffingDetails: json("staffingDetails"), // 詳細情報（役職グループ、事務員など）
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
