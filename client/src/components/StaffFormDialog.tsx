@@ -116,19 +116,18 @@ export function StaffFormDialog({
           </div>
 
           <div className="space-y-2 pt-4 border-t">
-              <Label htmlFor="additionalConstraints">個別勤務条件</Label>
-              <Textarea
-                id="additionalConstraints"
-                placeholder="設定されている個別条件がここに表示されます"
-                value={formData.additionalConstraints}
-                readOnly
-                className="rounded-xl bg-muted/50"
-                rows={5}
-              />
-              <p className="text-xs text-muted-foreground">
-                ※ 個別勤務条件はシフト自動生成時にAIが参照します。編集が必要な場合は開発チームにご連絡ください。
-              </p>
-            </div>
+            <Label htmlFor="additionalConstraints">個別勤務条件</Label>
+            <Textarea
+              id="additionalConstraints"
+              placeholder="設定されている個別条件がここに表示されます"
+              value={formData.additionalConstraints}
+              readOnly
+              className="rounded-xl bg-muted/50"
+              rows={5}
+            />
+            <p className="text-xs text-muted-foreground">
+              ※ 個別勤務条件はシフト自動生成時にAIが参照します。編集が必要な場合は開発チームにご連絡ください。
+            </p>
           </div>
         </div>
 
