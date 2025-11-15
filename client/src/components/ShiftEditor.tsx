@@ -216,6 +216,9 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           displayName = `${formatTime(detail.startTime)}-${formatTime(detail.endTime)}`;
         } else if (detail.leaveType) {
           displayName = detail.leaveType;
+        } else if (detail.status === "off" || detail.status === "requested_off") {
+          // 承認済み希望休（generatedBy = 'leave_request'）の場合、leaveTypeがnullでも"休"を表示
+          displayName = "休";
         } else if (detail.timeSlotId) {
           displayName = "勤務"; // TODO: 実際の時間枠名を取得
         }
