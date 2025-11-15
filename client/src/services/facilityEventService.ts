@@ -1,4 +1,4 @@
-import { trpc } from "../lib/trpc";
+import { trpcClient } from "../lib/trpc";
 
 export interface FacilityEvent {
   id: number;
@@ -19,7 +19,7 @@ export const facilityEventService = {
    */
   async getAllEvents(): Promise<FacilityEvent[]> {
     try {
-      const result = await trpc.facilityEvents.list.query();
+      const result = await trpcClient.facilityEvents.list.query();
       return result as FacilityEvent[];
     } catch (error) {
       console.error("Failed to fetch facility events:", error);
@@ -32,7 +32,7 @@ export const facilityEventService = {
    */
   async getEventsByMonth(year: number, month: number): Promise<FacilityEvent[]> {
     try {
-      const result = await trpc.facilityEvents.getByMonth.query({ year, month });
+      const result = await trpcClient.facilityEvents.getByMonth.query({ year, month });
       return result as FacilityEvent[];
     } catch (error) {
       console.error(`Failed to fetch facility events for ${year}-${month}:`, error);
@@ -45,7 +45,7 @@ export const facilityEventService = {
    */
   async getEventById(id: number): Promise<FacilityEvent | null> {
     try {
-      const result = await trpc.facilityEvents.getById.query({ id });
+      const result = await trpcClient.facilityEvents.getById.query({ id });
       return result as FacilityEvent | null;
     } catch (error) {
       console.error(`Failed to fetch facility event ${id}:`, error);
@@ -65,7 +65,7 @@ export const facilityEventService = {
     time?: string;
   }): Promise<void> {
     try {
-      await trpc.facilityEvents.create.mutate(event);
+      await trpcClient.facilityEvents.create.mutate(event);
     } catch (error) {
       console.error("Failed to create facility event:", error);
       throw error;
@@ -87,7 +87,7 @@ export const facilityEventService = {
     }
   ): Promise<void> {
     try {
-      await trpc.facilityEvents.update.mutate({ id, ...updates });
+      await trpcClient.facilityEvents.update.mutate({ id, ...updates });
     } catch (error) {
       console.error(`Failed to update facility event ${id}:`, error);
       throw error;
@@ -99,7 +99,7 @@ export const facilityEventService = {
    */
   async deleteEvent(id: number): Promise<void> {
     try {
-      await trpc.facilityEvents.delete.mutate({ id });
+      await trpcClient.facilityEvents.delete.mutate({ id });
     } catch (error) {
       console.error(`Failed to delete facility event ${id}:`, error);
       throw error;
