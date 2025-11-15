@@ -328,20 +328,15 @@ class AuthServiceProduction implements AuthService {
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      console.log('[AuthService] Checking current user...');
-
       // Try employee auth first
       const employeeResponse = await fetch(`${this.baseUrl}/api/simple-auth/me`, {
         method: 'GET',
         credentials: 'include',
       });
 
-      console.log('[AuthService] Employee auth response:', employeeResponse.status, employeeResponse.ok);
-
       if (employeeResponse.ok) {
         const data = await employeeResponse.json();
         if (data.user) {
-          console.log('[AuthService] Employee user found:', data.user.name);
           return {
             id: data.user.id,
             name: data.user.name,
@@ -362,12 +357,9 @@ class AuthServiceProduction implements AuthService {
         credentials: 'include',
       });
 
-      console.log('[AuthService] Admin auth response:', adminResponse.status, adminResponse.ok);
-
       if (adminResponse.ok) {
         const data = await adminResponse.json();
         if (data.user) {
-          console.log('[AuthService] Admin user found:', data.user.name || '管理者');
           return {
             id: data.user.id,
             name: data.user.name || '管理者',
@@ -381,10 +373,8 @@ class AuthServiceProduction implements AuthService {
         }
       }
 
-      console.log('[AuthService] No authenticated user found');
       return null;
-    } catch (error) {
-      console.error('[AuthService] Error checking current user:', error);
+    } catch {
       return null;
     }
   }

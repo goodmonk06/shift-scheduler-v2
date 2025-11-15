@@ -48,27 +48,11 @@ export default function App() {
   // 初期化: 認証状態を確認
   useEffect(() => {
     checkAuthStatus();
-
-    // Re-check auth when app becomes visible (for PWA)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !user && !isLoading) {
-        console.log('[App] App became visible, re-checking auth');
-        checkAuthStatus();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [user, isLoading]);
+  }, []);
 
   async function checkAuthStatus() {
-    console.log('[App] Checking auth status...');
     try {
       const currentUser = await authService.getCurrentUser();
-      console.log('[App] Auth check result:', currentUser ? 'User found' : 'No user');
-
       if (currentUser) {
         // role を employee | admin に正規化
         const normalizedRole = currentUser.role === 'user' ? 'employee' : currentUser.role as UserRole;
@@ -79,12 +63,9 @@ export default function App() {
           email: currentUser.email || undefined,
           employeePrimaryId: currentUser.employeePrimaryId, // Employee.id (primary key)
         });
-        console.log('[App] User set:', normalizedRole);
-      } else {
-        console.log('[App] No authenticated user found');
       }
     } catch (error) {
-      console.error("[App] 認証状態の確認に失敗しました:", error);
+      console.error("認証状態の確認に失敗しました:", error);
     } finally {
       setIsLoading(false);
     }
