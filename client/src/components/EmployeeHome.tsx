@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Calendar, Clock, Bell, Sparkles, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
