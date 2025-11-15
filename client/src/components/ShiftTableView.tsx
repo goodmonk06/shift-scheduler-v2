@@ -110,7 +110,7 @@ export function ShiftTableView({
     };
 
     fetchWorkTimeSlots();
-  }, [toast]);
+  }, []); // 初回マウント時のみ実行
 
   // 各職員の各日のシフトを取得
   const getAssignment = (employeeId: string, day: number) => {
