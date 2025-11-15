@@ -149,11 +149,6 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
       }));
       setEmployees(formattedEmployees);
 
-      // シフト詳細を取得
-      const allShiftDetails = await trpcClient.shiftDetails.getByShift.query({
-        shiftId: Number(shiftId)
-      });
-
       // 該当月の日付範囲を計算
       const targetYear = viewYear;
       const targetMonth = viewMonth;
@@ -163,11 +158,29 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
       const monthEndDay = monthEnd.getDate();
       const monthEndStr = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${String(monthEndDay).padStart(2, '0')}`;
 
-      // shiftDetailsを表示月でフィルタリング（viewYear/viewMonthと一致する日付のみ）
-      const shiftDetails = allShiftDetails.filter(detail => {
-        return detail.date >= monthStartStr && detail.date <= monthEndStr;
-      });
-      console.log('[ShiftEditor] Shift details for', targetYear, targetMonth, ':', shiftDetails.length, '/', allShiftDetails.length);
+      // 表示している年月のシフトを検索して、そのシフトIDを取得
+      const allShifts = await trpcClient.shifts.list.query();
+      const targetMonthShift = allShifts.find(s => s.year === targetYear && s.month === targetMonth);
+
+      let shiftDetails = [];
+      if (targetMonthShift) {
+        console.log('[ShiftEditor] Found shift for', targetYear, targetMonth, ':', targetMonthShift.id);
+        // 該当月のシフトIDでshiftDetailsを取得
+        shiftDetails = await trpcClient.shiftDetails.getByShift.query({
+          shiftId: targetMonthShift.id
+        });
+        console.log('[ShiftEditor] Shift details for', targetYear, targetMonth, ':', shiftDetails.length);
+      } else {
+        console.log('[ShiftEditor] No shift found for', targetYear, targetMonth);
+        // 該当月のシフトが存在しない場合、現在のshiftIdから取得してフィルタ
+        const allShiftDetails = await trpcClient.shiftDetails.getByShift.query({
+          shiftId: Number(shiftId)
+        });
+        shiftDetails = allShiftDetails.filter(detail => {
+          return detail.date >= monthStartStr && detail.date <= monthEndStr;
+        });
+        console.log('[ShiftEditor] Filtered shift details:', shiftDetails.length, '/', allShiftDetails.length);
+      }
 
       // 承認済み希望休を取得（年月でフィルタリング）
       const allLeaveRequests = await trpcClient.leaveRequests.list.query();
