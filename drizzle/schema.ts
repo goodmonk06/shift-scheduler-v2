@@ -338,3 +338,23 @@ export const staffSettings = mysqlTable("staffSettings", {
 
 export type StaffSettings = typeof staffSettings.$inferSelect;
 export type InsertStaffSettings = typeof staffSettings.$inferInsert;
+
+/**
+ * Facility Events (施設イベント)
+ * 全職員のホームカレンダーに表示される施設イベント
+ */
+export const facilityEvents = mysqlTable("facilityEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  year: int("year").notNull(),
+  month: int("month").notNull(),
+  day: int("day").notNull(),
+  title: varchar("title", { length: 100 }).notNull(),
+  description: text("description"),
+  time: varchar("time", { length: 50 }), // 時間（例: "10:00 - 11:30"）
+  createdBy: int("createdBy").notNull().references(() => users.id, { onDelete: 'cascade' }), // FK to users
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FacilityEvent = typeof facilityEvents.$inferSelect;
+export type InsertFacilityEvent = typeof facilityEvents.$inferInsert;

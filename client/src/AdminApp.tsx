@@ -3,7 +3,7 @@ import {
   Home, Users, Sparkles, Calendar,
   Briefcase, Clock, Settings, UsersRound,
   FileText, Bell, Archive, BarChart3,
-  RefreshCw, LogOut, Server
+  RefreshCw, LogOut, Server, PartyPopper
 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { ScrollArea } from "./components/ui/scroll-area";
@@ -24,6 +24,7 @@ import { Statistics } from "./components/Statistics";
 import { EmergencyNotifications } from "./components/EmergencyNotifications";
 import { ShiftArchive } from "./components/ShiftArchive";
 import { ServerManagement } from "./components/ServerManagement";
+import { FacilityEventManagement } from "./components/FacilityEventManagement";
 import { VacationProvider } from "./contexts/VacationContext";
 
 type AdminView =
@@ -33,6 +34,7 @@ type AdminView =
   | "work-time-slots"
   | "workplace-rules"
   | "required-staffing"
+  | "facility-events"
   | "shifts"
   | "shift-editor"
   | "leave-requests"
@@ -82,6 +84,8 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
         return <WorkplaceRules />;
       case "required-staffing":
         return <RequiredStaffing />;
+      case "facility-events":
+        return <FacilityEventManagement />;
       case "shifts":
         return <ShiftYearlyView onEditShift={handleEditShift} />;
       case "shift-editor":
@@ -184,6 +188,14 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
               >
                 <UsersRound className="w-4 h-4 mr-2" />
                 必要人数設定
+              </Button>
+              <Button
+                variant={adminView === "facility-events" ? "default" : "ghost"}
+                className="w-full justify-start rounded-xl"
+                onClick={() => handleViewChange("facility-events")}
+              >
+                <PartyPopper className="w-4 h-4 mr-2" />
+                施設イベント
               </Button>
             </div>
 

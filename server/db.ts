@@ -27,6 +27,8 @@ import {
   InsertEmergencyNotification,
   shiftFeedback,
   InsertShiftFeedback,
+  facilityEvents,
+  InsertFacilityEvent,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -659,4 +661,76 @@ export async function applyApprovedLeaveRequestsToShift(shiftId: number): Promis
 
   console.log(`[ApplyLeaveRequests] Applied ${appliedCount} leave days for shift ${shiftId}`);
   return appliedCount;
+}
+
+// ========== Facility Events Management ==========
+
+/**
+ * Get all facility events
+ */
+export async function getAllFacilityEvents() {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  return await database.select().from(facilityEvents).orderBy(asc(facilityEvents.year), asc(facilityEvents.month), asc(facilityEvents.day));
+}
+
+/**
+ * Get facility events for a specific month
+ */
+export async function getFacilityEventsByMonth(year: number, month: number) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  return await database
+    .select()
+    .from(facilityEvents)
+    .where(
+      and(
+        eq(facilityEvents.year, year),
+        eq(facilityEvents.month, month)
+      )
+    )
+    .orderBy(asc(facilityEvents.day));
+}
+
+/**
+ * Get a facility event by ID
+ */
+export async function getFacilityEventById(id: number) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const result = await database.select().from(facilityEvents).where(eq(facilityEvents.id, id));
+  return result[0] || null;
+}
+
+/**
+ * Create a new facility event
+ */
+export async function createFacilityEvent(event: Omit<InsertFacilityEvent, 'id'>) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const result = await database.insert(facilityEvents).values(event);
+  return result;
+}
+
+/**
+ * Update a facility event
+ */
+export async function updateFacilityEvent(id: number, event: Partial<Omit<InsertFacilityEvent, 'id' | 'createdBy'>>) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const result = await database.update(facilityEvents).set({
+    ...event,
+    updatedAt: new Date(),
+  }).where(eq(facilityEvents.id, id));
+  return result;
+}
+
+/**
+ * Delete a facility event
+ */
+export async function deleteFacilityEvent(id: number) {
+  const database = await getDb();
+  if (!database) throw new Error("Database not available");
+  const result = await database.delete(facilityEvents).where(eq(facilityEvents.id, id));
+  return result;
 }

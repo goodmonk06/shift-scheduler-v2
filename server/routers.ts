@@ -1041,6 +1041,60 @@ export const appRouter = router({
     }),
   }),
 
+  // Facility Events
+  facilityEvents: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllFacilityEvents();
+    }),
+    getByMonth: publicProcedure
+      .input(z.object({ year: z.number(), month: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getFacilityEventsByMonth(input.year, input.month);
+      }),
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getFacilityEventById(input.id);
+      }),
+    create: protectedProcedure
+      .input(z.object({
+        year: z.number(),
+        month: z.number(),
+        day: z.number(),
+        title: z.string(),
+        description: z.string().optional(),
+        time: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new Error("User not authenticated");
+        }
+        return await db.createFacilityEvent({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        year: z.number().optional(),
+        month: z.number().optional(),
+        day: z.number().optional(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        time: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateFacilityEvent(id, data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteFacilityEvent(input.id);
+      }),
+  }),
+
   // Statistics
   statistics: router({
     getMonthlyStats: protectedProcedure

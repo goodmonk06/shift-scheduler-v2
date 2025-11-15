@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "e2810db8-8754-4881-b233-47995bde8bfd",
-  "prevId": "f0d096ee-814b-43c9-9cf8-f946c2793f46",
+  "id": "d41bb450-db9b-4298-8dc4-bd01ede4bf97",
+  "prevId": "e1cfbbc8-1f98-4f3d-98c3-e369c63a277d",
   "tables": {
     "auditLogs": {
       "name": "auditLogs",
@@ -569,6 +569,110 @@
       },
       "checkConstraint": {}
     },
+    "facilityEvents": {
+      "name": "facilityEvents",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "year": {
+          "name": "year",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "month": {
+          "name": "month",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "day": {
+          "name": "day",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "time": {
+          "name": "time",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "facilityEvents_createdBy_users_id_fk": {
+          "name": "facilityEvents_createdBy_users_id_fk",
+          "tableFrom": "facilityEvents",
+          "tableTo": "users",
+          "columnsFrom": [
+            "createdBy"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "facilityEvents_id": {
+          "name": "facilityEvents_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "leaveRequests": {
       "name": "leaveRequests",
       "columns": {
@@ -1110,6 +1214,27 @@
           "notNull": false,
           "autoincrement": false
         },
+        "leaveType": {
+          "name": "leaveType",
+          "type": "enum('休','有休','時間指定')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "startTime": {
+          "name": "startTime",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "endTime": {
+          "name": "endTime",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "generatedBy": {
           "name": "generatedBy",
           "type": "enum('manual','ai','leave_request')",
@@ -1336,6 +1461,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "parentShiftId": {
+          "name": "parentShiftId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "year": {
           "name": "year",
           "type": "int",
@@ -1359,7 +1491,7 @@
         },
         "status": {
           "name": "status",
-          "type": "enum('draft','tentative','tentative_revised','confirmed','actual','archived')",
+          "type": "enum('draft','ai_generated','tentative','tentative_revised','confirmed','actual','archived')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -1461,6 +1593,19 @@
             "id"
           ],
           "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "shifts_parentShiftId_shifts_id_fk": {
+          "name": "shifts_parentShiftId_shifts_id_fk",
+          "tableFrom": "shifts",
+          "tableTo": "shifts",
+          "columnsFrom": [
+            "parentShiftId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

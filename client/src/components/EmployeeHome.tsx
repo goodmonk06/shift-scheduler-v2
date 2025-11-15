@@ -8,7 +8,8 @@ import { employeeNotificationService, type EmployeeNotification, type Notificati
 import { shiftDetailService, type EmployeeShiftData } from "../services/shiftDetailService";
 import { NotificationListCard } from "./employee/NotificationListCard";
 import { DayDetailsDialog } from "./employee/DayDetailsDialog";
-import { holidays2025Nov, shiftTimes, facilityEvents, DEFAULT_HEADER_IMAGE_URL, getHolidaysForMonth } from "../constants/employeeHomeConstants";
+import { holidays2025Nov, shiftTimes, DEFAULT_HEADER_IMAGE_URL, getHolidaysForMonth } from "../constants/employeeHomeConstants";
+import { facilityEventService } from "../services/facilityEventService";
 import { getDayNumberColor } from "../utils/employeeHomeUtils";
 import type { DayData, EmployeeHomeProps } from "../types/employeeHomeTypes";
 import { useAsync } from "../hooks/useAsync";
@@ -67,9 +68,27 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     [viewYear, viewMonth] // 月が変わったら再取得
   );
 
+  // 施設イベントデータを取得（表示中の月のデータを取得）
+  const {
+    data: facilityEventsData,
+    isLoading: isLoadingEvents,
+    isError: hasEventsError,
+    error: eventsError,
+    refetch: refetchEvents,
+  } = useAsync(
+    async () => {
+      return await facilityEventService.getEventsByMonth(viewYear, viewMonth);
+    },
+    {
+      onError: () => console.warn("施設イベントの取得に失敗しました"), // エラーでも継続
+    },
+    [viewYear, viewMonth] // 月が変わったら再取得
+  );
+
   const notifications = notificationsData?.notifications || [];
   const stats = notificationsData?.stats || null;
   const employeeShiftData = shiftData || [];
+  const facilityEvents = facilityEventsData || [];
 
   // 表示中の月のカレンダー情報を計算
   const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
@@ -88,6 +107,18 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
   const monthDays: DayData[] = useMemo(() => {
     const monthHolidays = getHolidaysForMonth(viewYear, viewMonth);
     const holidayMap = new Map(monthHolidays.map(h => [h.day, h.name]));
+
+    // 施設イベントをMapに変換（日付でアクセス可能に）
+    const eventsMap = new Map(
+      facilityEvents.map(event => [
+        event.day,
+        {
+          title: event.title,
+          description: event.description || '',
+          time: event.time || undefined,
+        }
+      ])
+    );
 
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
@@ -111,10 +142,10 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
         dayOfWeek,
         isHoliday,
         holidayName,
-        event: facilityEvents.get(day),
+        event: eventsMap.get(day),
       };
     });
-  }, [daysInMonth, firstDayOfWeek, viewYear, viewMonth, shiftDataMap]);
+  }, [daysInMonth, firstDayOfWeek, viewYear, viewMonth, shiftDataMap, facilityEvents]);
 
   // 次の出勤予定を計算（今日以降の最初のシフト）
   const nextShift = useMemo(() => {
@@ -189,7 +220,7 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     );
   }
 
-  // ローディング状態
+  // ローディング状態（イベントはオプショナルなのでロード待ちしない）
   if (isLoadingNotifications || isLoadingShift) {
     return (
       <div className="min-h-screen bg-background p-4">
