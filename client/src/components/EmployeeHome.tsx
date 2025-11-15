@@ -85,6 +85,27 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
     [viewYear, viewMonth] // 月が変わったら再取得
   );
 
+  // 施設イベントを5分ごとに自動更新
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      refetchEvents();
+    }, 5 * 60 * 1000); // 5分
+
+    return () => clearInterval(intervalId);
+  }, [refetchEvents]);
+
+  // ページがアクティブになったときに施設イベントを再取得
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refetchEvents();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refetchEvents]);
+
   const notifications = notificationsData?.notifications || [];
   const stats = notificationsData?.stats || null;
   const employeeShiftData = shiftData || [];
