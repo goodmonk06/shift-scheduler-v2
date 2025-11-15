@@ -166,10 +166,13 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
       if (targetMonthShift) {
         console.log('[ShiftEditor] Found shift for', targetYear, targetMonth, ':', targetMonthShift.id);
         // 該当月のシフトIDでshiftDetailsを取得
-        shiftDetails = await trpcClient.shiftDetails.getByShift.query({
+        const allDetails = await trpcClient.shiftDetails.getByShift.query({
           shiftId: targetMonthShift.id
         });
-        console.log('[ShiftEditor] Shift details for', targetYear, targetMonth, ':', shiftDetails.length);
+        // 手動入力（generatedBy = 'manual'）の休を除外し、承認済み希望休（generatedBy = 'leave_request'）のみを残す
+        // これにより、承認済み希望休が優先的に表示される
+        shiftDetails = allDetails.filter(detail => detail.generatedBy !== 'manual');
+        console.log('[ShiftEditor] Shift details for', targetYear, targetMonth, ':', shiftDetails.length, '(excluding manual entries:', allDetails.length - shiftDetails.length, ')');
       } else {
         console.log('[ShiftEditor] No shift found for', targetYear, targetMonth);
         // 該当月のシフトが存在しない場合、現在のshiftIdから取得してフィルタ
@@ -177,7 +180,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           shiftId: Number(shiftId)
         });
         shiftDetails = allShiftDetails.filter(detail => {
-          return detail.date >= monthStartStr && detail.date <= monthEndStr;
+          return detail.date >= monthStartStr && detail.date <= monthEndStr && detail.generatedBy !== 'manual';
         });
         console.log('[ShiftEditor] Filtered shift details:', shiftDetails.length, '/', allShiftDetails.length);
       }
