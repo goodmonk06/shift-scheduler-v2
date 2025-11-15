@@ -22,6 +22,13 @@
    - `VacationCalendar.tsx`の`getDayOfWeek()`関数で正確な曜日計算
    - 土日祝日の色が正しく表示されることを確認済み
 
+5. **施設イベント管理機能** ✨NEW
+   - データベース: `facilityEvents` テーブルを追加
+   - 管理者画面: `client/src/components/FacilityEventManagement.tsx` で作成・編集・削除可能
+   - 職員ホーム: APIから施設イベントを取得して表示（モックデータは削除済み）
+   - 全職員のカレンダーに自動反映（🎉マークで表示）
+   - マイグレーション: `drizzle/0009_amazing_matthew_murdock.sql` で本番環境に適用済み
+
 ## 環境変数・設定
 
 ### 重要な環境変数 (.env)
@@ -60,7 +67,10 @@ shift-scheduler-v2/
 │   │   │   ├── EmployeeHome.tsx  # 従業員ホーム
 │   │   │   ├── VacationRequest.tsx  # 希望休申請
 │   │   │   ├── VacationCalendar.tsx # 希望休カレンダー
-│   │   │   └── VacationDayDialog.tsx # 日付選択ダイアログ
+│   │   │   ├── VacationDayDialog.tsx # 日付選択ダイアログ
+│   │   │   └── FacilityEventManagement.tsx # 施設イベント管理（管理者）
+│   │   ├── services/
+│   │   │   └── facilityEventService.ts # 施設イベントAPI
 │   │   ├── constants/
 │   │   │   └── employeeHomeConstants.ts # 祝日データ
 │   │   ├── types/                # TypeScript型定義
@@ -68,8 +78,10 @@ shift-scheduler-v2/
 ├── server/                        # バックエンド
 │   ├── _core/
 │   │   └── index.ts              # サーバーエントリーポイント
-│   └── routes/                   # APIルート
-├── db/                           # データベース
+│   ├── routes/                   # APIルート
+│   ├── db.ts                     # データベース操作関数
+│   └── routers.ts                # tRPC APIルーター
+├── drizzle/                       # データベース
 │   └── schema.ts                 # Drizzle ORMスキーマ
 └── scripts/                      # ユーティリティスクリプト
 ```
@@ -193,13 +205,50 @@ if (hasRequest) {
 }
 ```
 
+## 施設イベント機能の詳細
+
+### データベーステーブル構造
+```sql
+CREATE TABLE `facilityEvents` (
+  `id` int AUTO_INCREMENT PRIMARY KEY,
+  `year` int NOT NULL,
+  `month` int NOT NULL,
+  `day` int NOT NULL,
+  `title` varchar(100) NOT NULL,
+  `description` text,
+  `time` varchar(50),
+  `createdBy` int NOT NULL,
+  `createdAt` timestamp NOT NULL DEFAULT (now()),
+  `updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (`createdBy`) REFERENCES `users`(`id`) ON DELETE cascade
+);
+```
+
+### API エンドポイント
+- `trpc.facilityEvents.list.query()` - 全イベント取得
+- `trpc.facilityEvents.getByMonth.query({ year, month })` - 月別イベント取得
+- `trpc.facilityEvents.create.mutate(event)` - イベント作成（管理者のみ）
+- `trpc.facilityEvents.update.mutate({ id, ...updates })` - イベント更新（管理者のみ）
+- `trpc.facilityEvents.delete.mutate({ id })` - イベント削除（管理者のみ）
+
+### 使用方法
+**管理者:**
+1. 管理者画面にログイン
+2. サイドバー「設定」→「施設イベント」
+3. 新規イベントボタンから登録
+
+**職員:**
+- ホーム画面のカレンダーに自動表示
+- イベントがある日には🎉マークが表示される
+
 ## 最後の確認事項
 
-- 全ての変更がコミット済み（確認推奨）
-- 祝日カレンダー機能が正常動作
-- 土日祝日の色分けが正確
-- モーダル内の祝日名表示が正常
+- ✅ 全ての変更がコミット済み
+- ✅ 祝日カレンダー機能が正常動作
+- ✅ 土日祝日の色分けが正確
+- ✅ モーダル内の祝日名表示が正常
+- ✅ 施設イベント機能が本番環境で動作中
 
 ---
 
-**最終更新**: 2025年（PC再起動前）
+**最終更新**: 2025年11月15日（施設イベント機能追加）
