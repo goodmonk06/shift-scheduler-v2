@@ -902,7 +902,29 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
             })()}
             onCellUpdate={async (cell) => {
               try {
-                console.log('[ShiftEditor] Cell update:', cell);
+                console.log('[ShiftEditor] Cell update request:', {
+                  shiftDetailId: cell.shiftDetailId,
+                  employeeId: cell.employeeId,
+                  date: cell.date,
+                  shiftType: cell.shiftType,
+                  startTime: cell.startTime,
+                  endTime: cell.endTime,
+                  isHope: cell.isHope,
+                  source: cell.source,
+                });
+
+                // 空セル（削除）の場合は既存のshiftDetailを削除
+                if (cell.shiftType === null) {
+                  if (cell.shiftDetailId) {
+                    console.log('[ShiftEditor] Deleting shift detail:', cell.shiftDetailId);
+                    await trpcClient.shiftDetails.delete.mutate({ id: cell.shiftDetailId });
+                    toast.success('シフトを削除しました');
+                    await loadData();
+                  } else {
+                    console.log('[ShiftEditor] Empty cell, nothing to delete');
+                  }
+                  return;
+                }
 
                 // ShiftTypeからstatusとleaveTypeを判定
                 let status: "working" | "off" | "requested_off" | "emergency_off" = "working";
@@ -918,51 +940,72 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                 } else if (cell.shiftType) {
                   // 勤務シフトの場合、時間枠から逆引きしてtimeSlotIdを取得
                   status = "working";
-                  const shiftTypeInfo = SHIFT_TYPE_MASTER[cell.shiftType];
+                  const master = SHIFT_TYPE_MASTER[cell.shiftType];
+                  console.log('[ShiftEditor] Looking for timeSlot matching:', {
+                    code: master?.code,
+                    label: master?.label,
+                    startTime: cell.startTime,
+                    endTime: cell.endTime,
+                  });
 
                   // workTimeSlotsから対応するtimeSlotIdを検索
                   for (const [id, slot] of Object.entries(workTimeSlots)) {
-                    const master = SHIFT_TYPE_MASTER[cell.shiftType];
                     if (slot.displayLabel === master?.code ||
                         slot.name === master?.label ||
                         (cell.startTime && cell.endTime &&
                          slot.startTime === cell.startTime &&
                          slot.endTime === cell.endTime)) {
                       timeSlotId = parseInt(id);
+                      console.log('[ShiftEditor] Found matching timeSlot:', id, slot);
                       break;
                     }
                   }
+
+                  if (!timeSlotId) {
+                    console.warn('[ShiftEditor] No matching timeSlot found for', cell.shiftType);
+                  }
                 }
+
+                const requestData = {
+                  status,
+                  timeSlotId,
+                  leaveType,
+                  startTime: cell.startTime || null,
+                  endTime: cell.endTime || null,
+                };
 
                 if (cell.shiftDetailId) {
                   // 既存のシフト詳細を更新
-                  await trpcClient.shiftDetails.update.mutate({
+                  console.log('[ShiftEditor] Updating shift detail:', cell.shiftDetailId, requestData);
+                  const result = await trpcClient.shiftDetails.update.mutate({
                     id: cell.shiftDetailId,
                     date: cell.date,
-                    status,
-                    timeSlotId,
-                    leaveType,
-                    startTime: cell.startTime || null,
-                    endTime: cell.endTime || null,
+                    ...requestData,
                   });
+                  console.log('[ShiftEditor] Update result:', result);
                   toast.success('シフトを更新しました');
                 } else {
                   // 新規シフト詳細を作成
-                  await trpcClient.shiftDetails.create.mutate({
+                  console.log('[ShiftEditor] Creating new shift detail:', {
                     shiftId: Number(shiftId),
                     employeeId: cell.employeeId,
                     date: cell.date,
-                    status,
-                    timeSlotId,
-                    leaveType,
-                    startTime: cell.startTime || null,
-                    endTime: cell.endTime || null,
+                    ...requestData,
                   });
+                  const result = await trpcClient.shiftDetails.create.mutate({
+                    shiftId: Number(shiftId),
+                    employeeId: cell.employeeId,
+                    date: cell.date,
+                    ...requestData,
+                  });
+                  console.log('[ShiftEditor] Create result:', result);
                   toast.success('シフトを保存しました');
                 }
 
                 // データを再読み込みして表示を更新
+                console.log('[ShiftEditor] Reloading data after save...');
                 await loadData();
+                console.log('[ShiftEditor] Data reloaded successfully');
               } catch (error) {
                 console.error('[ShiftEditor] Failed to update cell:', error);
                 toast.error('シフトの保存に失敗しました', {
