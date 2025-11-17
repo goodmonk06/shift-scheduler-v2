@@ -371,9 +371,14 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         toast.success("AI生成が完了しました", {
           description: "AI生成シフトを確認してください",
         });
-        // Reload shift data and details to show the newly generated shifts
-        await loadShiftData();
-        await loadData();
+        // Navigate to the newly created AI-generated shift
+        if (result.newShiftId) {
+          window.location.href = `/shifts/${result.newShiftId}`;
+        } else {
+          // Fallback: reload current shift data if newShiftId is not returned
+          await loadShiftData();
+          await loadData();
+        }
       },
       onError: (error: Error) => {
         toast.error("AI生成に失敗しました", {
