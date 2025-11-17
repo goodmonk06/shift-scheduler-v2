@@ -205,6 +205,9 @@ export interface FilterSettings {
   highlightAI: boolean;          // AI生成セルをハイライト
   highlightShortage: boolean;    // 不足日を色付き
   showOnlyProblems: boolean;     // 問題のあるセルのみ表示
+  showSourceIcons: boolean;      // ソースアイコンを常時表示（false=ホバー時のみ）
+  showLockIcon: boolean;         // ロックアイコンを常時表示（false=ホバー時のみ）
+  showWarningIcon: boolean;      // 警告アイコンを常時表示（false=ホバー時のみ）
 }
 
 // セル選択状態

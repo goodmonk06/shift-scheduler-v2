@@ -100,7 +100,10 @@ export function ShiftTableV2({
     highlightHope: false,
     highlightAI: false,
     highlightShortage: false,
-    showOnlyProblems: false
+    showOnlyProblems: false,
+    showSourceIcons: false,  // デフォルトでホバー時のみ表示
+    showLockIcon: false,     // デフォルトでホバー時のみ表示
+    showWarningIcon: true,   // 警告は常時表示（重要なため）
   });
   const [cellSelection, setCellSelection] = useState<CellSelection>({
     startCell: null,
@@ -138,7 +141,7 @@ export function ShiftTableV2({
 
     // セルのクラス名を生成
     const cellClassName = cn(
-      'relative h-10 border border-gray-200 cursor-pointer hover:border-blue-400 transition-colors',
+      'group relative h-10 border border-gray-200 cursor-pointer hover:border-blue-400 transition-colors',
       {
         // 背景色
         [master?.color || 'bg-white']: true,
@@ -195,7 +198,10 @@ export function ShiftTableV2({
 
           {/* ソースアイコン */}
           {cell?.source && (
-            <div className="absolute bottom-0.5 right-0.5">
+            <div className={cn(
+              "absolute bottom-0.5 right-0.5 transition-opacity",
+              filterSettings.showSourceIcons ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}>
               {cell.source === 'HOPE' && (
                 <Heart
                   className={cn(
@@ -216,7 +222,10 @@ export function ShiftTableV2({
           {cell?.hasWarning && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="absolute top-0.5 right-0.5">
+                <div className={cn(
+                  "absolute top-0.5 right-0.5 transition-opacity",
+                  filterSettings.showWarningIcon ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}>
                   <AlertCircle className="w-3 h-3 text-red-500" />
                 </div>
               </TooltipTrigger>
@@ -228,7 +237,10 @@ export function ShiftTableV2({
 
           {/* ロックアイコン（承認済み希望休/シフト） */}
           {(cell?.isLocked || (cell?.source === 'HOPE' && cell?.isHope)) && (
-            <div className="absolute top-0.5 left-0.5">
+            <div className={cn(
+              "absolute top-0.5 left-0.5 transition-opacity",
+              filterSettings.showLockIcon ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}>
               <Lock className="w-3 h-3 text-yellow-600" />
             </div>
           )}
@@ -394,6 +406,61 @@ export function ShiftTableV2({
                 希望休強調
               </Label>
             </div>
+
+            <Separator orientation="vertical" className="h-6" />
+
+            {/* アイコン表示設定 */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Eye className="w-4 h-4 mr-2" />
+                  アイコン表示
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="showSourceIcons"
+                      checked={filterSettings.showSourceIcons}
+                      onCheckedChange={(checked) =>
+                        setFilterSettings({ ...filterSettings, showSourceIcons: !!checked })
+                      }
+                    />
+                    <Label htmlFor="showSourceIcons" className="cursor-pointer text-sm">
+                      ソース (♡🖋✨⚙️)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="showLockIcon"
+                      checked={filterSettings.showLockIcon}
+                      onCheckedChange={(checked) =>
+                        setFilterSettings({ ...filterSettings, showLockIcon: !!checked })
+                      }
+                    />
+                    <Label htmlFor="showLockIcon" className="cursor-pointer text-sm">
+                      ロック (🔒)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="showWarningIcon"
+                      checked={filterSettings.showWarningIcon}
+                      onCheckedChange={(checked) =>
+                        setFilterSettings({ ...filterSettings, showWarningIcon: !!checked })
+                      }
+                    />
+                    <Label htmlFor="showWarningIcon" className="cursor-pointer text-sm">
+                      警告 (⚠️)
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    オフの場合、ホバー時のみ表示されます
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             {/* 塗りつぶしモード */}
             <Button
