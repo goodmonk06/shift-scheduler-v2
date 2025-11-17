@@ -114,6 +114,7 @@ export function convertAssignmentToCell(
   // TODO: 生成履歴からAI_AUTOやRULE_AUTOを判定できるように拡張
 
   return {
+    shiftDetailId: assignment.shiftDetailId,
     employeeId,
     date: assignment.date,
     shiftType,

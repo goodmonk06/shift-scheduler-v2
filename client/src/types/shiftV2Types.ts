@@ -144,6 +144,7 @@ export const SHIFT_TYPE_MASTER: Record<ShiftType, ShiftTypeMaster> = {
 // ==========================================
 
 export interface ShiftCell {
+  shiftDetailId?: number;  // シフト詳細ID（DB更新時に使用）
   employeeId: number;      // 職員ID（内部ID）
   date: string;            // 日付 'YYYY-MM-DD'
   shiftType: ShiftType | null; // null = 空白

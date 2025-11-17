@@ -28,7 +28,7 @@ import { ShiftCellEditor } from "./ShiftCellEditor";
 import { ShiftPDFView } from "./ShiftPDFView";
 import { WorkflowDashboard } from "./admin/WorkflowDashboard";
 import type { ShiftCell, EmployeeRowData, DaySummary } from "../types/shiftV2Types";
-import { getCellKey, getDateRange } from "../types/shiftV2Types";
+import { getCellKey, getDateRange, SHIFT_TYPE_MASTER } from "../types/shiftV2Types";
 import { getStatusLabel, getStatusBadgeVariant, getDaysInMonth, isReadOnlyStatus } from "../utils/shiftHelpers";
 import { convertAssignmentsToCellsMap, calculateDaySummaries } from "../utils/shiftV2Mappers";
 import { useToast } from "../hooks/useToast";
@@ -901,8 +901,74 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
               return calculateDaySummaries(cellsMap, dates);
             })()}
             onCellUpdate={async (cell) => {
-              console.log('Cell update:', cell);
-              toast.info('セル更新機能は開発中です');
+              try {
+                console.log('[ShiftEditor] Cell update:', cell);
+
+                // ShiftTypeからstatusとleaveTypeを判定
+                let status: "working" | "off" | "requested_off" | "emergency_off" = "working";
+                let leaveType: "休" | "有休" | "時間指定" | null = null;
+                let timeSlotId: number | null = null;
+
+                if (cell.shiftType === 'OFF') {
+                  status = cell.isHope ? "requested_off" : "off";
+                  leaveType = "休";
+                } else if (cell.shiftType === 'PAID_LEAVE') {
+                  status = cell.isHope ? "requested_off" : "off";
+                  leaveType = "有休";
+                } else if (cell.shiftType) {
+                  // 勤務シフトの場合、時間枠から逆引きしてtimeSlotIdを取得
+                  status = "working";
+                  const shiftTypeInfo = SHIFT_TYPE_MASTER[cell.shiftType];
+
+                  // workTimeSlotsから対応するtimeSlotIdを検索
+                  for (const [id, slot] of Object.entries(workTimeSlots)) {
+                    const master = SHIFT_TYPE_MASTER[cell.shiftType];
+                    if (slot.displayLabel === master?.code ||
+                        slot.name === master?.label ||
+                        (cell.startTime && cell.endTime &&
+                         slot.startTime === cell.startTime &&
+                         slot.endTime === cell.endTime)) {
+                      timeSlotId = parseInt(id);
+                      break;
+                    }
+                  }
+                }
+
+                if (cell.shiftDetailId) {
+                  // 既存のシフト詳細を更新
+                  await trpcClient.shiftDetails.update.mutate({
+                    id: cell.shiftDetailId,
+                    date: cell.date,
+                    status,
+                    timeSlotId,
+                    leaveType,
+                    startTime: cell.startTime || null,
+                    endTime: cell.endTime || null,
+                  });
+                  toast.success('シフトを更新しました');
+                } else {
+                  // 新規シフト詳細を作成
+                  await trpcClient.shiftDetails.create.mutate({
+                    shiftId: Number(shiftId),
+                    employeeId: cell.employeeId,
+                    date: cell.date,
+                    status,
+                    timeSlotId,
+                    leaveType,
+                    startTime: cell.startTime || null,
+                    endTime: cell.endTime || null,
+                  });
+                  toast.success('シフトを保存しました');
+                }
+
+                // データを再読み込みして表示を更新
+                await loadData();
+              } catch (error) {
+                console.error('[ShiftEditor] Failed to update cell:', error);
+                toast.error('シフトの保存に失敗しました', {
+                  description: error instanceof Error ? error.message : '不明なエラー',
+                });
+              }
             }}
             onBatchUpdate={async (cells) => {
               console.log('Batch update:', cells);
