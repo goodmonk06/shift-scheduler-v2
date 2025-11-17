@@ -53,6 +53,7 @@ export function ShiftCalendarView({
       try {
         setIsLoadingSlots(true);
         const slots = await trpcClient.workTimeSlots.list.query();
+        console.log('[ShiftCalendarView] Loaded workTimeSlots:', slots);
         setWorkTimeSlots(slots);
       } catch (error) {
         console.error('Failed to load work time slots:', error);
@@ -92,6 +93,17 @@ export function ShiftCalendarView({
     const dayAssignments = assignments.filter(
       (a) => a.date === dateStr && a.timeSlotId !== null && !a.isVacationRequest
     );
+
+    if (hour === 9 && dateStr.endsWith('-01')) {
+      console.log('[ShiftCalendarView] getStaffCountAtTime debug:', {
+        dateStr,
+        hour,
+        dayAssignments: dayAssignments.length,
+        workTimeSlots: workTimeSlots.length,
+        sampleAssignment: dayAssignments[0],
+        sampleWorkTimeSlot: workTimeSlots[0]
+      });
+    }
 
     let count = 0;
     dayAssignments.forEach((assignment) => {
@@ -272,8 +284,28 @@ export function ShiftCalendarView({
                     }`}>
                       {day}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                      <span>{dayAssignments.length}名</span>
+                    <div className="text-xs mt-0.5 flex flex-col items-center gap-1">
+                      <span className="text-muted-foreground">{dayAssignments.length}名</span>
+                      {(() => {
+                        // その日の最大不足人数を計算
+                        const hours = Array.from({ length: 24 }, (_, i) => i);
+                        let maxShortage = 0;
+                        hours.forEach(hour => {
+                          const count = getStaffCountAtTime(dateStr, hour);
+                          const required = getRequiredStaffAtTime(hour);
+                          const shortage = required - count;
+                          if (shortage > maxShortage) maxShortage = shortage;
+                        });
+
+                        if (maxShortage > 0) {
+                          return (
+                            <div className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                              -{maxShortage}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                       {isExpanded ? (
                         <ChevronUp className="w-3 h-3" />
                       ) : (
@@ -397,36 +429,37 @@ export function ShiftCalendarView({
                       const shortage = required - count;
 
                       // 不足状況に応じた色分け
-                      let bgColor = 'bg-green-100';
-                      let textColor = 'text-green-700';
-                      let borderColor = 'border-green-300';
+                      let bgColor = 'bg-green-500';
+                      let textColor = 'text-white';
                       let displayText = `${count}`;
+                      let badgeSize = 'px-2 py-1 text-sm';
 
                       if (shortage > 0) {
-                        // 不足あり - 赤色で強調
-                        bgColor = 'bg-red-100';
-                        textColor = 'text-red-700';
-                        borderColor = 'border-red-400';
+                        // 不足あり - 赤色で強調、大きく表示
+                        bgColor = 'bg-red-600';
+                        textColor = 'text-white';
                         displayText = `${count}/${required}`;
+                        badgeSize = 'px-3 py-1.5 text-base';
                       } else if (required > 0) {
                         // 充足 - 緑色
+                        bgColor = 'bg-green-500';
                         displayText = `${count}`;
                       } else {
-                        // 必要人数が設定されていない - グレー
-                        bgColor = 'bg-gray-100';
-                        textColor = 'text-gray-600';
-                        borderColor = 'border-gray-300';
+                        // 必要人数が設定されていない - グレー、小さく
+                        bgColor = 'bg-gray-400';
+                        textColor = 'text-white';
+                        badgeSize = 'px-1.5 py-0.5 text-xs';
                       }
 
                       return (
                         <div
                           key={hour}
-                          className={`absolute -bottom-1 px-1.5 py-0.5 rounded ${bgColor} ${textColor} border ${borderColor} shadow-sm text-xs font-bold z-20`}
+                          className={`absolute -bottom-2 ${badgeSize} rounded-lg ${bgColor} ${textColor} shadow-lg font-bold z-20 border-2 border-white`}
                           style={{ left: `${(hour / 24) * 100}%`, transform: "translateX(-50%)" }}
-                          title={shortage > 0 ? `不足: ${shortage}人` : required > 0 ? '充足' : '未設定'}
+                          title={`${hour}時: ${shortage > 0 ? `不足 ${shortage}人` : required > 0 ? '充足' : '未設定'}`}
                         >
-                          {shortage > 0 && <Users className="w-3 h-3 inline mr-0.5" />}
-                          {displayText}
+                          {shortage > 0 && <Users className="w-4 h-4 inline mr-1" />}
+                          <span className="font-black">{displayText}</span>
                         </div>
                       );
                     })}
