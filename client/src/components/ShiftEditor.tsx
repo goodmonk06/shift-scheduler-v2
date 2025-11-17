@@ -941,27 +941,42 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                   status = "working";
                   const master = SHIFT_TYPE_MASTER[cell.shiftType];
                   console.log('[ShiftEditor] Looking for timeSlot matching:', {
-                    code: master?.code,
-                    label: master?.label,
-                    startTime: cell.startTime,
-                    endTime: cell.endTime,
+                    shiftType: cell.shiftType,
+                    masterCode: master?.code,
+                    masterLabel: master?.label,
+                    cellStartTime: cell.startTime,
+                    cellEndTime: cell.endTime,
+                    workTimeSlotsCount: Object.keys(workTimeSlots).length,
+                    workTimeSlotsKeys: Object.keys(workTimeSlots),
+                    sampleSlot: Object.values(workTimeSlots)[0]
                   });
 
                   // workTimeSlotsから対応するtimeSlotIdを検索
                   for (const [id, slot] of Object.entries(workTimeSlots)) {
+                    console.log('[ShiftEditor] Checking slot:', {
+                      id,
+                      slotDisplayLabel: slot.displayLabel,
+                      slotName: slot.name,
+                      slotStartTime: slot.startTime,
+                      slotEndTime: slot.endTime,
+                      codeMatch: slot.displayLabel === master?.code,
+                      labelMatch: slot.name === master?.label,
+                      timeMatch: cell.startTime && cell.endTime && slot.startTime === cell.startTime && slot.endTime === cell.endTime
+                    });
+
                     if (slot.displayLabel === master?.code ||
                         slot.name === master?.label ||
                         (cell.startTime && cell.endTime &&
                          slot.startTime === cell.startTime &&
                          slot.endTime === cell.endTime)) {
                       timeSlotId = parseInt(id);
-                      console.log('[ShiftEditor] Found matching timeSlot:', id, slot);
+                      console.log('[ShiftEditor] Found matching timeSlot!', id, slot);
                       break;
                     }
                   }
 
                   if (!timeSlotId) {
-                    console.warn('[ShiftEditor] No matching timeSlot found for', cell.shiftType);
+                    console.warn('[ShiftEditor] No matching timeSlot found for', cell.shiftType, 'workTimeSlots:', workTimeSlots);
                   }
                 }
 
