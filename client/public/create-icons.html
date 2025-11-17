@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator</title>
+</head>
+<body>
+  <canvas id="canvas192" width="192" height="192"></canvas>
+  <canvas id="canvas512" width="512" height="512"></canvas>
+  <script>
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      
+      // Background
+      ctx.fillStyle = '#8B5CF6';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, size/6);
+      ctx.fill();
+      
+      // Calendar
+      const margin = size * 0.25;
+      const calWidth = size * 0.5;
+      const calHeight = size * 0.5;
+      
+      // Calendar body
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.roundRect(margin, margin + size * 0.04, calWidth, calHeight, size/24);
+      ctx.fill();
+      
+      // Calendar header
+      ctx.fillStyle = '#6D28D9';
+      ctx.beginPath();
+      ctx.roundRect(margin, margin + size * 0.04, calWidth, size * 0.125, size/24);
+      ctx.fill();
+      
+      // Calendar dots
+      ctx.fillStyle = '#8B5CF6';
+      const dotSize = size * 0.02;
+      const dotMargin = size * 0.125;
+      
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          ctx.beginPath();
+          ctx.arc(
+            margin + dotMargin + col * (calWidth - 2 * dotMargin) / 2,
+            margin + size * 0.21 + row * (calHeight - size * 0.21) / 3,
+            dotSize,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+      }
+    }
+    
+    drawIcon(document.getElementById('canvas192'), 192);
+    drawIcon(document.getElementById('canvas512'), 512);
+    
+    console.log('Icons generated. Right-click to save as PNG.');
+  </script>
+</body>
+</html>

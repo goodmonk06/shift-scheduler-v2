@@ -1,0 +1,1 @@
+ALTER TABLE `shifts` MODIFY COLUMN `userId` int;

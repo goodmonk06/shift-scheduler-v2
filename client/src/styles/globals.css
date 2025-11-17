@@ -1,0 +1,455 @@
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700&family=Zen+Maru+Gothic:wght@300;400;500;700&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --font-family-base: 'M PLUS Rounded 1c', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'ヒラギノ丸ゴ ProN', 'Yu Gothic UI', 'Meiryo UI', sans-serif;
+  
+  /* Relative font sizes based on --font-size */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  
+  --background: #FDFDF9;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #2B3A55;
+  --primary-foreground: #ffffff;
+  --secondary: #C8BFE7;
+  --secondary-foreground: #2B3A55;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #F2B5D4;
+  --accent-foreground: #2B3A55;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0);
+  --success: #A8D5BA;
+  --success-foreground: #2B3A55;
+  --warning: #FBC9A4;
+  --warning-foreground: #2B3A55;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #2B3A55;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family-base);
+    letter-spacing: 0.02em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.6;
+      letter-spacing: 0.03em;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.6;
+      letter-spacing: 0.03em;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.75;
+      letter-spacing: 0.02em;
+    }
+
+    label {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+      letter-spacing: 0.03em;
+    }
+
+    input, textarea {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+    }
+  }
+}
+
+html {
+  font-size: 16px; /* デフォルトベース */
+}
+
+/* 職員画面のフォントサイズを動的に変更 */
+[data-user-type="employee"] {
+  font-size: var(--employee-font-size, 16px);
+}
+
+[data-user-type="employee"] h1 {
+  font-size: calc(var(--employee-font-size, 16px) * 1.5);
+}
+
+[data-user-type="employee"] h2 {
+  font-size: calc(var(--employee-font-size, 16px) * 1.25);
+}
+
+[data-user-type="employee"] h3 {
+  font-size: calc(var(--employee-font-size, 16px) * 1.125);
+}
+
+[data-user-type="employee"] h4 {
+  font-size: var(--employee-font-size, 16px);
+}
+
+[data-user-type="employee"] p,
+[data-user-type="employee"] button,
+[data-user-type="employee"] label,
+[data-user-type="employee"] input,
+[data-user-type="employee"] textarea,
+[data-user-type="employee"] span,
+[data-user-type="employee"] div {
+  font-size: var(--employee-font-size, 16px);
+}
+
+/* 管理者画面も同様に */
+[data-user-type="admin"] {
+  font-size: var(--admin-font-size, 16px);
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes float-delayed {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(5deg);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* PDF出力用スタイル */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* ShiftPDFView専用スタイル */
+.shift-pdf-container {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  font-size: var(--base-font-size, 10px);
+  font-family: 'Noto Sans JP', sans-serif;
+  background: white;
+}
+
+.shift-pdf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--border-color, #c8c8ca);
+}
+
+.shift-pdf-title-main {
+  font-size: 1.6em;
+  font-weight: bold;
+  color: #333;
+}
+
+.shift-pdf-title-sub {
+  font-size: 1.2em;
+  color: #666;
+  margin-top: 2px;
+}
+
+.shift-pdf-update-date {
+  font-size: 0.9em;
+  color: var(--text-gray, #9ea4a5);
+}
+
+.shift-pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 1em;
+}
+
+.shift-pdf-table th,
+.shift-pdf-table td {
+  border: 1px solid var(--border-color, #c8c8ca);
+  padding: 2px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.pdf-col-name {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+  background: var(--header-bg, #e7e4e6);
+  font-weight: bold;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+}
+
+.pdf-col-event-row {
+  height: 16px;
+  font-size: 0.9em;
+  color: #444;
+  padding: 1px !important;
+}
+
+.pdf-col-day {
+  height: 16px;
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.pdf-col-weekday {
+  height: 16px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.pdf-cell-name {
+  background: white;
+  font-weight: normal;
+  text-align: left;
+  padding-left: 5px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdf-cell-shift {
+  font-size: 0.95em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px !important;
+}
+
+/* 印刷時の微調整 */
+@media print {
+  .shift-pdf-container {
+    padding: 5mm;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .shift-pdf-table {
+    page-break-inside: avoid;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 4s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-float-slow {
+  animation: float-slow 5s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+/* ===================================================
+ * 職員画面と管理者画面の独立したスタイル設定
+ * ===================================================
+ * ログイン画面は影響を受けず、デフォルトのスタイルを使用
+ */
+
+/* 職員画面専用のカラーテーマ */
+[data-user-type="employee"] {
+  --primary: var(--employee-primary, hsl(240, 60%, 25%));
+  --secondary: var(--employee-secondary, hsl(280, 60%, 75%));
+  --accent: var(--employee-accent, hsl(160, 40%, 70%));
+}
+
+/* 管理者画面専用のカラーテーマ */
+[data-user-type="admin"] {
+  --primary: var(--admin-primary, hsl(240, 60%, 25%));
+  --secondary: var(--admin-secondary, hsl(280, 60%, 75%));
+  --accent: var(--admin-accent, hsl(160, 40%, 70%));
+}

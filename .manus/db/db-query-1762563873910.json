@@ -1,0 +1,50 @@
+{
+  "query": "SELECT COUNT(*) as total, DATE(date) as shift_date FROM shiftDetails WHERE shiftId = 1 AND generatedBy = 'ai' GROUP BY DATE(date) ORDER BY shift_date LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 4VC8uge3RQ9miAE.e2e9d56c0bca --database D6Za279RcByuaKBWSbx3WZ --execute SELECT COUNT(*) as total, DATE(date) as shift_date FROM shiftDetails WHERE shiftId = 1 AND generatedBy = 'ai' GROUP BY DATE(date) ORDER BY shift_date LIMIT 10;",
+  "rows": [
+    {
+      "total": "5",
+      "shift_date": "2024-06-01"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-02"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-03"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-04"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-05"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-06"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-07"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-08"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-09"
+    },
+    {
+      "total": "5",
+      "shift_date": "2024-06-10"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tshift_date\n5\t2024-06-01\n5\t2024-06-02\n5\t2024-06-03\n5\t2024-06-04\n5\t2024-06-05\n5\t2024-06-06\n5\t2024-06-07\n5\t2024-06-08\n5\t2024-06-09\n5\t2024-06-10\n",
+  "stderr": "",
+  "execution_time_ms": 1509
+}

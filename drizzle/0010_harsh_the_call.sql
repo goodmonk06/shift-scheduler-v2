@@ -1,0 +1,13 @@
+ALTER TABLE `changeProposals` ADD CONSTRAINT `changeProposals_employeeId_employees_id_fk` FOREIGN KEY (`employeeId`) REFERENCES `employees`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `changeProposals` ADD CONSTRAINT `changeProposals_shiftId_shifts_id_fk` FOREIGN KEY (`shiftId`) REFERENCES `shifts`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `changeProposals` ADD CONSTRAINT `changeProposals_currentTimeSlotId_workTimeSlots_id_fk` FOREIGN KEY (`currentTimeSlotId`) REFERENCES `workTimeSlots`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `changeProposals` ADD CONSTRAINT `changeProposals_proposedTimeSlotId_workTimeSlots_id_fk` FOREIGN KEY (`proposedTimeSlotId`) REFERENCES `workTimeSlots`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `employeeConstraints` ADD CONSTRAINT `employeeConstraints_employeeId_employees_id_fk` FOREIGN KEY (`employeeId`) REFERENCES `employees`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `employees` ADD CONSTRAINT `employees_positionGroupId_positionGroups_id_fk` FOREIGN KEY (`positionGroupId`) REFERENCES `positionGroups`(`id`) ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `leaveRequests` ADD CONSTRAINT `leaveRequests_employeeId_employees_id_fk` FOREIGN KEY (`employeeId`) REFERENCES `employees`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `leaveRequests` ADD CONSTRAINT `leaveRequests_shiftId_shifts_id_fk` FOREIGN KEY (`shiftId`) REFERENCES `shifts`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `shiftDetails` ADD CONSTRAINT `shiftDetails_shiftId_shifts_id_fk` FOREIGN KEY (`shiftId`) REFERENCES `shifts`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `shiftDetails` ADD CONSTRAINT `shiftDetails_employeeId_employees_id_fk` FOREIGN KEY (`employeeId`) REFERENCES `employees`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `shiftDetails` ADD CONSTRAINT `shiftDetails_timeSlotId_workTimeSlots_id_fk` FOREIGN KEY (`timeSlotId`) REFERENCES `workTimeSlots`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `shiftDetails` ADD CONSTRAINT `shiftDetails_previousTimeSlotId_workTimeSlots_id_fk` FOREIGN KEY (`previousTimeSlotId`) REFERENCES `workTimeSlots`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `shiftFeedback` ADD CONSTRAINT `shiftFeedback_shiftId_shifts_id_fk` FOREIGN KEY (`shiftId`) REFERENCES `shifts`(`id`) ON DELETE cascade ON UPDATE no action;

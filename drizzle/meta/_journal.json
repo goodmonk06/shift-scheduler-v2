@@ -1,0 +1,76 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762586510445,
+      "tag": "0008_harsh_komodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762670413607,
+      "tag": "0009_motionless_magdalene",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762683929936,
+      "tag": "0010_harsh_the_call",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1762688556290,
+      "tag": "0011_illegal_harpoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1762701331707,
+      "tag": "0012_wandering_frog_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1762779353029,
+      "tag": "0013_true_chameleon",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1763140813685,
+      "tag": "0014_married_kulan_gath",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1763144116868,
+      "tag": "0015_flashy_zodiak",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1763240760000,
+      "tag": "0016_add_parent_shift_and_ai_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1763330000000,
+      "tag": "0017_add_rule_based_to_generated_by",
+      "breakpoints": true
+    }
+  ]
+}

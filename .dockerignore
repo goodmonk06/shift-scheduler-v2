@@ -1,0 +1,60 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs (excluded from COPY but rebuilt during Docker build)
+dist
+build
+.next
+out
+
+# Development files
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment files (use Railway env vars instead)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation (not needed in production)
+*.md
+!README.md
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+coverage
+
+# Development tools
+.prettierrc
+.prettierignore
+.eslintrc
+.eslintignore
+
+# Misc
+.cache
+tmp
+temp
