@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Calendar,
   AlertCircle,
@@ -6,21 +6,28 @@ import {
   ChevronUp,
   AlertTriangle,
   Info,
+  Users,
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import type { ShiftAssignment } from "../types/shiftTypes";
 import {
-  timeSlots,
   getDayOfWeek,
   getDayOfWeekNumber,
   getDaysInMonth,
   isHoliday,
-  calculateTimelinePosition,
-  getPositionGroupColor,
-  getStaffCountStyle,
 } from "../utils/shiftHelpers";
+import { trpcClient } from "../lib/trpc";
+
+interface WorkTimeSlot {
+  id: number;
+  name: string;
+  displayLabel: string;
+  startTime: string;
+  endTime: string;
+  requiredStaff: number;
+}
 
 interface ShiftCalendarViewProps {
   viewYear: number;
@@ -34,9 +41,51 @@ export function ShiftCalendarView({
   assignments,
 }: ShiftCalendarViewProps) {
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [workTimeSlots, setWorkTimeSlots] = useState<WorkTimeSlot[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  // WorkTimeSlots（時間枠）をDBから取得
+  useEffect(() => {
+    const loadWorkTimeSlots = async () => {
+      try {
+        setIsLoadingSlots(true);
+        const slots = await trpcClient.workTimeSlots.list.query();
+        setWorkTimeSlots(slots);
+      } catch (error) {
+        console.error('Failed to load work time slots:', error);
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+    loadWorkTimeSlots();
+  }, []);
+
+  // 特定の時刻における必要人数を計算
+  const getRequiredStaffAtTime = (hour: number): number => {
+    let maxRequired = 0;
+
+    workTimeSlots.forEach((slot) => {
+      const startHour = parseInt(slot.startTime.split(":")[0]);
+      const endHour = parseInt(slot.endTime.split(":")[0]);
+
+      let isInSlot = false;
+      if (endHour < startHour) {
+        // 日をまたぐ夜勤
+        if (hour >= startHour || hour < endHour) isInSlot = true;
+      } else {
+        if (hour >= startHour && hour < endHour) isInSlot = true;
+      }
+
+      if (isInSlot && slot.requiredStaff > maxRequired) {
+        maxRequired = slot.requiredStaff;
+      }
+    });
+
+    return maxRequired;
+  };
 
   // 各時間帯の人員数をカウント
   const getStaffCountAtTime = (dateStr: string, hour: number): number => {
@@ -46,7 +95,7 @@ export function ShiftCalendarView({
 
     let count = 0;
     dayAssignments.forEach((assignment) => {
-      const timeSlot = timeSlots.find((ts) => ts.id === assignment.timeSlotId);
+      const timeSlot = workTimeSlots.find((ts) => ts.id === Number(assignment.timeSlotId));
       if (!timeSlot) return;
 
       const startHour = parseInt(timeSlot.startTime.split(":")[0]);
@@ -71,7 +120,7 @@ export function ShiftCalendarView({
 
     const staffList: Array<{name: string; timeSlot: string}> = [];
     dayAssignments.forEach((assignment) => {
-      const timeSlot = timeSlots.find((ts) => ts.id === assignment.timeSlotId);
+      const timeSlot = workTimeSlots.find((ts) => ts.id === Number(assignment.timeSlotId));
       if (!timeSlot) return;
 
       const startHour = parseInt(timeSlot.startTime.split(":")[0]);
@@ -275,18 +324,33 @@ export function ShiftCalendarView({
                       </div>
                     ) : (
                       dayAssignments.map((assignment, index) => {
-                        const timeSlot = timeSlots.find((ts) => ts.id === assignment.timeSlotId);
+                        const timeSlot = workTimeSlots.find((ts) => ts.id === Number(assignment.timeSlotId));
                         if (!timeSlot) return null;
 
-                        const { left, width } = calculateTimelinePosition(
-                          timeSlot.startTime,
-                          timeSlot.endTime
-                        );
+                        // タイムライン位置を直接計算
+                        const startHour = parseInt(timeSlot.startTime.split(":")[0]);
+                        const startMin = parseInt(timeSlot.startTime.split(":")[1]);
+                        const endHour = parseInt(timeSlot.endTime.split(":")[0]);
+                        const endMin = parseInt(timeSlot.endTime.split(":")[1]);
+
+                        const startPos = (startHour + startMin / 60) / 24 * 100;
+                        let endPos = (endHour + endMin / 60) / 24 * 100;
+                        if (endPos < startPos) endPos += 100; // 日をまたぐ場合
+
+                        const left = startPos;
+                        const width = endPos - startPos;
 
                         // 縦方向の位置を計算
                         const topOffset = isExpanded ? index * 2.2 : 0.5; // rem単位
                         const barHeight = isExpanded ? 1.8 : 0.8; // rem単位
-                        const positionColor = getPositionGroupColor(assignment.positionGroup);
+
+                        // 職種グループごとの色分け
+                        const positionColors: Record<string, string> = {
+                          fulltime: 'from-blue-500 to-blue-600',
+                          part: 'from-green-500 to-green-600',
+                          admin: 'from-purple-500 to-purple-600',
+                        };
+                        const positionColor = positionColors[assignment.positionGroup] || 'from-gray-500 to-gray-600';
 
                         return (
                           <div
@@ -326,18 +390,43 @@ export function ShiftCalendarView({
                       })
                     )}
 
-                    {/* 人員数のオーバーレイ表示（3時間ごと） - 簡素化 */}
-                    {!isExpanded && dayAssignments.length > 0 && Array.from({ length: 8 }, (_, i) => i * 3).map((hour) => {
+                    {/* 人員数のオーバーレイ表示（3時間ごと） - 不足を強調 */}
+                    {!isExpanded && Array.from({ length: 8 }, (_, i) => i * 3).map((hour) => {
                       const count = getStaffCountAtTime(dateStr, hour);
-                      const style = getStaffCountStyle(count);
+                      const required = getRequiredStaffAtTime(hour);
+                      const shortage = required - count;
+
+                      // 不足状況に応じた色分け
+                      let bgColor = 'bg-green-100';
+                      let textColor = 'text-green-700';
+                      let borderColor = 'border-green-300';
+                      let displayText = `${count}`;
+
+                      if (shortage > 0) {
+                        // 不足あり - 赤色で強調
+                        bgColor = 'bg-red-100';
+                        textColor = 'text-red-700';
+                        borderColor = 'border-red-400';
+                        displayText = `${count}/${required}`;
+                      } else if (required > 0) {
+                        // 充足 - 緑色
+                        displayText = `${count}`;
+                      } else {
+                        // 必要人数が設定されていない - グレー
+                        bgColor = 'bg-gray-100';
+                        textColor = 'text-gray-600';
+                        borderColor = 'border-gray-300';
+                      }
 
                       return (
                         <div
                           key={hour}
-                          className={`absolute -bottom-1 px-1.5 py-0.5 rounded ${style.bg} ${style.text} border ${style.border} shadow-sm text-xs font-bold z-20`}
+                          className={`absolute -bottom-1 px-1.5 py-0.5 rounded ${bgColor} ${textColor} border ${borderColor} shadow-sm text-xs font-bold z-20`}
                           style={{ left: `${(hour / 24) * 100}%`, transform: "translateX(-50%)" }}
+                          title={shortage > 0 ? `不足: ${shortage}人` : required > 0 ? '充足' : '未設定'}
                         >
-                          {count}
+                          {shortage > 0 && <Users className="w-3 h-3 inline mr-0.5" />}
+                          {displayText}
                         </div>
                       );
                     })}
@@ -351,20 +440,43 @@ export function ShiftCalendarView({
                       {Array.from({ length: 8 }, (_, i) => i * 3).map((hour) => {
                         const count = getStaffCountAtTime(dateStr, hour);
                         const staffList = getStaffListAtTime(dateStr, hour);
-                        const style = getStaffCountStyle(count);
+                        const required = getRequiredStaffAtTime(hour);
+                        const shortage = required - count;
                         const endHour = (hour + 3) % 24;
+
+                        // 不足状況に応じた色分け
+                        let bgColor = 'bg-green-100';
+                        let textColor = 'text-green-700';
+                        let borderColor = 'border-green-300';
+
+                        if (shortage > 0) {
+                          bgColor = 'bg-red-100';
+                          textColor = 'text-red-700';
+                          borderColor = 'border-red-400';
+                        } else if (required === 0) {
+                          bgColor = 'bg-gray-100';
+                          textColor = 'text-gray-600';
+                          borderColor = 'border-gray-300';
+                        }
 
                         return (
                           <div
                             key={hour}
-                            className="bg-white rounded-lg p-2 border-2 border-gray-100 hover:border-gray-200 transition-colors"
+                            className={`bg-white rounded-lg p-2 border-2 ${shortage > 0 ? borderColor : 'border-gray-100'} hover:border-gray-200 transition-colors`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="text-xs text-muted-foreground">
                                 {hour}:00-{endHour}:00
                               </div>
-                              <div className={`px-1.5 py-0.5 rounded text-xs font-bold ${style.bg} ${style.text}`}>
-                                {count}
+                              <div className="flex items-center gap-1">
+                                <div className={`px-1.5 py-0.5 rounded text-xs font-bold ${bgColor} ${textColor}`}>
+                                  {count}人
+                                </div>
+                                {shortage > 0 && (
+                                  <div className="px-1.5 py-0.5 rounded text-xs font-bold bg-red-500 text-white">
+                                    -{shortage}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
