@@ -181,10 +181,9 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
       const allDetails = await trpcClient.shiftDetails.getByShift.query({
         shiftId: Number(shiftId)
       });
-      // 手動入力（generatedBy = 'manual'）の休を除外し、承認済み希望休（generatedBy = 'leave_request'）のみを残す
-      // これにより、承認済み希望休が優先的に表示される
-      const shiftDetails = allDetails.filter(detail => detail.generatedBy !== 'manual');
-      console.log('[ShiftEditor] Shift details:', shiftDetails.length, '(excluding manual entries:', allDetails.length - shiftDetails.length, ')');
+      // 全てのシフト詳細を表示（新UIで編集したシフトも含む）
+      const shiftDetails = allDetails;
+      console.log('[ShiftEditor] Shift details:', shiftDetails.length);
 
       // 承認済み希望休を取得（年月でフィルタリング）
       const allLeaveRequests = await trpcClient.leaveRequests.list.query();
