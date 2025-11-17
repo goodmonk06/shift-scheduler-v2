@@ -53,7 +53,17 @@ export function ShiftCalendarView({
       try {
         setIsLoadingSlots(true);
         const slots = await trpcClient.workTimeSlots.list.query();
-        console.log('[ShiftCalendarView] Loaded workTimeSlots:', slots);
+        console.log('[ShiftCalendarView] Loaded workTimeSlots:', {
+          count: slots.length,
+          slots: slots.map(s => ({
+            id: s.id,
+            name: s.name,
+            displayLabel: s.displayLabel,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            requiredStaff: s.requiredStaff
+          }))
+        });
         setWorkTimeSlots(slots);
       } catch (error) {
         console.error('Failed to load work time slots:', error);
@@ -95,17 +105,41 @@ export function ShiftCalendarView({
     );
 
     if (hour === 9 && dateStr.endsWith('-01')) {
+      const assignmentsWithTimeSlot = dayAssignments.filter(a => a.timeSlotId !== null);
+      const timeSlotIds = assignmentsWithTimeSlot.map(a => a.timeSlotId);
+      const workTimeSlotIds = workTimeSlots.map(ts => ts.id);
+
       console.log('[ShiftCalendarView] getStaffCountAtTime debug:', {
         dateStr,
         hour,
-        dayAssignments: dayAssignments.length,
-        workTimeSlots: workTimeSlots.length,
-        sampleAssignment: dayAssignments[0],
-        sampleWorkTimeSlot: workTimeSlots[0]
+        totalDayAssignments: dayAssignments.length,
+        assignmentsWithTimeSlotId: assignmentsWithTimeSlot.length,
+        timeSlotIdsInAssignments: timeSlotIds,
+        workTimeSlotsCount: workTimeSlots.length,
+        workTimeSlotIds: workTimeSlotIds,
+        sampleAssignments: dayAssignments.slice(0, 3).map(a => ({
+          employeeName: a.employeeName,
+          timeSlotId: a.timeSlotId,
+          timeSlotName: a.timeSlotName,
+          isVacationRequest: a.isVacationRequest
+        })),
+        matchedTimeSlots: assignmentsWithTimeSlot.slice(0, 3).map(a => {
+          const ts = workTimeSlots.find(t => t.id === Number(a.timeSlotId));
+          return {
+            assignmentTimeSlotId: a.timeSlotId,
+            foundTimeSlot: ts ? {
+              id: ts.id,
+              name: ts.name,
+              startTime: ts.startTime,
+              endTime: ts.endTime
+            } : null
+          };
+        })
       });
     }
 
     let count = 0;
+    let matchedAssignments: string[] = [];
     dayAssignments.forEach((assignment) => {
       const timeSlot = workTimeSlots.find((ts) => ts.id === Number(assignment.timeSlotId));
       if (!timeSlot) return;
@@ -115,11 +149,26 @@ export function ShiftCalendarView({
 
       if (endHour < startHour) {
         // 日をまたぐ夜勤
-        if (hour >= startHour || hour < endHour) count++;
+        if (hour >= startHour || hour < endHour) {
+          count++;
+          matchedAssignments.push(`${assignment.employeeName}(${timeSlot.displayLabel})`);
+        }
       } else {
-        if (hour >= startHour && hour < endHour) count++;
+        if (hour >= startHour && hour < endHour) {
+          count++;
+          matchedAssignments.push(`${assignment.employeeName}(${timeSlot.displayLabel})`);
+        }
       }
     });
+
+    if (hour === 9 && dateStr.endsWith('-01')) {
+      console.log('[ShiftCalendarView] Count result:', {
+        dateStr,
+        hour,
+        finalCount: count,
+        matchedStaff: matchedAssignments
+      });
+    }
 
     return count;
   };
