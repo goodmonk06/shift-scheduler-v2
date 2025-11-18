@@ -16,6 +16,7 @@ interface ShiftGenerationContext {
   requiredStaffing: any[];
   workplaceRules: any[];
   leaveRequests: any[];
+  workPreferences: any[]; // 時間指定勤務希望
   employeeConstraints: any[];
   daysInMonth: number;
   year: number;
@@ -274,6 +275,7 @@ async function collectContext(
   const requiredStaffing = await db.getAllRequiredStaffing();
   const workplaceRules = await db.getAllWorkplaceRules();
   const leaveRequests = await db.getLeaveRequestsByShift(shiftId);
+  const workPreferences = await db.getWorkPreferencesByShift(shiftId);
   const employeeConstraints = await db.getAllEmployeeConstraints();
   const daysInMonth = new Date(year, month, 0).getDate();
 
@@ -285,6 +287,7 @@ async function collectContext(
     requiredStaffing,
     workplaceRules,
     leaveRequests,
+    workPreferences,
     employeeConstraints,
     daysInMonth,
     year,
@@ -418,7 +421,7 @@ async function generateFullTimeShifts(
  * パート用のプロンプトを構築
  */
 function buildPartTimePrompt(context: ShiftGenerationContext, existingShifts: any[]): string {
-  const { partTimeEmployees, workTimeSlots, requiredStaffing, workplaceRules, leaveRequests, employeeConstraints, daysInMonth, year, month } = context;
+  const { partTimeEmployees, workTimeSlots, requiredStaffing, workplaceRules, leaveRequests, workPreferences, employeeConstraints, daysInMonth, year, month } = context;
 
   // 曜日名マップ
   const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
@@ -441,10 +444,12 @@ ${relaxationMsg}
 ${partTimeEmployees.map((e: any) => {
   const constraints = employeeConstraints.filter(ec => ec.employeeId === e.id);
   const leaves = leaveRequests.filter(lr => lr.employeeId === e.id);
+  const timePrefs = workPreferences.filter(wp => wp.employeeId === e.id);
   return `### 職員ID: ${e.id} - ${e.name}
 - スキルレベル: ${e.skillLevel}/100 (${e.skillLevel >= 90 ? '熟練' : e.skillLevel >= 70 ? '中堅' : '新人'})
 - 夜勤可否: ${e.canWorkNightShift ? '可' : '不可'}
 - 希望休: ${leaves.length > 0 ? leaves.map(lr => lr.requestDate || `${lr.startDate}〜${lr.endDate}`).join(', ') : 'なし'}
+- 時間指定勤務希望: ${timePrefs.length > 0 ? timePrefs.map(wp => `${wp.startDate}〜${wp.endDate} ${wp.startTime}-${wp.endTime}のみ勤務可`).join(', ') : 'なし'}
 - 個人制約: ${constraints.length > 0 ? constraints.map(c => {
     if (c.constraintType === 'max_hours_per_week') return `週${c.maxValue}時間まで`;
     if (c.constraintType === 'max_days_per_week') return `週${c.maxValue}日まで`;
@@ -531,7 +536,7 @@ ${Array.from(new Set(requiredStaffing.map(rs => rs.dayOfWeek))).sort().map(dow =
  * 正社員用のプロンプトを構築
  */
 function buildFullTimePrompt(context: ShiftGenerationContext, partTimeShifts: any[]): string {
-  const { fullTimeEmployees, workTimeSlots, requiredStaffing, workplaceRules, leaveRequests, employeeConstraints, daysInMonth, year, month } = context;
+  const { fullTimeEmployees, workTimeSlots, requiredStaffing, workplaceRules, leaveRequests, workPreferences, employeeConstraints, daysInMonth, year, month } = context;
 
   // 曜日名マップ
   const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
@@ -554,10 +559,12 @@ ${relaxationMsg}
 ${fullTimeEmployees.map((e: any) => {
   const constraints = employeeConstraints.filter(ec => ec.employeeId === e.id);
   const leaves = leaveRequests.filter(lr => lr.employeeId === e.id);
+  const timePrefs = workPreferences.filter(wp => wp.employeeId === e.id);
   return `### 職員ID: ${e.id} - ${e.name}
 - スキルレベル: ${e.skillLevel}/100 (${e.skillLevel >= 90 ? '熟練' : e.skillLevel >= 70 ? '中堅' : '新人'})
 - 夜勤可否: ${e.canWorkNightShift ? '可' : '不可'}
 - 希望休: ${leaves.length > 0 ? leaves.map(lr => lr.requestDate || `${lr.startDate}〜${lr.endDate}`).join(', ') : 'なし'}
+- 時間指定勤務希望: ${timePrefs.length > 0 ? timePrefs.map(wp => `${wp.startDate}〜${wp.endDate} ${wp.startTime}-${wp.endTime}のみ勤務可`).join(', ') : 'なし'}
 - 個人制約: ${constraints.length > 0 ? constraints.map(c => {
     if (c.constraintType === 'max_hours_per_week') return `週${c.maxValue}時間まで`;
     if (c.constraintType === 'max_days_per_week') return `週${c.maxValue}日まで`;
@@ -679,6 +686,14 @@ async function validateGeneratedShifts(
       startDate: lr.startDate || lr.requestDate,
       endDate: lr.endDate || lr.requestDate,
       status: lr.status || "approved",
+    })),
+    workPreferences: context.workPreferences.map((wp: any) => ({
+      employeeId: wp.employeeId,
+      startDate: wp.startDate,
+      endDate: wp.endDate,
+      startTime: wp.startTime,
+      endTime: wp.endTime,
+      status: wp.status || "approved",
     })),
     employeeConstraints: context.employeeConstraints.map((ec: any) => ({
       employeeId: ec.employeeId,

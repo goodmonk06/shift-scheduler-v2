@@ -5,7 +5,7 @@
  */
 
 import { getDb } from "./db";
-import { employees, positionGroups, workTimeSlots, leaveRequests, shiftDetails } from "../drizzle/schema";
+import { employees, positionGroups, workTimeSlots, leaveRequests, workPreferences, shiftDetails } from "../drizzle/schema";
 import { and, gte, lte, or, eq } from "drizzle-orm";
 import type { EmployeeConstraints } from "../shared/employeeConstraintTypes";
 
@@ -41,6 +41,15 @@ interface LeaveRequest {
   employeeId: number;
   startDate: Date;
   endDate: Date;
+  status: string;
+}
+
+interface WorkPreference {
+  employeeId: number;
+  startDate: string;
+  endDate: string;
+  startTime: string; // HH:MM
+  endTime: string; // HH:MM
   status: string;
 }
 
@@ -88,6 +97,29 @@ function hasLeaveRequest(
 
     return targetDate >= startDate && targetDate <= endDate;
   });
+}
+
+/**
+ * 指定された日付に時間指定勤務希望があるかチェック
+ * 戻り値: WorkPreference | null (該当する勤務希望があれば返す)
+ */
+function getWorkPreference(
+  employeeId: number,
+  date: string,
+  workPreferences: WorkPreference[]
+): WorkPreference | null {
+  const pref = workPreferences.find(wp => {
+    if (wp.employeeId !== employeeId) return false;
+    if (wp.status !== 'approved' && wp.status !== 'pending') return false;
+
+    const targetDate = new Date(date);
+    const startDate = new Date(wp.startDate);
+    const endDate = new Date(wp.endDate);
+
+    return targetDate >= startDate && targetDate <= endDate;
+  });
+
+  return pref || null;
 }
 
 /**
@@ -186,7 +218,8 @@ function calculateAvailableSlots(
   date: string,
   existingShifts: ShiftDetail[],
   allSlots: WorkTimeSlot[],
-  leaveRequests: LeaveRequest[]
+  leaveRequests: LeaveRequest[],
+  workPreferences: WorkPreference[]
 ): { availableSlotIds: number[], reasons: Record<number, string> } {
   const availableSlotIds: number[] = [];
   const reasons: Record<number, string> = {};
@@ -201,6 +234,39 @@ function calculateAvailableSlots(
     return {
       availableSlotIds: [],
       reasons: { 0: '希望休（厳守）' }
+    };
+  }
+
+  // チェック0.5: 時間指定勤務希望
+  const workPref = getWorkPreference(employee.id, date, workPreferences);
+  if (workPref) {
+    // 時間指定勤務希望がある場合、その時間範囲内の勤務枠のみ配置可能
+    const matchingSlots = allSlots.filter(slot => {
+      const toMinutes = (time: string) => {
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+      };
+
+      const slotStartMin = toMinutes(slot.startTime);
+      const slotEndMin = toMinutes(slot.endTime);
+      const prefStartMin = toMinutes(workPref.startTime);
+      const prefEndMin = toMinutes(workPref.endTime);
+
+      // 勤務時間枠が勤務希望の範囲内に完全に収まっているかチェック
+      return slotStartMin >= prefStartMin && slotEndMin <= prefEndMin;
+    });
+
+    const matchingSlotIds = matchingSlots.map(s => s.id);
+    if (matchingSlotIds.length === 0) {
+      return {
+        availableSlotIds: [],
+        reasons: { 0: `時間指定勤務希望(${workPref.startTime}-${workPref.endTime})に合致する枠なし` }
+      };
+    }
+
+    return {
+      availableSlotIds: matchingSlotIds,
+      reasons: { 0: `時間指定勤務希望(${workPref.startTime}-${workPref.endTime})` }
     };
   }
 
@@ -378,6 +444,22 @@ export async function calculateAllAvailableSlots(
       )
     );
 
+  const workPreferencesData = await db
+    .select()
+    .from(workPreferences)
+    .where(
+      or(
+        and(
+          gte(workPreferences.startDate, startDate),
+          lte(workPreferences.startDate, endDate)
+        ),
+        and(
+          gte(workPreferences.endDate, startDate),
+          lte(workPreferences.endDate, endDate)
+        )
+      )
+    );
+
   const existingShiftsData = await db
     .select()
     .from(shiftDetails)
@@ -391,6 +473,7 @@ export async function calculateAllAvailableSlots(
   console.log(`   職員: ${employeesData.length}人`);
   console.log(`   勤務時間枠: ${slotsData.length}枠`);
   console.log(`   希望休: ${leaveRequestsData.length}件`);
+  console.log(`   時間指定勤務希望: ${workPreferencesData.length}件`);
   console.log(`   既存シフト: ${existingShiftsData.length}件\n`);
 
   // 2. 型変換
@@ -405,6 +488,7 @@ export async function calculateAllAvailableSlots(
 
   const slotsList: WorkTimeSlot[] = slotsData;
   const leaveRequestsList: LeaveRequest[] = leaveRequestsData as any; // DB returns Date, interface expects string
+  const workPreferencesList: WorkPreference[] = workPreferencesData as any; // DB returns Date, interface expects string
   const existingShiftsList: ShiftDetail[] = existingShiftsData;
 
   // 3. 日付リスト生成
@@ -426,7 +510,8 @@ export async function calculateAllAvailableSlots(
         date,
         existingShiftsList,
         slotsList,
-        leaveRequestsList
+        leaveRequestsList,
+        workPreferencesList
       );
       availableSlots[employee.id][date] = result.availableSlotIds;
 
