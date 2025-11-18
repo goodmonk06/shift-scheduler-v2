@@ -368,12 +368,12 @@ export async function calculateAllAvailableSlots(
     .where(
       or(
         and(
-          gte(leaveRequests.startDate, new Date(startDate)),
-          lte(leaveRequests.startDate, new Date(endDate))
+          gte(leaveRequests.startDate, startDate),
+          lte(leaveRequests.startDate, endDate)
         ),
         and(
-          gte(leaveRequests.endDate, new Date(startDate)),
-          lte(leaveRequests.endDate, new Date(endDate))
+          gte(leaveRequests.endDate, startDate),
+          lte(leaveRequests.endDate, endDate)
         )
       )
     );
@@ -404,7 +404,7 @@ export async function calculateAllAvailableSlots(
   }));
 
   const slotsList: WorkTimeSlot[] = slotsData;
-  const leaveRequestsList: LeaveRequest[] = leaveRequestsData;
+  const leaveRequestsList: LeaveRequest[] = leaveRequestsData as any; // DB returns Date, interface expects string
   const existingShiftsList: ShiftDetail[] = existingShiftsData;
 
   // 3. 日付リスト生成

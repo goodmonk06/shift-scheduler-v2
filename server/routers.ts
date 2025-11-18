@@ -644,7 +644,7 @@ export const appRouter = router({
           date: input.date,
           status: input.status,
           timeSlotId: input.timeSlotId ?? null,
-          leaveType: (input.leaveType && input.leaveType !== "") ? input.leaveType : null,
+          leaveType: input.leaveType ?? null,
           startTime: (input.startTime && input.startTime !== "") ? input.startTime : null,
           endTime: (input.endTime && input.endTime !== "") ? input.endTime : null,
           previousTimeSlotId: input.previousTimeSlotId ?? null,
@@ -672,7 +672,7 @@ export const appRouter = router({
         if (data.date !== undefined) sanitizedData.date = data.date;
         if (data.status !== undefined) sanitizedData.status = data.status;
         if (data.timeSlotId !== undefined) sanitizedData.timeSlotId = data.timeSlotId ?? null;
-        if (data.leaveType !== undefined) sanitizedData.leaveType = (data.leaveType && data.leaveType !== "") ? data.leaveType : null;
+        if (data.leaveType !== undefined) sanitizedData.leaveType = data.leaveType ?? null;
         if (data.startTime !== undefined) sanitizedData.startTime = (data.startTime && data.startTime !== "") ? data.startTime : null;
         if (data.endTime !== undefined) sanitizedData.endTime = (data.endTime && data.endTime !== "") ? data.endTime : null;
         if (data.isChanged !== undefined) sanitizedData.isChanged = data.isChanged;
