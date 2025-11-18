@@ -34,9 +34,7 @@ export interface LeaveRequest {
   shiftId: number | null;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
-  leaveType: "休" | "有休" | "時間指定";
-  startTime: string | null; // HH:MM
-  endTime: string | null; // HH:MM
+  leaveType: "休" | "有休";
   isAdditional: boolean;
   reason: string | null;
   status: "pending" | "approved" | "rejected";
@@ -48,9 +46,7 @@ export interface CreateLeaveRequestInput {
   shiftId?: number;
   startDate: string;
   endDate: string;
-  leaveType?: "休" | "有休" | "時間指定";
-  startTime?: string;
-  endTime?: string;
+  leaveType?: "休" | "有休";
   isAdditional?: boolean;
   reason?: string;
 }
@@ -158,8 +154,6 @@ class LeaveRequestServiceMock implements LeaveRequestService {
       startDate: input.startDate,
       endDate: input.endDate,
       leaveType: input.leaveType || "休",
-      startTime: input.startTime ?? null,
-      endTime: input.endTime ?? null,
       isAdditional: input.isAdditional || false,
       reason: input.reason ?? null,
       status: "pending",
@@ -175,8 +169,6 @@ class LeaveRequestServiceMock implements LeaveRequestService {
       startDate: data.startDate || "",
       endDate: data.endDate || "",
       leaveType: data.leaveType || "休",
-      startTime: data.startTime ?? null,
-      endTime: data.endTime ?? null,
       isAdditional: data.isAdditional || false,
       reason: data.reason ?? null,
       status: "pending",
@@ -196,8 +188,6 @@ class LeaveRequestServiceMock implements LeaveRequestService {
       startDate: "",
       endDate: "",
       leaveType: "休",
-      startTime: null,
-      endTime: null,
       isAdditional: false,
       reason: null,
       status: "approved",
@@ -213,8 +203,6 @@ class LeaveRequestServiceMock implements LeaveRequestService {
       startDate: "",
       endDate: "",
       leaveType: "休",
-      startTime: null,
-      endTime: null,
       isAdditional: false,
       reason: null,
       status: "rejected",
