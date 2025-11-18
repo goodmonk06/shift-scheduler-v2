@@ -10,6 +10,11 @@ import { generateShiftPDF } from "./pdfGenerator";
 import { z } from "zod";
 import * as db from "./db";
 
+// Common validation schemas
+const timeFormatRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+const timeSchema = z.string().regex(timeFormatRegex, "時刻はHH:MM形式で入力してください (例: 09:00)");
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日付はYYYY-MM-DD形式で入力してください");
+
 /**
  * シフトステータス遷移ルール（単一の信頼できるソース）
  */
@@ -175,8 +180,8 @@ export const appRouter = router({
       .input(z.object({
         name: z.string(),
         displayLabel: z.string(),
-        startTime: z.string(),
-        endTime: z.string(),
+        startTime: timeSchema,
+        endTime: timeSchema,
         isNightShift: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
@@ -187,8 +192,8 @@ export const appRouter = router({
         id: z.number(),
         name: z.string().optional(),
         displayLabel: z.string().optional(),
-        startTime: z.string().optional(),
-        endTime: z.string().optional(),
+        startTime: timeSchema.optional(),
+        endTime: timeSchema.optional(),
         isNightShift: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
@@ -685,11 +690,14 @@ export const appRouter = router({
         employeeId: z.number(),
         shiftId: z.number().optional(),
         requestDate: z.string().optional(), // deprecated
-        startDate: z.string(),
-        endDate: z.string(),
+        startDate: dateSchema,
+        endDate: dateSchema,
         leaveType: z.enum(["休", "有休"]).optional(),
         isAdditional: z.boolean().optional(), // 追加希望休（仮確定後）
         reason: z.string().optional(),
+      }).refine(data => new Date(data.startDate) <= new Date(data.endDate), {
+        message: "開始日は終了日以前である必要があります",
+        path: ["endDate"]
       }))
       .mutation(async ({ input }) => {
         // シフトIDが指定されている場合、締切を検証
@@ -886,12 +894,15 @@ export const appRouter = router({
         employeeId: z.number(),
         shiftId: z.number().optional(),
         requestDate: z.string().optional(), // deprecated
-        startDate: z.string(),
-        endDate: z.string(),
-        startTime: z.string(), // HH:MM format - required
-        endTime: z.string(), // HH:MM format - required
+        startDate: dateSchema,
+        endDate: dateSchema,
+        startTime: timeSchema, // HH:MM format - required
+        endTime: timeSchema, // HH:MM format - required
         isAdditional: z.boolean().optional(),
         reason: z.string().optional(),
+      }).refine(data => new Date(data.startDate) <= new Date(data.endDate), {
+        message: "開始日は終了日以前である必要があります",
+        path: ["endDate"]
       }))
       .mutation(async ({ input }) => {
         // シフトIDが指定されている場合、締切を検証（leaveRequestsと同様）

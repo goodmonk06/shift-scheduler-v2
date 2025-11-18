@@ -1,8 +1,46 @@
+// Validate required environment variables
+function validateRequiredEnvVars() {
+  const required = {
+    JWT_SECRET: process.env.JWT_SECRET,
+    DATABASE_URL: process.env.DATABASE_URL,
+  };
+
+  const missing = Object.entries(required)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missing.join(', ')}\n` +
+      `Please check your .env file and ensure all required variables are set.`
+    );
+  }
+
+  // Warn about recommended variables
+  const recommended = {
+    OWNER_OPEN_ID: process.env.OWNER_OPEN_ID,
+  };
+
+  const missingRecommended = Object.entries(recommended)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingRecommended.length > 0) {
+    console.warn(
+      `⚠️  Warning: Recommended environment variables not set: ${missingRecommended.join(', ')}\n` +
+      `   Without OWNER_OPEN_ID, no user will be automatically promoted to admin role.`
+    );
+  }
+}
+
+// Run validation
+validateRequiredEnvVars();
+
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
-  jwtSecret: process.env.JWT_SECRET ?? "",
-  databaseUrl: process.env.DATABASE_URL ?? "",
+  cookieSecret: process.env.JWT_SECRET!,
+  jwtSecret: process.env.JWT_SECRET!,
+  databaseUrl: process.env.DATABASE_URL!,
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",

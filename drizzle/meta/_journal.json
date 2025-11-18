@@ -71,6 +71,13 @@
       "when": 1763330000000,
       "tag": "0017_add_rule_based_to_generated_by",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1763420000000,
+      "tag": "0018_add_performance_indexes",
+      "breakpoints": true
     }
   ]
 }

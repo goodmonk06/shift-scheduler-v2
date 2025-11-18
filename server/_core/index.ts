@@ -8,8 +8,8 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { simpleLogin, simpleLogout, getSimpleAuthUser } from "../simpleAuth";
-import { adminLogin, adminLogout, getAdminAuthUser } from "../adminAuth";
+import { simpleLogin, simpleLogout, getSimpleAuthUser, employeeLoginLimiter } from "../simpleAuth";
+import { adminLogin, adminLogout, getAdminAuthUser, adminLoginLimiter } from "../adminAuth";
 import serverRouter from "../routes/server";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
@@ -129,13 +129,13 @@ async function startServer() {
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   
-  // Simple auth routes for employees
-  app.post("/api/simple-auth/login", simpleLogin);
+  // Simple auth routes for employees (with rate limiting on login)
+  app.post("/api/simple-auth/login", employeeLoginLimiter, simpleLogin);
   app.post("/api/simple-auth/logout", simpleLogout);
   app.get("/api/simple-auth/me", getSimpleAuthUser);
 
-  // Admin auth routes
-  app.post("/api/admin-auth/login", adminLogin);
+  // Admin auth routes (with rate limiting on login)
+  app.post("/api/admin-auth/login", adminLoginLimiter, adminLogin);
   app.post("/api/admin-auth/logout", adminLogout);
   app.get("/api/admin-auth/me", getAdminAuthUser);
 

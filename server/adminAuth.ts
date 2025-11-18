@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { getDb } from "./db";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -7,6 +8,17 @@ import { ENV } from "./_core/env";
 
 const ADMIN_AUTH_COOKIE_NAME = "admin_auth_token";
 const ADMIN_AUTH_SECRET = ENV.jwtSecret;
+
+// Rate limiter for admin login attempts
+export const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per windowMs
+  message: { error: "ログイン試行回数が多すぎます。15分後に再試行してください。" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Skip successful requests from counting against the limit
+  skipSuccessfulRequests: true,
+});
 
 export interface AdminAuthUser {
   id: number;

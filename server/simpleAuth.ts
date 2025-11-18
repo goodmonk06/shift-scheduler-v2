@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { getDb } from "./db";
 import { employees } from "../drizzle/schema";
 import { eq, or } from "drizzle-orm";
@@ -7,6 +8,16 @@ import { ENV } from "./_core/env";
 
 const SIMPLE_AUTH_COOKIE_NAME = "simple_auth_token";
 const SIMPLE_AUTH_SECRET = ENV.jwtSecret;
+
+// Rate limiter for employee login attempts
+export const employeeLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 login attempts per windowMs (more lenient than admin)
+  message: { error: "ログイン試行回数が多すぎます。15分後に再試行してください。" },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+});
 
 export interface SimpleAuthUser {
   id: number;
