@@ -431,7 +431,7 @@ export function ShiftCalendarView({
                           part: 'from-green-500 to-green-600',
                           admin: 'from-purple-500 to-purple-600',
                         };
-                        const positionColor = positionColors[assignment.positionGroup] || 'from-gray-500 to-gray-600';
+                        const positionColor = positionColors[assignment.positionGroup as keyof typeof positionColors] || 'from-gray-500 to-gray-600';
 
                         return (
                           <div

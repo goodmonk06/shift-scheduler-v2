@@ -557,9 +557,10 @@ export function getAvailableSlotsStatistics(availableSlots: AvailableSlotsData) 
     let employeeTotalSlots = 0;
 
     for (const [date, slotIds] of Object.entries(dateSlots)) {
-      if (slotIds.length > 0) {
+      const ids = slotIds as number[];
+      if (ids.length > 0) {
         employeeAvailableDays++;
-        employeeTotalSlots += slotIds.length;
+        employeeTotalSlots += ids.length;
       }
     }
 

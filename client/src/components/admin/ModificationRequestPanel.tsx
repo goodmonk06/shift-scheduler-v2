@@ -154,7 +154,7 @@ export function ModificationRequestPanel({ shiftId, shiftYear, shiftMonth }: Mod
 
       return await trpcClient.modificationRequests.process.mutate({
         requestIds: selectedRequests,
-        action: params.action,
+        action: params.action === 'approve' ? 'approved' : 'rejected',
         comment: params.comment
       });
     },
@@ -319,9 +319,9 @@ export function ModificationRequestPanel({ shiftId, shiftYear, shiftMonth }: Mod
           </div>
         ) : sortedRequests.length === 0 ? (
           <EmptyState
-            icon={MessageSquare}
+            icon={<MessageSquare className="h-16 w-16" />}
             title="修正希望はありません"
-            description="職員からの修正希望がまだ提出されていません"
+            message="職員からの修正希望がまだ提出されていません"
           />
         ) : (
           <Table>

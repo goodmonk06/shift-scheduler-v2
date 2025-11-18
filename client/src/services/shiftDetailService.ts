@@ -37,10 +37,11 @@ export interface WorkTimeSlot {
 
 export interface EmployeeShiftData {
   date: string;
-  status: 'working' | 'off' | 'requested_off' | 'emergency_off';
+  status: 'working' | 'off' | 'requested_off' | 'emergency_off' | 'tentative';
   timeSlot: WorkTimeSlot | null;
   isChanged: boolean;
   note?: string;
+  shiftId?: number;
 }
 
 // ===========================

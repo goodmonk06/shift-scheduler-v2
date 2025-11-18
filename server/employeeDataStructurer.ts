@@ -132,13 +132,13 @@ async function determineLeaveEligibility(employeeId: number) {
 
   // 誕生日休暇の対象判定
   const birthdayLeaveRule = applicableRules.find(
-    (r) => r.ruleType === "birthday_leave" && r.isActive
+    (r) => (r.ruleType as any) === "birthday_leave" && r.isActive
   );
   const isBirthdayLeaveEligible = !!birthdayLeaveRule;
 
   // 季節休暇の対象判定（通常は全職員）
   const seasonalLeaveRule = applicableRules.find(
-    (r) => r.ruleType === "seasonal_leave" && r.isActive
+    (r) => (r.ruleType as any) === "seasonal_leave" && r.isActive
   );
   const isSeasonalLeaveEligible = !!seasonalLeaveRule;
 

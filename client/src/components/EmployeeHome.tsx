@@ -415,12 +415,13 @@ export function EmployeeHome({ employeeName, hasNotifications = false, headerIma
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                {shiftData?.status === "tentative" && (
+                {/* TODO: シフト全体のステータスをAPIから取得して表示 */}
+                {shiftData?.some(d => d.status === "tentative") && (
                   <Badge className="bg-purple-600 text-white">
                     仮確定
                   </Badge>
                 )}
-                {shiftData?.status === "confirmed" && (
+                {shiftData?.some(d => d.status === "working" || d.status === "off") && (
                   <Badge className="bg-green-600 text-white">
                     確定
                   </Badge>

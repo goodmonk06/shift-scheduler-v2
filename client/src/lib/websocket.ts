@@ -216,7 +216,6 @@ class NotificationWebSocketClient {
       icon: '/notification-icon.png',
       badge: '/badge-icon.png',
       tag: `notification-${data.id}`,
-      timestamp: new Date(data.timestamp).getTime(),
       requireInteraction: data.priority === 'high'
     });
 

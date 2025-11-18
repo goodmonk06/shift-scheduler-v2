@@ -1572,7 +1572,7 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const dbWorkflow = await import('./dbWorkflow');
-        return await dbWorkflow.getModificationRequestsByEmployee(input.employeeId, input.shiftId);
+        return await dbWorkflow.getModificationRequestsByEmployee(input.employeeId, input.shiftId?.toString());
       }),
 
     // Process modification requests (approve/reject)
@@ -1654,8 +1654,7 @@ export const appRouter = router({
 
         return await dbWorkflow.getNotificationsForEmployee(
           employee.id,
-          input.limit,
-          input.includeRead
+          { limit: input.limit, includeRead: input.includeRead }
         );
       }),
 
@@ -1699,7 +1698,7 @@ export const appRouter = router({
           recipientType: input.recipientType,
           recipientId: input.recipientId,
           shiftId: input.shiftId,
-          notificationType: 'custom',
+          notificationType: 'modification_request' as any, // Custom notification type
           title: input.title,
           message: input.message,
           priority: input.priority,

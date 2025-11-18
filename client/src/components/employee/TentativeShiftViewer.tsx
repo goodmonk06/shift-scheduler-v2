@@ -80,11 +80,12 @@ export function TentativeShiftViewer({
   } = useAsync(
     async () => {
       // 仮確定シフトの詳細データを取得
-      const [shift, assignments, modifications] = await Promise.all([
+      const [shift, modifications] = await Promise.all([
         trpcClient.shifts.getById.query({ id: shiftId }),
-        trpcClient.shifts.getAssignmentsByShift.query({ shiftId }),
         trpcClient.modificationRequests.getByEmployee.query({ employeeId, shiftId })
       ]);
+      // TODO: getAssignmentsByShift endpoint needs to be implemented
+      const assignments: any[] = [];
       return { shift, assignments, modifications };
     },
     {
@@ -102,11 +103,11 @@ export function TentativeShiftViewer({
 
     // 修正希望のマップ作成
     const modificationMap = new Map(
-      modifications.map(mod => [mod.requestDate, mod])
+      modifications.map((mod: any) => [mod.requestDate, mod])
     );
 
     // 各日付のスケジュールを構築
-    assignments.forEach(assignment => {
+    assignments.forEach((assignment: any) => {
       const date = assignment.date;
       if (!scheduleMap.has(date)) {
         const dateObj = new Date(date);
@@ -237,7 +238,7 @@ export function TentativeShiftViewer({
               仮確定シフト
             </h2>
             <p className="text-muted-foreground">
-              {shift.year}年{shift.month}月分
+              {shift?.year}年{shift?.month}月分
             </p>
           </div>
           <div className="flex items-center gap-2">

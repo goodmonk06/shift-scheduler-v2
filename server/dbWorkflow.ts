@@ -35,7 +35,7 @@ export async function createNotification(data: {
     expiresAt: data.expiresAt,
     isRead: false,
   });
-  return { id: Number(result.insertId) };
+  return { id: Number((result as any).insertId) };
 }
 
 export async function sendBulkNotification(data: {
@@ -142,7 +142,7 @@ export async function createModificationRequest(data: {
     priority: data.priority || "medium",
     status: "pending",
   });
-  return { id: Number(result.insertId) };
+  return { id: Number((result as any).insertId) };
 }
 
 export async function getModificationRequestsByEmployee(employeeId: number, status?: string) {
@@ -255,7 +255,7 @@ export async function recordWorkflowHistory(data: {
     comment: data.comment,
     metadata: data.metadata,
   });
-  return { id: Number(result.insertId) };
+  return { id: Number((result as any).insertId) };
 }
 
 export async function getWorkflowHistory(shiftId: number) {

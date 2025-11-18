@@ -115,8 +115,7 @@ export function NotificationCenter({
     refetch
   } = useAsync(
     async () => {
-      return await trpcClient.notifications.getForEmployee.query({
-        employeeId,
+      return await trpcClient.notifications.getMine.query({
         limit: 100,
         includeRead: true
       });
@@ -192,7 +191,15 @@ export function NotificationCenter({
   // 初期データのセット
   useEffect(() => {
     if (data) {
-      setNotifications(data);
+      setNotifications(data.map(n => ({
+        ...n,
+        recipientId: n.recipientId ?? undefined,
+        shiftId: n.shiftId ?? undefined,
+        actionUrl: n.actionUrl ?? undefined,
+        readAt: n.readAt ? new Date(n.readAt) : undefined,
+        expiresAt: n.expiresAt ? new Date(n.expiresAt) : undefined,
+        createdAt: new Date(n.createdAt)
+      })) as any);
     }
   }, [data]);
 
@@ -236,13 +243,13 @@ export function NotificationCenter({
   // すべて既読にする
   const markAllAsRead = useCallback(async () => {
     try {
-      await trpcClient.notifications.markAllAsRead.mutate({ employeeId });
+      await trpcClient.notifications.markAllAsRead.mutate();
       notificationClient.markAllNotificationsAsRead();
       toast.success('すべて既読にしました');
     } catch (error: any) {
       toast.error('既読処理に失敗しました');
     }
-  }, [employeeId, toast]);
+  }, [toast]);
 
   // 通知を削除
   const deleteNotification = useCallback(async (notificationId: number) => {

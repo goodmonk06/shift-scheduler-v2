@@ -208,7 +208,9 @@ async function startServer() {
   // Graceful shutdown
   process.on('SIGTERM', () => {
     console.log('SIGTERM received, shutting down gracefully...');
-    wsServer.shutdown();
+    if (wsServer && typeof (wsServer as any).shutdown === 'function') {
+      (wsServer as any).shutdown();
+    }
     server.close(() => {
       console.log('Server closed');
       process.exit(0);

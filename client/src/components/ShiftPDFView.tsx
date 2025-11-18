@@ -195,7 +195,7 @@ export function ShiftPDFView({
         </thead>
         <tbody>
           {employees.map((employee) => {
-            const shifts = getEmployeeShifts(employee.dbId);
+            const shifts = getEmployeeShifts(employee.dbId!);
             return (
               <tr key={`staff-${employee.dbId}`}>
                 <td className="pdf-cell-name">{employee.name}</td>
