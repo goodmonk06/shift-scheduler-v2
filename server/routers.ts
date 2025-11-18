@@ -4,8 +4,6 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 // Dynamic import to avoid bundling OpenAI at build time
 // import { generateShiftWithAI } from "./aiShiftGenerator";
-import { generateShiftRuleBased as generateShiftRuleBasedApi } from "./ruleBasedShiftGeneratorApi";
-import { generateShiftTimeSlotBased } from "./timeSlotBasedGeneratorApi";
 import { generateShiftPDF } from "./pdfGenerator";
 // Dynamic import to avoid bundling OpenAI at build time
 // import { structureEmployeeData, getEmployeeConstraints } from "./employeeDataStructurer";
@@ -452,80 +450,6 @@ export const appRouter = router({
         return {
           success: true,
           newShiftId: aiShift.id,
-        };
-      }),
-    generateRuleBased: protectedProcedure
-      .input(z.object({
-        shiftId: z.number(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const draftShift = await db.getShiftById(input.shiftId);
-        if (!draftShift) throw new Error("シフトが見つかりません");
-
-        // Verify the source shift is in vacation_only or draft status
-        if (draftShift.status !== "vacation_only" && draftShift.status !== "draft") {
-          throw new Error("ルールベース生成は希望休のみまたは下書きのシフトでのみ実行できます");
-        }
-
-        console.log('[generateRuleBased API] Starting generation for shiftId:', input.shiftId);
-
-        // Run rule-based generation DIRECTLY on the draft shift
-        // This updates the draft shift in-place, unlike AI generation which creates a new shift
-        await generateShiftRuleBasedApi({
-          shiftId: input.shiftId,  // Use the draft shift ID directly
-          year: draftShift.year,
-          month: draftShift.month,
-        });
-
-        // Get the count of generated shift details to return to frontend
-        const shiftDetails = await db.getShiftDetailsByShiftId(input.shiftId);
-        const ruleBasedDetails = shiftDetails.filter((detail: any) => detail.generatedBy === 'rule_based');
-
-        console.log('[generateRuleBased API] Generation completed:', {
-          totalDetails: shiftDetails.length,
-          ruleBasedDetails: ruleBasedDetails.length,
-        });
-
-        return {
-          success: true,
-          shiftId: input.shiftId,  // Return the same shift ID (not a new one)
-          assignmentsCount: ruleBasedDetails.length,  // Return count for frontend display
-        };
-      }),
-
-    // 時間スロットベース生成（高速版）
-    generateTimeSlotBased: protectedProcedure
-      .input(z.object({
-        shiftId: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        const draftShift = await db.getShiftById(input.shiftId);
-        if (!draftShift) throw new Error("シフトが見つかりません");
-
-        // Verify the source shift is in vacation_only or draft status
-        if (draftShift.status !== "vacation_only" && draftShift.status !== "draft") {
-          throw new Error("時間スロットベース生成は希望休のみまたは下書きのシフトでのみ実行できます");
-        }
-
-        console.log('[generateTimeSlotBased API] Starting generation for shiftId:', input.shiftId);
-
-        // Run time-slot based generation
-        const result = await generateShiftTimeSlotBased({
-          shiftId: input.shiftId,
-          year: draftShift.year,
-          month: draftShift.month,
-        });
-
-        console.log('[generateTimeSlotBased API] Generation completed:', {
-          success: result.success,
-          assignmentsCreated: result.assignmentsCreated,
-        });
-
-        return {
-          success: result.success,
-          shiftId: input.shiftId,
-          assignmentsCount: result.assignmentsCreated,
-          errors: result.errors,
         };
       }),
 
