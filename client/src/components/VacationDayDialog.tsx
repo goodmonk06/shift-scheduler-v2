@@ -13,16 +13,11 @@ export function VacationDayDialog({
   holidayName,
   requestType,
   setRequestType,
-  startHour,
-  startMinute,
-  endHour,
-  endMinute,
   reason,
   setReason,
   onSave,
   onRemove,
   hasRequest,
-  onTimePickerOpen,
 }: VacationDayDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,38 +81,6 @@ export function VacationDayDialog({
                     有休
                   </span>
                   {requestType === "有休" && (
-                    <CheckCircle className="w-8 h-8 text-[#2B3A55] ml-auto" />
-                  )}
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setRequestType("時間指定");
-                  onTimePickerOpen();
-                }}
-                className={`
-                  relative p-6 rounded-2xl transition-all duration-300 text-left
-                  ${requestType === "時間指定"
-                    ? "bg-gradient-to-br from-accent/40 to-accent/20 border-4 border-accent shadow-lg scale-[1.02]"
-                    : "bg-white border-2 border-muted hover:border-accent/50 hover:bg-accent/5"
-                  }
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-4xl">⏰</span>
-                  <div className="flex-1">
-                    <span className={`text-2xl font-bold ${requestType === "時間指定" ? "text-[#2B3A55]" : "text-foreground"}`}>
-                      時間指定
-                    </span>
-                    {requestType === "時間指定" && startHour && endHour && (
-                      <div className="mt-2 text-lg font-medium text-[#2B3A55]">
-                        {startHour}:{startMinute} - {endHour}:{endMinute}
-                      </div>
-                    )}
-                  </div>
-                  {requestType === "時間指定" && (
                     <CheckCircle className="w-8 h-8 text-[#2B3A55] ml-auto" />
                   )}
                 </div>

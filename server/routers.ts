@@ -630,9 +630,9 @@ export const appRouter = router({
         date: z.string(),
         status: z.enum(["working", "off", "requested_off", "emergency_off"]),
         timeSlotId: z.number().nullable().optional(),
-        leaveType: z.enum(["休", "有休", "時間指定"]).nullable().optional(),
-        startTime: z.string().nullable().optional(),
-        endTime: z.string().nullable().optional(),
+        leaveType: z.enum(["休", "有休"]).nullable().optional(),
+        startTime: z.string().nullable().optional(), // HH:MM format (時間指定勤務用)
+        endTime: z.string().nullable().optional(), // HH:MM format (時間指定勤務用)
         isChanged: z.boolean().optional(),
         previousTimeSlotId: z.number().nullable().optional(),
       }))
@@ -658,9 +658,9 @@ export const appRouter = router({
         date: z.string().optional(),
         status: z.enum(["working", "off", "requested_off", "emergency_off"]).optional(),
         timeSlotId: z.number().nullable().optional(),
-        leaveType: z.enum(["休", "有休", "時間指定"]).nullable().optional(),
-        startTime: z.string().nullable().optional(), // HH:MM format
-        endTime: z.string().nullable().optional(), // HH:MM format
+        leaveType: z.enum(["休", "有休"]).nullable().optional(),
+        startTime: z.string().nullable().optional(), // HH:MM format (時間指定勤務用)
+        endTime: z.string().nullable().optional(), // HH:MM format (時間指定勤務用)
         isChanged: z.boolean().optional(),
         previousTimeSlotId: z.number().nullable().optional(),
       }))

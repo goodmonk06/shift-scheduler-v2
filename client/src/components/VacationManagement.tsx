@@ -123,8 +123,6 @@ export function VacationManagement() {
         requests: requests.map((req) => ({
           day: new Date(req.startDate).getDate(),
           type: req.leaveType,
-          startTime: req.startTime ?? undefined,
-          endTime: req.endTime ?? undefined,
           reason: req.reason ?? undefined,
         })),
         status: firstRequest.status,

@@ -211,7 +211,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         // パート職員かどうかを判定（positionGroupIdから判定が必要だが、現在はemployeeIdから推定）
         const isPartTime = employee?.positionGroupId === 3; // パートのIDが3と仮定
 
-        if (detail.leaveType === "時間指定" && detail.startTime && detail.endTime) {
+        // 時間指定勤務（timeSlotId=null, status=working, startTime/endTime設定あり）
+        if (detail.timeSlotId === null && detail.status === "working" && detail.startTime && detail.endTime) {
           // Format time display (remove :00 for clean display)
           const formatTime = (time: string) => {
             const [hour, minute] = time.split(':');
@@ -284,15 +285,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           console.log('[ShiftEditor] Date:', dateStr, 'exists in shiftDetails:', existsInShiftDetails);
 
           if (!existsInShiftDetails) {
-            // 時間指定の希望休の場合
-            let displayName: string = request.leaveType || "休";
-            if (request.leaveType === "時間指定" && request.startTime && request.endTime) {
-              const formatTime = (time: string) => {
-                const [hour, minute] = time.split(':');
-                return minute === '00' ? hour : time;
-              };
-              displayName = `${formatTime(request.startTime)}-${formatTime(request.endTime)}`;
-            }
+            // 希望休の表示名（休 or 有休）
+            const displayName: string = request.leaveType || "休";
 
             leaveRequestAssignments.push({
               date: dateStr,
@@ -927,7 +921,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
 
                 // ShiftTypeからstatusとleaveTypeを判定
                 let status: "working" | "off" | "requested_off" | "emergency_off" = "working";
-                let leaveType: "休" | "有休" | "時間指定" | null = null;
+                let leaveType: "休" | "有休" | null = null;
                 let timeSlotId: number | null = null;
 
                 if (cell.shiftType === 'OFF') {

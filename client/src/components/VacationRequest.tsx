@@ -7,7 +7,6 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { SparkleIcon } from "./DecorativeElements";
 import { VacationCalendar } from "./VacationCalendar";
 import { VacationDayDialog } from "./VacationDayDialog";
-import { VacationTimePicker } from "./VacationTimePicker";
 import { useToast } from "../hooks/useToast";
 import { useAsync } from "../hooks/useAsync";
 import { leaveRequestService, type LeaveRequest } from "../services/leaveRequestService";
@@ -24,9 +23,7 @@ interface VacationRequestProps {
 
 interface DayRequest {
   day: number;
-  type: "休" | "有休" | "時間指定";
-  startTime?: string;
-  endTime?: string;
+  type: "休" | "有休";
   reason?: string;
 }
 
@@ -44,14 +41,9 @@ export function VacationRequest({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showDayDialog, setShowDayDialog] = useState(false);
-  const [showTimeModal, setShowTimeModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null); // 選択中の日付キー
-  const [requestType, setRequestType] = useState<"休" | "有休" | "時間指定">("休");
-  const [startHour, setStartHour] = useState("09");
-  const [startMinute, setStartMinute] = useState("00");
-  const [endHour, setEndHour] = useState("12");
-  const [endMinute, setEndMinute] = useState("00");
+  const [requestType, setRequestType] = useState<"休" | "有休">("休");
   const [reason, setReason] = useState("");
 
   // 月の計算（来月のみ）
@@ -167,36 +159,14 @@ export function VacationRequest({
     const request = editingRequest || (existingRequest ? {
       day,
       type: existingRequest.leaveType,
-      startTime: existingRequest.startTime,
-      endTime: existingRequest.endTime,
       reason: existingRequest.reason,
     } : null);
 
     if (request) {
       setRequestType(request.type);
-      if (request.startTime) {
-        const [h, m] = request.startTime.split(":");
-        setStartHour(h);
-        setStartMinute(m);
-      } else {
-        setStartHour("09");
-        setStartMinute("00");
-      }
-      if (request.endTime) {
-        const [h, m] = request.endTime.split(":");
-        setEndHour(h);
-        setEndMinute(m);
-      } else {
-        setEndHour("12");
-        setEndMinute("00");
-      }
       setReason(request.reason || "");
     } else {
       setRequestType("休");
-      setStartHour("09");
-      setStartMinute("00");
-      setEndHour("12");
-      setEndMinute("00");
       setReason("");
     }
 
@@ -206,27 +176,9 @@ export function VacationRequest({
   const handleSaveDay = () => {
     if (selectedDay === null || selectedDayKey === null) return;
 
-    if (requestType === "時間指定") {
-      if (!startHour || !startMinute || !endHour || !endMinute) {
-        toast.error("時間を設定してください", {
-          description: "開始時刻と終了時刻の両方を選択してください。",
-        });
-        return;
-      }
-    }
-
-    const startTime = requestType === "時間指定" && startHour && startMinute
-      ? `${startHour}:${startMinute}`
-      : undefined;
-    const endTime = requestType === "時間指定" && endHour && endMinute
-      ? `${endHour}:${endMinute}`
-      : undefined;
-
     const newRequest: DayRequest = {
       day: selectedDay,
       type: requestType,
-      startTime,
-      endTime,
       reason: reason || undefined,
     };
 
@@ -311,8 +263,6 @@ export function VacationRequest({
               startDate: dateStr,
               endDate: dateStr,
               leaveType: request.type,
-              startTime: request.startTime,
-              endTime: request.endTime,
               reason: request.reason,
             })
           );
@@ -325,8 +275,6 @@ export function VacationRequest({
               startDate: dateStr,
               endDate: dateStr,
               leaveType: request.type,
-              startTime: request.startTime,
-              endTime: request.endTime,
               reason: request.reason,
             })
           );
@@ -371,12 +319,8 @@ export function VacationRequest({
     if (editingRequest) {
       // 編集中（未送信）
       const reqType = String(editingRequest.type || '');
-      const timeText = reqType === "時間指定" && editingRequest.startTime && editingRequest.endTime
-        ? `${String(editingRequest.startTime)}\n〜${String(editingRequest.endTime)}`
-        : "";
-      const isMultiLine = timeText.includes("\n");
-      const emoji = reqType === "休" ? "🌸" : reqType === "有休" ? "💐" : "⏰";
-      const text = reqType === "時間指定" ? timeText : reqType;
+      const emoji = reqType === "休" ? "🌸" : reqType === "有休" ? "💐" : "🌸";
+      const text = reqType;
       const color = "bg-warning";
 
       console.log('[Badge editingRequest]', { emojiType: typeof emoji, textType: typeof text, emojiValue: emoji, textValue: text });
@@ -385,10 +329,7 @@ export function VacationRequest({
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
           <span className="text-[0.5rem]">{String(emoji)}</span>
           {text && typeof text === 'string' && text.length > 0 && (
-            <span
-              className="leading-tight whitespace-pre-line text-center"
-              style={{ fontSize: isMultiLine ? '0.5rem' : '0.55rem' }}
-            >
+            <span className="leading-tight whitespace-pre-line text-center text-[0.55rem]">
               {String(text)}
             </span>
           )}
@@ -403,12 +344,8 @@ export function VacationRequest({
 
     if (existingRequest) {
       const reqType = String(existingRequest.leaveType || '');
-      const timeText = reqType === "時間指定" && existingRequest.startTime && existingRequest.endTime
-        ? `${String(existingRequest.startTime)}\n〜${String(existingRequest.endTime)}`
-        : "";
-      const isMultiLine = timeText.includes("\n");
-      const emoji = reqType === "休" ? "🌸" : reqType === "有休" ? "💐" : "⏰";
-      const text = reqType === "時間指定" ? timeText : reqType;
+      const emoji = reqType === "休" ? "🌸" : reqType === "有休" ? "💐" : "🌸";
+      const text = reqType;
 
       console.log('[Badge existingRequest]', { emojiType: typeof emoji, textType: typeof text, emojiValue: emoji, textValue: text, status: existingRequest.status });
 
@@ -423,10 +360,7 @@ export function VacationRequest({
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
           <span className="text-[0.5rem]">{String(emoji)}</span>
           {text && typeof text === 'string' && text.length > 0 && (
-            <span
-              className="leading-tight whitespace-pre-line text-center"
-              style={{ fontSize: isMultiLine ? '0.5rem' : '0.55rem' }}
-            >
+            <span className="leading-tight whitespace-pre-line text-center text-[0.55rem]">
               {String(text)}
             </span>
           )}
@@ -435,13 +369,6 @@ export function VacationRequest({
     }
 
     return null;
-  };
-
-  const handleTimeConfirm = (hours: { startHour: string; startMinute: string; endHour: string; endMinute: string }) => {
-    setStartHour(hours.startHour);
-    setStartMinute(hours.startMinute);
-    setEndHour(hours.endHour);
-    setEndMinute(hours.endMinute);
   };
 
   // ローディング中
@@ -620,8 +547,6 @@ export function VacationRequest({
                 return [startDate.getDate(), {
                   day: startDate.getDate(),
                   type: req.leaveType,
-                  startTime: req.startTime || undefined,
-                  endTime: req.endTime || undefined,
                   reason: req.reason || undefined,
                 }];
               })
@@ -671,10 +596,6 @@ export function VacationRequest({
         holidayName={selectedDay ? holidayMap.get(selectedDay) : undefined}
         requestType={requestType}
         setRequestType={setRequestType}
-        startHour={startHour}
-        startMinute={startMinute}
-        endHour={endHour}
-        endMinute={endMinute}
         reason={reason}
         setReason={setReason}
         onSave={handleSaveDay}
@@ -688,18 +609,6 @@ export function VacationRequest({
                    startDate.getDate() === selectedDay;
           })
         }
-        onTimePickerOpen={() => setShowTimeModal(true)}
-      />
-
-      {/* Time Selection Modal */}
-      <VacationTimePicker
-        open={showTimeModal}
-        onOpenChange={setShowTimeModal}
-        startHour={startHour}
-        startMinute={startMinute}
-        endHour={endHour}
-        endMinute={endMinute}
-        onConfirm={handleTimeConfirm}
       />
     </div>
   );

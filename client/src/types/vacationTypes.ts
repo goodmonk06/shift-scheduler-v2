@@ -1,8 +1,6 @@
 export interface DayRequest {
   day: number;
-  type: "休" | "有休" | "時間指定";
-  startTime?: string;
-  endTime?: string;
+  type: "休" | "有休";
   reason?: string;
 }
 
@@ -28,18 +26,13 @@ export interface VacationDayDialogProps {
   selectedDay: number | null;
   nextMonthName: string;
   holidayName?: string;
-  requestType: "休" | "有休" | "時間指定";
-  setRequestType: (type: "休" | "有休" | "時間指定") => void;
-  startHour: string;
-  startMinute: string;
-  endHour: string;
-  endMinute: string;
+  requestType: "休" | "有休";
+  setRequestType: (type: "休" | "有休") => void;
   reason: string;
   setReason: (reason: string) => void;
   onSave: () => void;
   onRemove: () => void;
   hasRequest: boolean;
-  onTimePickerOpen: () => void;
 }
 
 export interface VacationTimePickerProps {
