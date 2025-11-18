@@ -19,6 +19,22 @@ export async function generateShiftPDF(params: GeneratePDFParams): Promise<Buffe
   const shiftDetails = await db.getShiftDetails(shiftId);
   const daysInMonth = new Date(year, month, 0).getDate();
 
+  // パフォーマンス最適化: データを事前にMap構造に変換してO(1)アクセスにする
+  // workTimeSlotsのMap: id -> slot
+  const workTimeSlotsMap = new Map(workTimeSlots.map(ts => [ts.id, ts]));
+
+  // shiftDetailsのMap: "employeeId-date" -> ShiftDetail[]
+  const shiftsByEmployeeDate = new Map<string, any[]>();
+  for (const detail of shiftDetails) {
+    if (detail.status === 'working') {
+      const key = `${detail.employeeId}-${detail.date}`;
+      if (!shiftsByEmployeeDate.has(key)) {
+        shiftsByEmployeeDate.set(key, []);
+      }
+      shiftsByEmployeeDate.get(key)!.push(detail);
+    }
+  }
+
   // PDFドキュメントを作成
   const doc = new PDFDocument({
     size: 'A4',
@@ -68,24 +84,23 @@ export async function generateShiftPDF(params: GeneratePDFParams): Promise<Buffe
     doc.text(employee.name, startX + 5, currentY + 10, { width: nameColWidth - 10 });
 
     // 月間合計を計算
-    const employeeShifts = shiftDetails.filter(
-      (sd: any) => sd.employeeId === employee.id && sd.status === 'working'
-    );
-    
     let totalHours = 0;
     const workDays = new Set<string>();
 
     // 各日のシフト
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayShifts = employeeShifts.filter((sd: any) => sd.date === dateStr);
+
+      // 最適化: Mapから直接取得 O(1)
+      const dayShifts = shiftsByEmployeeDate.get(`${employee.id}-${dateStr}`) || [];
 
       const x = startX + nameColWidth + (day - 1) * colWidth;
       doc.rect(x, currentY, colWidth, rowHeight).stroke();
 
       if (dayShifts.length > 0) {
         const timeSlotLabels = dayShifts.map((sd: any) => {
-          const ts = workTimeSlots.find(t => t.id === sd.timeSlotId);
+          // 最適化: Mapから直接取得 O(1)
+          const ts = workTimeSlotsMap.get(sd.timeSlotId);
           if (ts) {
             // 勤務時間を計算
             const [startHour, startMin] = ts.startTime.split(':').map(Number);
@@ -97,9 +112,9 @@ export async function generateShiftPDF(params: GeneratePDFParams): Promise<Buffe
           }
           return ts?.displayLabel || '';
         }).join(',');
-        
-        doc.fontSize(6).text(timeSlotLabels, x + 2, currentY + 10, { 
-          width: colWidth - 4, 
+
+        doc.fontSize(6).text(timeSlotLabels, x + 2, currentY + 10, {
+          width: colWidth - 4,
           align: 'center',
           lineBreak: false,
         });

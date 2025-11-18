@@ -5,9 +5,7 @@ import jwt from "jsonwebtoken";
 import { ENV } from "./env";
 import type { SimpleAuthUser } from "../simpleAuth";
 import type { AdminAuthUser } from "../adminAuth";
-
-const SIMPLE_AUTH_COOKIE_NAME = "simple_auth_token";
-const ADMIN_AUTH_COOKIE_NAME = "admin_auth_token";
+import { SIMPLE_AUTH_COOKIE_NAME, ADMIN_AUTH_COOKIE_NAME } from "./constants";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];

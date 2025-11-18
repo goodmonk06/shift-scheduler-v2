@@ -168,28 +168,33 @@ async function startServer() {
 
   console.log(`[ENV] PORT=${process.env.PORT}`);
   console.log(`[ENV] NODE_ENV=${process.env.NODE_ENV}`);
-  console.log(`[ENV] All env vars:`, Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('KEY')));
 
-  // Debug: Log directory structure to diagnose build output location
-  console.log(`[DEBUG] process.cwd() = ${process.cwd()}`);
-  console.log(`[DEBUG] __dirname would be = ${import.meta.dirname}`);
-  try {
-    const fs = await import('fs');
-    const cwdContents = fs.readdirSync(process.cwd());
-    console.log(`[DEBUG] Contents of cwd:`, cwdContents);
+  // Debug logging (only when DEBUG=true in environment)
+  const isDebugMode = process.env.DEBUG === 'true';
+  if (isDebugMode) {
+    console.log(`[DEBUG] Debug mode enabled`);
+    console.log(`[DEBUG] All env vars:`, Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('KEY')));
+    console.log(`[DEBUG] process.cwd() = ${process.cwd()}`);
+    console.log(`[DEBUG] __dirname would be = ${import.meta.dirname}`);
 
-    // Check if build or dist directories exist
-    ['build', 'dist', 'client'].forEach(dir => {
-      const dirPath = `${process.cwd()}/${dir}`;
-      if (fs.existsSync(dirPath)) {
-        const contents = fs.readdirSync(dirPath).slice(0, 10);
-        console.log(`[DEBUG] Contents of ${dir}/:`, contents);
-      } else {
-        console.log(`[DEBUG] ${dir}/ does not exist`);
-      }
-    });
-  } catch (e) {
-    console.error(`[DEBUG] Error reading directory:`, e);
+    try {
+      const fs = await import('fs');
+      const cwdContents = fs.readdirSync(process.cwd());
+      console.log(`[DEBUG] Contents of cwd:`, cwdContents);
+
+      // Check if build or dist directories exist
+      ['build', 'dist', 'client'].forEach(dir => {
+        const dirPath = `${process.cwd()}/${dir}`;
+        if (fs.existsSync(dirPath)) {
+          const contents = fs.readdirSync(dirPath).slice(0, 10);
+          console.log(`[DEBUG] Contents of ${dir}/:`, contents);
+        } else {
+          console.log(`[DEBUG] ${dir}/ does not exist`);
+        }
+      });
+    } catch (e) {
+      console.error(`[DEBUG] Error reading directory:`, e);
+    }
   }
 
   // Initialize WebSocket server

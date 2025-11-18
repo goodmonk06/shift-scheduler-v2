@@ -4,10 +4,10 @@
  * 自然言語入力を構造化データに変換し、職場ルールと統合
  */
 
-import OpenAI from "openai";
 import { getDb } from "./db";
 import { employees, positionGroups, workplaceRules } from "../drizzle/schema";
 import { eq, or } from "drizzle-orm";
+import { invokeLLM } from "./_core/llm";
 import type {
   EmployeeConstraints,
   WorkConstraint,
@@ -16,9 +16,9 @@ import type {
   StructureEmployeeDataResponse,
 } from "../shared/employeeConstraintTypes";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Debug mode control (use DEBUG=true environment variable to enable verbose logging)
+const DEBUG = process.env.DEBUG === 'true';
+const log = DEBUG ? console.log : () => {}; // No-op function when debug is off
 
 /**
  * JSON Schema for OpenAI Structured Outputs
@@ -211,8 +211,7 @@ ${input}
 - 不明な情報は省略（推測しない）
 `.trim();
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-2024-11-20",
+  const response = await invokeLLM({
     messages: [
       {
         role: "system",
@@ -223,20 +222,16 @@ ${input}
         content: prompt
       }
     ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "employee_constraints",
-        strict: false,
-        schema: EMPLOYEE_CONSTRAINTS_SCHEMA
-      }
+    outputSchema: {
+      name: "employee_constraints",
+      schema: EMPLOYEE_CONSTRAINTS_SCHEMA,
+      strict: false
     },
-    temperature: 0.1
   });
 
   const content = response.choices[0].message.content;
-  if (!content) {
-    throw new Error("OpenAI APIからのレスポンスが空です");
+  if (!content || typeof content !== 'string') {
+    throw new Error("LLM APIからのレスポンスが空または不正です");
   }
 
   const parsed = JSON.parse(content);
@@ -310,31 +305,31 @@ export async function structureEmployeeData(
   naturalLanguageInput: string
 ): Promise<StructureEmployeeDataResponse> {
   try {
-    console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`📝 職員データ構造化開始: 職員ID ${employeeId}`);
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+    log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    log(`📝 職員データ構造化開始: 職員ID ${employeeId}`);
+    log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
     // 1. 職場ルールと対象判定
-    console.log("1️⃣ 職場ルールと対象判定...");
+    log("1️⃣ 職場ルールと対象判定...");
     const eligibility = await determineLeaveEligibility(employeeId);
-    console.log(`   職員名: ${eligibility.employee.name}`);
-    console.log(`   雇用形態: ${eligibility.employee.positionGroup.employmentType}`);
-    console.log(`   誕生日休暇対象: ${eligibility.birthdayLeave.eligible ? "✓" : "✗"}`);
-    console.log(`   季節休暇対象: ${eligibility.seasonalLeave.eligible ? "✓" : "✗"}\n`);
+    log(`   職員名: ${eligibility.employee.name}`);
+    log(`   雇用形態: ${eligibility.employee.positionGroup.employmentType}`);
+    log(`   誕生日休暇対象: ${eligibility.birthdayLeave.eligible ? "✓" : "✗"}`);
+    log(`   季節休暇対象: ${eligibility.seasonalLeave.eligible ? "✓" : "✗"}\n`);
 
     // 2. 自然言語を構造化
-    console.log("2️⃣ 自然言語を構造化...");
+    log("2️⃣ 自然言語を構造化...");
     const parsed = await parseNaturalLanguage(naturalLanguageInput, eligibility.employee.name);
-    console.log(`   勤務制約: ${parsed.workConstraints?.length ?? 0}件`);
-    console.log(`   個人情報: ${parsed.personalInfo ? "あり" : "なし"}\n`);
+    log(`   勤務制約: ${parsed.workConstraints?.length ?? 0}件`);
+    log(`   個人情報: ${parsed.personalInfo ? "あり" : "なし"}\n`);
 
     // 3. 休暇管理データを初期化
-    console.log("3️⃣ 休暇管理データを初期化...");
+    log("3️⃣ 休暇管理データを初期化...");
     const leaveAllowances = initializeLeaveAllowances(eligibility, parsed);
-    console.log(`   有給: ${leaveAllowances.paidLeave.totalDays}日`);
-    console.log(`   誕生日休: ${leaveAllowances.birthdayLeave.totalDays}日 (対象: ${leaveAllowances.birthdayLeave.eligible})`);
-    console.log(`   夏休: ${leaveAllowances.seasonalLeave.summer.totalDays}日`);
-    console.log(`   冬休: ${leaveAllowances.seasonalLeave.winter.totalDays}日\n`);
+    log(`   有給: ${leaveAllowances.paidLeave.totalDays}日`);
+    log(`   誕生日休: ${leaveAllowances.birthdayLeave.totalDays}日 (対象: ${leaveAllowances.birthdayLeave.eligible})`);
+    log(`   夏休: ${leaveAllowances.seasonalLeave.summer.totalDays}日`);
+    log(`   冬休: ${leaveAllowances.seasonalLeave.winter.totalDays}日\n`);
 
     // 4. 完全なデータ構造を構築
     const now = new Date().toISOString();
@@ -352,7 +347,7 @@ export async function structureEmployeeData(
       }
     };
 
-    console.log("4️⃣ データベースに保存...");
+    log("4️⃣ データベースに保存...");
     const db = await getDb();
     if (!db) {
       throw new Error("Database not available");
@@ -364,11 +359,11 @@ export async function structureEmployeeData(
         updatedAt: new Date()
       })
       .where(eq(employees.id, employeeId));
-    console.log(`   ✅ 保存完了\n`);
+    log(`   ✅ 保存完了\n`);
 
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-    console.log(`✅ 構造化完了`);
-    console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+    log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    log(`✅ 構造化完了`);
+    log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
     return {
       success: true,

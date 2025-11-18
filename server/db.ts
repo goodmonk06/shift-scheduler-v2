@@ -662,60 +662,76 @@ export async function applyApprovedLeaveRequestsToShift(shiftId: number): Promis
     throw new Error("Shift not found");
   }
 
-  let appliedCount = 0;
-
-  // 各希望休をシフト詳細に反映
+  // パフォーマンス最適化: N+1問題を解決
+  // 1. 全ての対象日付を先に計算
+  const allTargetDates: Array<{ employeeId: number; date: string }> = [];
   for (const request of approvedRequests) {
     const startDate = new Date(request.startDate);
     const endDate = new Date(request.endDate);
-
-    // 日付範囲内の全ての日をループ
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-      // シフト期間内かチェック
       const dateStr = date.toISOString().split('T')[0];
-
-      // 既存のシフト詳細があるかチェック
-      const existing = await database
-        .select()
-        .from(shiftDetails)
-        .where(
-          and(
-            eq(shiftDetails.shiftId, shiftId),
-            eq(shiftDetails.employeeId, request.employeeId),
-            eq(shiftDetails.date, dateStr)
-          )
-        );
-
-      if (existing.length > 0) {
-        // 既存のエントリーがある場合は更新（休みに変更）
-        await database
-          .update(shiftDetails)
-          .set({
-            status: "off",
-            timeSlotId: null,
-            generatedBy: "leave_request",
-            updatedAt: new Date(),
-          })
-          .where(eq(shiftDetails.id, existing[0].id));
-      } else {
-        // 新規作成
-        await database.insert(shiftDetails).values({
-          shiftId,
-          employeeId: request.employeeId,
-          date: dateStr,
-          status: "off",
-          timeSlotId: null,
-          generatedBy: "leave_request",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
-      }
-
-      appliedCount++;
+      allTargetDates.push({ employeeId: request.employeeId, date: dateStr });
     }
   }
 
-  console.log(`[ApplyLeaveRequests] Applied ${appliedCount} leave days for shift ${shiftId}`);
+  // 2. 既存のシフト詳細を一括取得
+  const existingDetails = await database
+    .select()
+    .from(shiftDetails)
+    .where(eq(shiftDetails.shiftId, shiftId));
+
+  // 3. 既存データをMapに格納 (employeeId-date -> detail)
+  const existingMap = new Map<string, typeof shiftDetails.$inferSelect>();
+  for (const detail of existingDetails) {
+    const key = `${detail.employeeId}-${detail.date}`;
+    existingMap.set(key, detail);
+  }
+
+  // 4. 更新と挿入のデータを準備
+  const toUpdate: Array<{ id: number }> = [];
+  const toInsert: Array<typeof shiftDetails.$inferInsert> = [];
+
+  for (const { employeeId, date } of allTargetDates) {
+    const key = `${employeeId}-${date}`;
+    const existing = existingMap.get(key);
+
+    if (existing) {
+      toUpdate.push({ id: existing.id });
+    } else {
+      toInsert.push({
+        shiftId,
+        employeeId,
+        date,
+        status: "off",
+        timeSlotId: null,
+        generatedBy: "leave_request",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+  }
+
+  // 5. バッチ更新 (Drizzleは一括更新をサポートしていないため、個別に更新)
+  // 本来はトランザクション内で実行すべきだが、既存コードに合わせる
+  for (const { id } of toUpdate) {
+    await database
+      .update(shiftDetails)
+      .set({
+        status: "off",
+        timeSlotId: null,
+        generatedBy: "leave_request",
+        updatedAt: new Date(),
+      })
+      .where(eq(shiftDetails.id, id));
+  }
+
+  // 6. バッチ挿入 (Drizzleは複数行の一括挿入をサポート)
+  if (toInsert.length > 0) {
+    await database.insert(shiftDetails).values(toInsert);
+  }
+
+  const appliedCount = allTargetDates.length;
+  console.log(`[ApplyLeaveRequests] Applied ${appliedCount} leave days for shift ${shiftId} (${toUpdate.length} updated, ${toInsert.length} inserted)`);
   return appliedCount;
 }
 

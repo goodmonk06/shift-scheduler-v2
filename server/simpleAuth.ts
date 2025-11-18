@@ -5,14 +5,14 @@ import { getDb } from "./db";
 import { employees } from "../drizzle/schema";
 import { eq, or } from "drizzle-orm";
 import { ENV } from "./_core/env";
+import { SIMPLE_AUTH_COOKIE_NAME, DEFAULT_LOGIN_RATE_LIMIT } from "./_core/constants";
 
-const SIMPLE_AUTH_COOKIE_NAME = "simple_auth_token";
 const SIMPLE_AUTH_SECRET = ENV.jwtSecret;
 
 // Rate limiter for employee login attempts
 export const employeeLoginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit each IP to 10 login attempts per windowMs (more lenient than admin)
+  windowMs: DEFAULT_LOGIN_RATE_LIMIT.EMPLOYEE.WINDOW_MS,
+  max: DEFAULT_LOGIN_RATE_LIMIT.EMPLOYEE.MAX_ATTEMPTS,
   message: { error: "ログイン試行回数が多すぎます。15分後に再試行してください。" },
   standardHeaders: true,
   legacyHeaders: false,
