@@ -11,6 +11,7 @@ import { Separator } from "./components/ui/separator";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { ShiftEditor } from "./components/ShiftEditor";
 import { VacationManagement } from "./components/VacationManagement";
+import { WorkPreferenceManagement } from "./components/WorkPreferenceManagement";
 import { StaffManagement } from "./components/StaffManagement";
 import { PositionGroups } from "./components/PositionGroups";
 import { WorkTimeSlots } from "./components/WorkTimeSlots";
@@ -37,6 +38,7 @@ type AdminView =
   | "shifts"
   | "shift-editor"
   | "leave-requests"
+  | "work-preferences"
   | "change-proposals"
   | "statistics"
   | "emergency-notifications"
@@ -98,6 +100,8 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
         return <ShiftEditor shiftId={editingShiftId} onBack={handleBackToShiftList} />;
       case "leave-requests":
         return <VacationManagement />;
+      case "work-preferences":
+        return <WorkPreferenceManagement />;
       case "change-proposals":
         return <ChangeProposals />;
       case "statistics":
@@ -220,6 +224,14 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
               >
                 <Calendar className="w-4 h-4 mr-2" />
                 希望休管理
+              </Button>
+              <Button
+                variant={adminView === "work-preferences" ? "default" : "ghost"}
+                className="w-full justify-start rounded-xl"
+                onClick={() => handleViewChange("work-preferences")}
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                時間指定勤務希望
               </Button>
               <Button
                 variant={adminView === "change-proposals" ? "default" : "ghost"}

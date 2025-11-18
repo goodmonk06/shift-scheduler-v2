@@ -529,6 +529,60 @@ export const appRouter = router({
         };
       }),
 
+    // 段階的配置アルゴリズム（カスタム時間対応）
+    generatePhaseBased: protectedProcedure
+      .input(z.object({
+        shiftId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const draftShift = await db.getShiftById(input.shiftId);
+        if (!draftShift) throw new Error("シフトが見つかりません");
+
+        // Verify the source shift is in vacation_only or draft status
+        if (draftShift.status !== "vacation_only" && draftShift.status !== "draft") {
+          throw new Error("段階的生成は希望休のみまたは下書きのシフトでのみ実行できます");
+        }
+
+        console.log('[generatePhaseBased API] Starting generation for shiftId:', input.shiftId);
+
+        // Run phase-based generation
+        const { generateShiftWithPhases } = await import("./phaseBasedShiftGenerator");
+        const result = await generateShiftWithPhases(
+          input.shiftId,
+          draftShift.year,
+          draftShift.month
+        );
+
+        // Save generated shifts to database
+        for (const shift of result.allShifts) {
+          await db.createShiftDetail({
+            shiftId: input.shiftId,
+            employeeId: shift.employeeId,
+            date: shift.date,
+            status: shift.status,
+            timeSlotId: shift.timeSlotId,
+            leaveType: shift.leaveType,
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            generatedBy: shift.generatedBy || 'ai',
+          });
+        }
+
+        console.log('[generatePhaseBased API] Generation completed:', {
+          confirmedShifts: result.confirmedShifts.length,
+          aiGeneratedShifts: result.aiGeneratedShifts.length,
+          totalShifts: result.allShifts.length,
+        });
+
+        return {
+          success: true,
+          shiftId: input.shiftId,
+          confirmedShifts: result.confirmedShifts.length,
+          aiGeneratedShifts: result.aiGeneratedShifts.length,
+          totalShifts: result.allShifts.length,
+        };
+      }),
+
     transitionPhase: protectedProcedure
       .input(z.object({
         sourceShiftId: z.number(),
@@ -1068,51 +1122,7 @@ export const appRouter = router({
       }),
   }),
 
-  // Notifications (通知管理 - DBベース)
-  notifications: router({
-    getForEmployee: protectedProcedure
-      .input(z.object({
-        employeeId: z.number(),
-        limit: z.number().optional(),
-        includeRead: z.boolean().optional(),
-      }))
-      .query(async ({ input }) => {
-        const dbWorkflow = await import('./dbWorkflow');
-        return await dbWorkflow.getNotificationsForEmployee(input.employeeId, {
-          limit: input.limit,
-          includeRead: input.includeRead,
-        });
-      }),
-    getMine: protectedProcedure
-      .input(z.object({
-        limit: z.number().optional(),
-        includeRead: z.boolean().optional(),
-      }))
-      .query(async ({ ctx, input }) => {
-        // Get employee from user
-        const employee = await db.getEmployeeByUserId(ctx.user?.id || 0);
-        if (!employee) {
-          throw new Error('Employee not found');
-        }
-        const dbWorkflow = await import('./dbWorkflow');
-        return await dbWorkflow.getNotificationsForEmployee(employee.id, {
-          limit: input.limit,
-          includeRead: input.includeRead,
-        });
-      }),
-    markAsRead: protectedProcedure
-      .input(z.object({ notificationId: z.number() }))
-      .mutation(async ({ input }) => {
-        const dbWorkflow = await import('./dbWorkflow');
-        return await dbWorkflow.markNotificationAsRead(input.notificationId);
-      }),
-    markAllAsRead: protectedProcedure
-      .input(z.object({ employeeId: z.number() }))
-      .mutation(async ({ input }) => {
-        const dbWorkflow = await import('./dbWorkflow');
-        return await dbWorkflow.markAllNotificationsAsRead(input.employeeId);
-      }),
-  }),
+  // Notifications (通知管理 - DBベース) - 削除: 1762行目の新しい実装に統合済み
 
   // Employee Notifications (職員向け通知)
   employeeNotifications: router({

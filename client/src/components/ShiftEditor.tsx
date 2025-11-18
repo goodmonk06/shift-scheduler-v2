@@ -62,6 +62,12 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
   const [isLoadingShift, setIsLoadingShift] = useState(false);
   const [showAIDialog, setShowAIDialog] = useState(false);
   const [showPDFDialog, setShowPDFDialog] = useState(false);
+  const [showPhaseResultDialog, setShowPhaseResultDialog] = useState(false);
+  const [phaseResult, setPhaseResult] = useState<{
+    confirmedShifts: number;
+    aiGeneratedShifts: number;
+    totalShifts: number;
+  } | null>(null);
 
   // シフトデータをロードする関数（成功後の再取得にも使用）
   const loadShiftData = useCallback(async () => {
@@ -112,7 +118,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
   }, [shiftId]);
 
   // 生成方式の選択
-  const [generationMethod, setGenerationMethod] = useState<'rule_based' | 'time_slot' | 'ai'>('time_slot');
+  const [generationMethod, setGenerationMethod] = useState<'rule_based' | 'time_slot' | 'phase_based' | 'ai'>('time_slot');
 
   // AI生成設定
   const [aiConfig, setAiConfig] = useState<AIGenerationConfig>({
@@ -478,6 +484,54 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     generateTimeSlotBased();
   };
 
+  // 段階的配置ベース生成を実行 - useMutationに移行
+  const { mutate: generatePhaseBased, isLoading: isGeneratingPhaseBased } = useMutation(
+    async () => {
+      if (!shiftId) {
+        throw new Error("シフトIDが指定されていません");
+      }
+
+      const numericShiftId = parseInt(shiftId);
+      if (isNaN(numericShiftId)) {
+        throw new Error("無効なシフトIDです");
+      }
+
+      const result = await trpcClient.shifts.generatePhaseBased.mutate({
+        shiftId: numericShiftId,
+      });
+      return result;
+    },
+    {
+      onSuccess: async (result) => {
+        // Store result and show detailed dialog
+        setPhaseResult({
+          confirmedShifts: result.confirmedShifts,
+          aiGeneratedShifts: result.aiGeneratedShifts,
+          totalShifts: result.totalShifts,
+        });
+        setShowPhaseResultDialog(true);
+
+        // Reload shift data and details to show the newly generated shifts
+        await loadShiftData();
+        await loadData();
+      },
+      onError: (error: Error) => {
+        toast.error("段階的配置生成に失敗しました", {
+          description: error.message,
+          duration: 7000,
+        });
+      },
+    }
+  );
+
+  // 段階的配置ベース生成を実行
+  const handlePhaseBasedGenerate = async () => {
+    toast.info("段階的配置シフト生成を開始します...", {
+      description: "カスタム時間対応（約10-20秒）",
+    });
+    generatePhaseBased();
+  };
+
   // Phase transition mutation
   const { mutate: transitionPhase, isLoading: isTransitioning } = useMutation(
     async (targetStatus: "tentative" | "tentative_revised" | "confirmed" | "actual") => {
@@ -592,7 +646,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                 {generationMethod === 'time_slot' && (
                   <Button
                     onClick={handleTimeSlotBasedGenerate}
-                    disabled={isGeneratingTimeSlot || isGeneratingRuleBased || isGeneratingAI}
+                    disabled={isGeneratingTimeSlot || isGeneratingRuleBased || isGeneratingPhaseBased || isGeneratingAI}
                     className="rounded-xl bg-blue-600 hover:bg-blue-700"
                   >
                     {isGeneratingTimeSlot ? (
@@ -605,7 +659,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                 {generationMethod === 'rule_based' && (
                   <Button
                     onClick={handleRuleBasedGenerate}
-                    disabled={isGeneratingRuleBased || isGeneratingAI || isGeneratingTimeSlot}
+                    disabled={isGeneratingRuleBased || isGeneratingAI || isGeneratingTimeSlot || isGeneratingPhaseBased}
                     className="rounded-xl bg-green-600 hover:bg-green-700"
                   >
                     {isGeneratingRuleBased ? (
@@ -615,10 +669,23 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                     )}
                   </Button>
                 )}
+                {generationMethod === 'phase_based' && (
+                  <Button
+                    onClick={handlePhaseBasedGenerate}
+                    disabled={isGeneratingPhaseBased || isGeneratingRuleBased || isGeneratingTimeSlot || isGeneratingAI}
+                    className="rounded-xl bg-orange-600 hover:bg-orange-700"
+                  >
+                    {isGeneratingPhaseBased ? (
+                      <><LoadingInline /> <span className="ml-2">段階的配置生成中...</span></>
+                    ) : (
+                      <><Sparkles className="w-4 h-4 mr-2" /> 段階的配置生成</>
+                    )}
+                  </Button>
+                )}
                 {generationMethod === 'ai' && (
                   <Button
                     onClick={() => setShowAIDialog(true)}
-                    disabled={isGeneratingAI || isGeneratingRuleBased || isGeneratingTimeSlot}
+                    disabled={isGeneratingAI || isGeneratingRuleBased || isGeneratingTimeSlot || isGeneratingPhaseBased}
                     className="rounded-xl bg-purple-600 hover:bg-purple-700"
                   >
                     {isGeneratingAI ? (
@@ -656,52 +723,75 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                   </Badge>
                 )}
               </div>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
                   <input
                     type="radio"
                     name="generation"
                     value="time_slot"
                     checked={generationMethod === 'time_slot'}
-                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'ai')}
+                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
                     className="text-blue-600 focus:ring-blue-500"
                   />
-                  <div>
-                    <span className="font-medium text-gray-900">時間スロット方式</span>
-                    <Badge variant="outline" className="ml-2 bg-blue-100 text-blue-700 border-blue-200">
-                      推奨・高速
-                    </Badge>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">時間スロット方式</span>
+                      <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
+                        高速
+                      </Badge>
+                    </div>
                     <p className="text-xs text-gray-500 mt-0.5">30分刻みの時間枠で最適配置（約2秒）</p>
                   </div>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="generation"
+                    value="phase_based"
+                    checked={generationMethod === 'phase_based'}
+                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
+                    className="text-orange-600 focus:ring-orange-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">段階的配置方式</span>
+                      <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
+                        NEW
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">カスタム時間対応・優先順位ロジック（約10-20秒）</p>
+                  </div>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
                   <input
                     type="radio"
                     name="generation"
                     value="rule_based"
                     checked={generationMethod === 'rule_based'}
-                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'ai')}
+                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
                     className="text-green-600 focus:ring-green-500"
                   />
-                  <div>
+                  <div className="flex-1">
                     <span className="font-medium text-gray-900">ルールベース方式</span>
                     <p className="text-xs text-gray-500 mt-0.5">従来の制約ルールに基づく生成</p>
                   </div>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
                   <input
                     type="radio"
                     name="generation"
                     value="ai"
                     checked={generationMethod === 'ai'}
-                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'ai')}
+                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
                     className="text-purple-600 focus:ring-purple-500"
                   />
-                  <div>
-                    <span className="font-medium text-gray-900">AI方式</span>
-                    <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-700 border-amber-200">
-                      実験的
-                    </Badge>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">AI方式</span>
+                      <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
+                        実験的
+                      </Badge>
+                    </div>
                     <p className="text-xs text-gray-500 mt-0.5">ChatGPTによる自動生成（20-30秒）</p>
                   </div>
                 </label>
@@ -1129,6 +1219,115 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
               <Button onClick={handlePrintPDF} className="rounded-xl bg-blue-600 hover:bg-blue-700">
                 <FileDown className="w-4 h-4 mr-2" />
                 PDF出力
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 段階的配置生成結果ダイアログ */}
+        <Dialog open={showPhaseResultDialog} onOpenChange={setShowPhaseResultDialog}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                  段階的配置生成が完了しました
+                </div>
+              </DialogTitle>
+              <DialogDescription>
+                カスタム時間対応・優先順位ロジックによるシフト生成が完了しました
+              </DialogDescription>
+            </DialogHeader>
+
+            {phaseResult && (
+              <div className="space-y-6 py-4">
+                {/* 統計サマリー */}
+                <div className="grid grid-cols-3 gap-4">
+                  <Card className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                    <div className="text-center">
+                      <p className="text-sm text-blue-700 font-medium mb-1">確定シフト</p>
+                      <p className="text-3xl font-bold text-blue-900">{phaseResult.confirmedShifts}</p>
+                      <p className="text-xs text-blue-600 mt-1">休み・時間指定</p>
+                    </div>
+                  </Card>
+                  <Card className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                    <div className="text-center">
+                      <p className="text-sm text-purple-700 font-medium mb-1">AI生成</p>
+                      <p className="text-3xl font-bold text-purple-900">{phaseResult.aiGeneratedShifts}</p>
+                      <p className="text-xs text-purple-600 mt-1">最適配置</p>
+                    </div>
+                  </Card>
+                  <Card className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                    <div className="text-center">
+                      <p className="text-sm text-green-700 font-medium mb-1">合計</p>
+                      <p className="text-3xl font-bold text-green-900">{phaseResult.totalShifts}</p>
+                      <p className="text-xs text-green-600 mt-1">総シフト数</p>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* プログレスバー */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">生成進捗</span>
+                    <span className="font-semibold text-gray-900">100%</span>
+                  </div>
+                  <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 rounded-full transition-all duration-1000"></div>
+                  </div>
+                </div>
+
+                {/* フェーズ説明 */}
+                <Card className="p-4 rounded-xl bg-gray-50">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-600" />
+                    生成フェーズの詳細
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs flex-shrink-0">1</div>
+                      <div>
+                        <p className="font-medium text-gray-900">ハード制約確定</p>
+                        <p className="text-xs text-gray-600">休み申請と時間指定勤務希望を優先配置</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-semibold text-xs flex-shrink-0">2</div>
+                      <div>
+                        <p className="font-medium text-gray-900">勤務可能枠計算</p>
+                        <p className="text-xs text-gray-600">workableDaysと連続勤務チェックを実施</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold text-xs flex-shrink-0">3</div>
+                      <div>
+                        <p className="font-medium text-gray-900">AI最適化配置</p>
+                        <p className="text-xs text-gray-600">カスタム時間を考慮した最適配置を生成</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* 次のアクション */}
+                <Alert className="bg-amber-50 border-amber-200">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <AlertDescription className="text-sm text-amber-900">
+                    生成されたシフトを確認し、必要に応じて手動調整してください。問題がなければ「仮確定して職員に通知」ボタンで次のステップに進めます。
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  setShowPhaseResultDialog(false);
+                  setPhaseResult(null);
+                }}
+                className="rounded-xl bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                シフトを確認する
               </Button>
             </DialogFooter>
           </DialogContent>

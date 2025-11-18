@@ -6,6 +6,7 @@ import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { WorkableDaysEditor } from "./WorkableDaysEditor";
 import type { StaffFormDialogProps } from "../types/staffManagementTypes";
 
 export function StaffFormDialog({
@@ -113,6 +114,15 @@ export function StaffFormDialog({
             <Label htmlFor="canWorkNight" className="cursor-pointer">
               夜勤可能
             </Label>
+          </div>
+
+          <div className="pt-4 border-t">
+            <WorkableDaysEditor
+              workableDays={formData.workableDays}
+              onChange={(workableDays) =>
+                setFormData({ ...formData, workableDays })
+              }
+            />
           </div>
 
           <div className="space-y-2 pt-4 border-t">
