@@ -50,6 +50,28 @@ export async function getDb() {
   return _db;
 }
 
+/**
+ * Execute a function within a database transaction
+ * Automatically commits on success, rolls back on error
+ *
+ * @example
+ * await withTransaction(async (tx) => {
+ *   await tx.insert(shifts).values({...});
+ *   await tx.update(employees).set({...}).where(...);
+ * });
+ */
+export async function withTransaction<T>(
+  callback: (tx: NonNullable<typeof _db>) => Promise<T>
+): Promise<T> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not initialized");
+
+  // Drizzle's transaction method
+  return await db.transaction(async (tx) => {
+    return await callback(tx as any);
+  });
+}
+
 // ========== User Management ==========
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -641,98 +663,105 @@ export async function applyApprovedLeaveRequestsToShift(shiftId: number): Promis
     throw new Error("Database connection not available");
   }
 
-  // 指定シフトの承認済み希望休を取得
-  const approvedRequests = await database
-    .select()
-    .from(leaveRequests)
-    .where(
-      and(
-        eq(leaveRequests.shiftId, shiftId),
-        eq(leaveRequests.status, "approved")
-      )
-    );
+  // トランザクション内で実行して、すべての操作が成功するか、すべて失敗するかを保証
+  return await withTransaction(async (tx) => {
+    // 指定シフトの承認済み希望休を取得
+    const approvedRequests = await tx
+      .select()
+      .from(leaveRequests)
+      .where(
+        and(
+          eq(leaveRequests.shiftId, shiftId),
+          eq(leaveRequests.status, "approved")
+        )
+      );
 
-  if (approvedRequests.length === 0) {
-    return 0;
-  }
-
-  // シフト情報を取得して期間を確認
-  const shift = await getShiftById(shiftId);
-  if (!shift) {
-    throw new Error("Shift not found");
-  }
-
-  // パフォーマンス最適化: N+1問題を解決
-  // 1. 全ての対象日付を先に計算
-  const allTargetDates: Array<{ employeeId: number; date: string }> = [];
-  for (const request of approvedRequests) {
-    const startDate = new Date(request.startDate);
-    const endDate = new Date(request.endDate);
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-      const dateStr = date.toISOString().split('T')[0];
-      allTargetDates.push({ employeeId: request.employeeId, date: dateStr });
+    if (approvedRequests.length === 0) {
+      return 0;
     }
-  }
 
-  // 2. 既存のシフト詳細を一括取得
-  const existingDetails = await database
-    .select()
-    .from(shiftDetails)
-    .where(eq(shiftDetails.shiftId, shiftId));
+    // シフト情報を取得して期間を確認
+    const shiftResult = await tx
+      .select()
+      .from(shifts)
+      .where(eq(shifts.id, shiftId))
+      .limit(1);
 
-  // 3. 既存データをMapに格納 (employeeId-date -> detail)
-  const existingMap = new Map<string, typeof shiftDetails.$inferSelect>();
-  for (const detail of existingDetails) {
-    const key = `${detail.employeeId}-${detail.date}`;
-    existingMap.set(key, detail);
-  }
-
-  // 4. 更新と挿入のデータを準備
-  const toUpdate: Array<{ id: number }> = [];
-  const toInsert: Array<typeof shiftDetails.$inferInsert> = [];
-
-  for (const { employeeId, date } of allTargetDates) {
-    const key = `${employeeId}-${date}`;
-    const existing = existingMap.get(key);
-
-    if (existing) {
-      toUpdate.push({ id: existing.id });
-    } else {
-      toInsert.push({
-        shiftId,
-        employeeId,
-        date,
-        status: "off",
-        timeSlotId: null,
-        generatedBy: "leave_request",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+    if (shiftResult.length === 0) {
+      throw new Error("Shift not found");
     }
-  }
 
-  // 5. バッチ更新 (Drizzleは一括更新をサポートしていないため、個別に更新)
-  // 本来はトランザクション内で実行すべきだが、既存コードに合わせる
-  for (const { id } of toUpdate) {
-    await database
-      .update(shiftDetails)
-      .set({
-        status: "off",
-        timeSlotId: null,
-        generatedBy: "leave_request",
-        updatedAt: new Date(),
-      })
-      .where(eq(shiftDetails.id, id));
-  }
+    // パフォーマンス最適化: N+1問題を解決
+    // 1. 全ての対象日付を先に計算
+    const allTargetDates: Array<{ employeeId: number; date: string }> = [];
+    for (const request of approvedRequests) {
+      const startDate = new Date(request.startDate);
+      const endDate = new Date(request.endDate);
+      for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+        const dateStr = date.toISOString().split('T')[0];
+        allTargetDates.push({ employeeId: request.employeeId, date: dateStr });
+      }
+    }
 
-  // 6. バッチ挿入 (Drizzleは複数行の一括挿入をサポート)
-  if (toInsert.length > 0) {
-    await database.insert(shiftDetails).values(toInsert);
-  }
+    // 2. 既存のシフト詳細を一括取得
+    const existingDetails = await tx
+      .select()
+      .from(shiftDetails)
+      .where(eq(shiftDetails.shiftId, shiftId));
 
-  const appliedCount = allTargetDates.length;
-  console.log(`[ApplyLeaveRequests] Applied ${appliedCount} leave days for shift ${shiftId} (${toUpdate.length} updated, ${toInsert.length} inserted)`);
-  return appliedCount;
+    // 3. 既存データをMapに格納 (employeeId-date -> detail)
+    const existingMap = new Map<string, typeof shiftDetails.$inferSelect>();
+    for (const detail of existingDetails) {
+      const key = `${detail.employeeId}-${detail.date}`;
+      existingMap.set(key, detail);
+    }
+
+    // 4. 更新と挿入のデータを準備
+    const toUpdate: Array<{ id: number }> = [];
+    const toInsert: Array<typeof shiftDetails.$inferInsert> = [];
+
+    for (const { employeeId, date } of allTargetDates) {
+      const key = `${employeeId}-${date}`;
+      const existing = existingMap.get(key);
+
+      if (existing) {
+        toUpdate.push({ id: existing.id });
+      } else {
+        toInsert.push({
+          shiftId,
+          employeeId,
+          date,
+          status: "off",
+          timeSlotId: null,
+          generatedBy: "leave_request",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+    }
+
+    // 5. トランザクション内でバッチ更新
+    for (const { id } of toUpdate) {
+      await tx
+        .update(shiftDetails)
+        .set({
+          status: "off",
+          timeSlotId: null,
+          generatedBy: "leave_request",
+          updatedAt: new Date(),
+        })
+        .where(eq(shiftDetails.id, id));
+    }
+
+    // 6. トランザクション内でバッチ挿入 (Drizzleは複数行の一括挿入をサポート)
+    if (toInsert.length > 0) {
+      await tx.insert(shiftDetails).values(toInsert);
+    }
+
+    const appliedCount = allTargetDates.length;
+    console.log(`[ApplyLeaveRequests] Applied ${appliedCount} leave days for shift ${shiftId} (${toUpdate.length} updated, ${toInsert.length} inserted)`);
+    return appliedCount;
+  }); // End of transaction
 }
 
 // ========== Facility Events Management ==========
