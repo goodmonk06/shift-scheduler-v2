@@ -178,6 +178,7 @@ export type InsertShift = typeof shifts.$inferInsert;
 
 /**
  * Shift Details (シフト詳細)
+ * Note: 時間指定勤務は timeSlotId=null, status=working, startTime/endTime設定 で表現
  */
 export const shiftDetails = mysqlTable("shiftDetails", {
   id: int("id").autoincrement().primaryKey(),
@@ -185,10 +186,10 @@ export const shiftDetails = mysqlTable("shiftDetails", {
   employeeId: int("employeeId").notNull().references(() => employees.id, { onDelete: 'cascade' }), // FK to employees
   date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format
   status: mysqlEnum("status", ["working", "off", "requested_off", "emergency_off"]).notNull(),
-  timeSlotId: int("timeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
-  leaveType: mysqlEnum("leaveType", ["休", "有休", "時間指定"]), // 休みの種類（勤務日はnull）
-  startTime: varchar("startTime", { length: 5 }), // HH:MM format (時間指定の場合のみ)
-  endTime: varchar("endTime", { length: 5 }), // HH:MM format (時間指定の場合のみ)
+  timeSlotId: int("timeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable (nullの場合は時間指定勤務)
+  leaveType: mysqlEnum("leaveType", ["休", "有休"]), // 休みの種類（勤務日はnull）
+  startTime: varchar("startTime", { length: 5 }), // HH:MM format (時間指定勤務の場合のみ)
+  endTime: varchar("endTime", { length: 5 }), // HH:MM format (時間指定勤務の場合のみ)
   generatedBy: mysqlEnum("generatedBy", ["manual", "ai", "leave_request", "rule_based"]).default("manual").notNull(), // Track if shift was manually created, AI-generated, from leave request, or rule-based
   isChanged: boolean("isChanged").default(false).notNull(),
   previousTimeSlotId: int("previousTimeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
@@ -200,7 +201,8 @@ export type ShiftDetail = typeof shiftDetails.$inferSelect;
 export type InsertShiftDetail = typeof shiftDetails.$inferInsert;
 
 /**
- * Leave Requests (希望休申請)
+ * Leave Requests (休み申請)
+ * Note: 時間指定勤務は workPreferences テーブルに移動しました
  */
 export const leaveRequests = mysqlTable("leaveRequests", {
   id: int("id").autoincrement().primaryKey(),
@@ -209,9 +211,7 @@ export const leaveRequests = mysqlTable("leaveRequests", {
   requestDate: varchar("requestDate", { length: 10 }), // YYYY-MM-DD format (deprecated, use startDate/endDate)
   startDate: varchar("startDate", { length: 10 }).notNull(), // YYYY-MM-DD format
   endDate: varchar("endDate", { length: 10 }).notNull(), // YYYY-MM-DD format
-  leaveType: mysqlEnum("leaveType", ["休", "有休", "時間指定"]).default("休").notNull(), // 休みの種類
-  startTime: varchar("startTime", { length: 5 }), // HH:MM format, nullable
-  endTime: varchar("endTime", { length: 5 }), // HH:MM format, nullable
+  leaveType: mysqlEnum("leaveType", ["休", "有休"]).default("休").notNull(), // 休みの種類
   isAdditional: boolean("isAdditional").default(false).notNull(), // 追加希望休（仮確定後）
   reason: text("reason"),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
@@ -222,6 +222,31 @@ export const leaveRequests = mysqlTable("leaveRequests", {
 
 export type LeaveRequest = typeof leaveRequests.$inferSelect;
 export type InsertLeaveRequest = typeof leaveRequests.$inferInsert;
+
+/**
+ * Work Preferences (勤務希望)
+ * 職員が希望する勤務時間帯（例：「9:00-13:00のみ勤務可能」）
+ * この時間帯のみ勤務でき、他の時間は勤務不可
+ */
+export const workPreferences = mysqlTable("workPreferences", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull().references(() => employees.id, { onDelete: 'cascade' }), // FK to employees
+  shiftId: int("shiftId").references(() => shifts.id, { onDelete: 'set null' }), // FK to shifts (nullable - not assigned until shift is created)
+  requestDate: varchar("requestDate", { length: 10 }), // YYYY-MM-DD format (deprecated, use startDate/endDate)
+  startDate: varchar("startDate", { length: 10 }).notNull(), // YYYY-MM-DD format
+  endDate: varchar("endDate", { length: 10 }).notNull(), // YYYY-MM-DD format
+  startTime: varchar("startTime", { length: 5 }).notNull(), // HH:MM format - 勤務可能開始時刻
+  endTime: varchar("endTime", { length: 5 }).notNull(), // HH:MM format - 勤務可能終了時刻
+  isAdditional: boolean("isAdditional").default(false).notNull(), // 追加希望（仮確定後）
+  reason: text("reason"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorkPreference = typeof workPreferences.$inferSelect;
+export type InsertWorkPreference = typeof workPreferences.$inferInsert;
 
 /**
  * Change Proposals (変更提案)

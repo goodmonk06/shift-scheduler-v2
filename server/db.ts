@@ -21,6 +21,8 @@ import {
   InsertShiftDetail,
   leaveRequests,
   InsertLeaveRequest,
+  workPreferences,
+  InsertWorkPreference,
   changeProposals,
   InsertChangeProposal,
   emergencyNotifications,
@@ -466,6 +468,45 @@ export async function deleteLeaveRequest(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return await db.delete(leaveRequests).where(eq(leaveRequests.id, id));
+}
+
+// ========== Work Preferences ==========
+
+export async function getAllWorkPreferences() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(workPreferences).orderBy(desc(workPreferences.createdAt));
+}
+
+export async function getWorkPreferencesByShift(shiftId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(workPreferences).where(eq(workPreferences.shiftId, shiftId));
+}
+
+export async function getWorkPreferencesByEmployee(employeeId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(workPreferences).where(eq(workPreferences.employeeId, employeeId));
+}
+
+export async function createWorkPreference(data: InsertWorkPreference) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(workPreferences).values(data);
+  return result;
+}
+
+export async function updateWorkPreference(id: number, data: Partial<InsertWorkPreference>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.update(workPreferences).set(data).where(eq(workPreferences.id, id));
+}
+
+export async function deleteWorkPreference(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.delete(workPreferences).where(eq(workPreferences.id, id));
 }
 
 // ========== Change Proposals ==========
