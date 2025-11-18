@@ -118,7 +118,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
   }, [shiftId]);
 
   // 生成方式の選択
-  const [generationMethod, setGenerationMethod] = useState<'rule_based' | 'time_slot' | 'phase_based' | 'ai'>('time_slot');
+  const [generationMethod, setGenerationMethod] = useState<'phase_based' | 'ai'>('phase_based');
 
   // AI生成設定
   const [aiConfig, setAiConfig] = useState<AIGenerationConfig>({
@@ -396,94 +396,6 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     generateAI(aiConfig.customInstructions || undefined);
   };
 
-  // ルールベース生成を実行 - useMutationに移行
-  const { mutate: generateRuleBased, isLoading: isGeneratingRuleBased } = useMutation(
-    async () => {
-      if (!shiftId) {
-        throw new Error("シフトIDが指定されていません");
-      }
-
-      const numericShiftId = parseInt(shiftId);
-      if (isNaN(numericShiftId)) {
-        throw new Error("無効なシフトIDです");
-      }
-
-      const result = await trpcClient.shifts.generateRuleBased.mutate({
-        shiftId: numericShiftId,
-      });
-      return result;
-    },
-    {
-      onSuccess: async (result) => {
-        toast.success("ルールベース生成が完了しました", {
-          description: `${result.assignmentsCount || 0}件のシフトが生成されました`,
-          duration: 5000,
-        });
-        // Reload shift data and details to show the newly generated shifts
-        await loadShiftData();
-        await loadData();
-      },
-      onError: (error: Error) => {
-        toast.error("ルールベース生成に失敗しました", {
-          description: error.message,
-          duration: 7000,
-        });
-      },
-    }
-  );
-
-  // ルールベース生成を実行
-  const handleRuleBasedGenerate = async () => {
-    toast.info("ルールベースシフト生成を開始します...", {
-      description: "生成には数秒かかります",
-    });
-    generateRuleBased();
-  };
-
-  // 時間スロットベース生成を実行 - useMutationに移行
-  const { mutate: generateTimeSlotBased, isLoading: isGeneratingTimeSlot } = useMutation(
-    async () => {
-      if (!shiftId) {
-        throw new Error("シフトIDが指定されていません");
-      }
-
-      const numericShiftId = parseInt(shiftId);
-      if (isNaN(numericShiftId)) {
-        throw new Error("無効なシフトIDです");
-      }
-
-      const result = await trpcClient.shifts.generateTimeSlotBased.mutate({
-        shiftId: numericShiftId,
-      });
-      return result;
-    },
-    {
-      onSuccess: async (result) => {
-        toast.success("時間スロットベース生成が完了しました", {
-          description: `${result.assignmentsCount || 0}件のシフトが生成されました（高速版）`,
-          duration: 5000,
-        });
-        // Reload shift data and details to show the newly generated shifts
-        await loadShiftData();
-        await loadData();
-      },
-      onError: (error: Error) => {
-        toast.error("時間スロットベース生成に失敗しました", {
-          description: error.message,
-          duration: 7000,
-        });
-      },
-    }
-  );
-
-  // 時間スロットベース生成を実行
-  const handleTimeSlotBasedGenerate = async () => {
-    toast.info("時間スロットベースシフト生成を開始します...", {
-      description: "高速生成（約2秒）",
-    });
-    generateTimeSlotBased();
-  };
-
   // 段階的配置ベース生成を実行 - useMutationに移行
   const { mutate: generatePhaseBased, isLoading: isGeneratingPhaseBased } = useMutation(
     async () => {
@@ -643,37 +555,11 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
             )}
             {(currentShift.status === "vacation_only" || currentShift.status === "draft") && (
               <>
-                {generationMethod === 'time_slot' && (
-                  <Button
-                    onClick={handleTimeSlotBasedGenerate}
-                    disabled={isGeneratingTimeSlot || isGeneratingRuleBased || isGeneratingPhaseBased || isGeneratingAI}
-                    className="rounded-xl bg-blue-600 hover:bg-blue-700"
-                  >
-                    {isGeneratingTimeSlot ? (
-                      <><LoadingInline /> <span className="ml-2">時間スロット生成中...</span></>
-                    ) : (
-                      <><Zap className="w-4 h-4 mr-2" /> 時間スロット生成（高速）</>
-                    )}
-                  </Button>
-                )}
-                {generationMethod === 'rule_based' && (
-                  <Button
-                    onClick={handleRuleBasedGenerate}
-                    disabled={isGeneratingRuleBased || isGeneratingAI || isGeneratingTimeSlot || isGeneratingPhaseBased}
-                    className="rounded-xl bg-green-600 hover:bg-green-700"
-                  >
-                    {isGeneratingRuleBased ? (
-                      <><LoadingInline /> <span className="ml-2">ルールベース生成中...</span></>
-                    ) : (
-                      <><Zap className="w-4 h-4 mr-2" /> ルールベース生成</>
-                    )}
-                  </Button>
-                )}
                 {generationMethod === 'phase_based' && (
                   <Button
                     onClick={handlePhaseBasedGenerate}
-                    disabled={isGeneratingPhaseBased || isGeneratingRuleBased || isGeneratingTimeSlot || isGeneratingAI}
-                    className="rounded-xl bg-orange-600 hover:bg-orange-700"
+                    disabled={isGeneratingPhaseBased || isGeneratingAI}
+                    className="rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
                   >
                     {isGeneratingPhaseBased ? (
                       <><LoadingInline /> <span className="ml-2">段階的配置生成中...</span></>
@@ -685,8 +571,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                 {generationMethod === 'ai' && (
                   <Button
                     onClick={() => setShowAIDialog(true)}
-                    disabled={isGeneratingAI || isGeneratingRuleBased || isGeneratingTimeSlot || isGeneratingPhaseBased}
-                    className="rounded-xl bg-purple-600 hover:bg-purple-700"
+                    disabled={isGeneratingAI || isGeneratingPhaseBased}
+                    className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600"
                   >
                     {isGeneratingAI ? (
                       <><LoadingInline /> <span className="ml-2">AI生成中...</span></>
@@ -723,76 +609,53 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                   </Badge>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="generation"
-                    value="time_slot"
-                    checked={generationMethod === 'time_slot'}
-                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">時間スロット方式</span>
-                      <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 text-xs">
-                        高速
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">30分刻みの時間枠で最適配置（約2秒）</p>
-                  </div>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex items-center gap-3 cursor-pointer p-4 border-2 rounded-xl hover:bg-orange-50 transition-all hover:border-orange-300 has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
                   <input
                     type="radio"
                     name="generation"
                     value="phase_based"
                     checked={generationMethod === 'phase_based'}
-                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
-                    className="text-orange-600 focus:ring-orange-500"
+                    onChange={(e) => setGenerationMethod(e.target.value as 'phase_based' | 'ai')}
+                    className="text-orange-600 focus:ring-orange-500 w-5 h-5"
                   />
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">段階的配置方式</span>
-                      <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
-                        NEW
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-gray-900">段階的配置方式</span>
+                      <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-xs">
+                        推奨
                       </Badge>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">カスタム時間対応・優先順位ロジック（約10-20秒）</p>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      カスタム時間完全対応・優先順位ロジック・AI最適化
+                    </p>
+                    <p className="text-xs text-orange-600 mt-1 font-medium">
+                      ⚡ 処理時間: 10-20秒
+                    </p>
                   </div>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
-                  <input
-                    type="radio"
-                    name="generation"
-                    value="rule_based"
-                    checked={generationMethod === 'rule_based'}
-                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
-                    className="text-green-600 focus:ring-green-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-gray-900">ルールベース方式</span>
-                    <p className="text-xs text-gray-500 mt-0.5">従来の制約ルールに基づく生成</p>
-                  </div>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-gray-50 transition-colors">
+                <label className="flex items-center gap-3 cursor-pointer p-4 border-2 rounded-xl hover:bg-purple-50 transition-all hover:border-purple-300 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50">
                   <input
                     type="radio"
                     name="generation"
                     value="ai"
                     checked={generationMethod === 'ai'}
-                    onChange={(e) => setGenerationMethod(e.target.value as 'time_slot' | 'rule_based' | 'phase_based' | 'ai')}
-                    className="text-purple-600 focus:ring-purple-500"
+                    onChange={(e) => setGenerationMethod(e.target.value as 'phase_based' | 'ai')}
+                    className="text-purple-600 focus:ring-purple-500 w-5 h-5"
                   />
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">AI方式</span>
-                      <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold text-gray-900">AI方式</span>
+                      <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
                         実験的
                       </Badge>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">ChatGPTによる自動生成（20-30秒）</p>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      ChatGPT完全自動生成・別シフトレコード作成
+                    </p>
+                    <p className="text-xs text-purple-600 mt-1 font-medium">
+                      ⚡ 処理時間: 20-30秒
+                    </p>
                   </div>
                 </label>
               </div>
