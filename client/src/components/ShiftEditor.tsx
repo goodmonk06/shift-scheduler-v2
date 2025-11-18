@@ -868,7 +868,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
             <TabsList className="rounded-xl">
               <TabsTrigger value="table-v2" className="rounded-lg">新UI (推奨)</TabsTrigger>
               <TabsTrigger value="table" className="rounded-lg">テーブル (旧)</TabsTrigger>
-              <TabsTrigger value="calendar" className="rounded-lg">カレンダー</TabsTrigger>
+              <TabsTrigger value="calendar" className="rounded-lg">カレンダー（実装予定）</TabsTrigger>
               <TabsTrigger value="workflow" className="rounded-lg">ワークフロー</TabsTrigger>
             </TabsList>
           </Tabs>
