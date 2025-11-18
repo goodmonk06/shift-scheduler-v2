@@ -150,7 +150,7 @@ export type InsertRequiredStaffing = typeof requiredStaffing.$inferInsert;
 /**
  * Shifts (シフト)
  */
-export const shifts = mysqlTable("shifts", {
+export const shifts: any = mysqlTable("shifts", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").references(() => users.id, { onDelete: 'restrict' }), // FK to users - creator (nullable)
   parentShiftId: int("parentShiftId").references(() => shifts.id, { onDelete: 'set null' }), // 親シフトID（どのシフトから派生したか）

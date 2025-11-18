@@ -139,7 +139,7 @@ export async function phase2_calculateAvailability(
   const employeesAvail: EmployeeAvail[] = employees.map(e => ({
     id: e.id,
     name: e.name,
-    workableDays: e.workableDays || [],
+    workableDays: (e.workableDays as any) || [],
     canWorkNightShift: e.canWorkNightShift || false,
     skillLevel: e.skillLevel || 100,
   }));

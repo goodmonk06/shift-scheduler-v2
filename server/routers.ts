@@ -1089,7 +1089,7 @@ export const appRouter = router({
               title: '希望休が承認されました',
               message: `${req.startDate}${req.startDate !== req.endDate ? `〜${req.endDate}` : ''}の希望休が承認されました。`,
               priority: 'medium',
-              createdAt: req.submittedAt,
+              createdAt: req.submittedAt?.toISOString() || new Date().toISOString(),
               relatedShiftId: req.shiftId || undefined,
             });
           } else if (req.status === 'rejected') {
@@ -1099,7 +1099,7 @@ export const appRouter = router({
               title: '希望休が却下されました',
               message: `${req.startDate}${req.startDate !== req.endDate ? `〜${req.endDate}` : ''}の希望休が却下されました。${req.reason ? `理由: ${req.reason}` : ''}`,
               priority: 'high',
-              createdAt: req.submittedAt,
+              createdAt: req.submittedAt?.toISOString() || new Date().toISOString(),
               relatedShiftId: req.shiftId || undefined,
             });
           }
@@ -1152,7 +1152,7 @@ export const appRouter = router({
             title: `${shift.year}年${shift.month}月のシフトが確定しました`,
             message: 'シフトが確定しました。ご確認ください。',
             priority: 'medium',
-            createdAt: shift.confirmedAt!,
+            createdAt: shift.confirmedAt?.toISOString() || new Date().toISOString(),
             relatedShiftId: shift.id,
           });
         }
@@ -1458,7 +1458,6 @@ export const appRouter = router({
           title: title!,
           message: message!,
           priority: input.priority,
-          actionUrl: `/shifts/${input.shiftId}`,
         });
 
         // Record in workflow history
@@ -1471,7 +1470,7 @@ export const appRouter = router({
         });
 
         // Update shift's notificationsSent field
-        const currentNotifications = shift.notificationsSent || {};
+        const currentNotifications = (shift.notificationsSent || {}) as Record<string, any[]>;
         currentNotifications[input.notificationType] = currentNotifications[input.notificationType] || [];
         currentNotifications[input.notificationType].push({
           sentAt: new Date().toISOString(),
