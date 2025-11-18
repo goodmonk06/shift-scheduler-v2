@@ -709,9 +709,7 @@ export const appRouter = router({
         requestDate: z.string().optional(), // deprecated
         startDate: z.string(),
         endDate: z.string(),
-        leaveType: z.enum(["休", "有休", "時間指定"]).optional(),
-        startTime: z.string().optional(), // HH:MM format
-        endTime: z.string().optional(), // HH:MM format
+        leaveType: z.enum(["休", "有休"]).optional(),
         isAdditional: z.boolean().optional(), // 追加希望休（仮確定後）
         reason: z.string().optional(),
       }))
@@ -757,9 +755,7 @@ export const appRouter = router({
         shiftId: z.number(),
         requests: z.array(z.object({
           date: z.string(), // YYYY-MM-DD
-          leaveType: z.enum(["休", "有休", "時間指定"]).optional(),
-          startTime: z.string().optional(), // HH:MM format
-          endTime: z.string().optional(), // HH:MM format
+          leaveType: z.enum(["休", "有休"]).optional(),
           reason: z.string().optional(),
         })),
         isAdditional: z.boolean().optional(), // 追加希望休（仮確定後）
@@ -802,8 +798,6 @@ export const appRouter = router({
             startDate: req.date,
             endDate: req.date,
             leaveType: req.leaveType,
-            startTime: req.startTime,
-            endTime: req.endTime,
             isAdditional: input.isAdditional,
             reason: req.reason,
           });
@@ -821,9 +815,7 @@ export const appRouter = router({
         id: z.number(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
-        leaveType: z.enum(["休", "有休", "時間指定"]).optional(),
-        startTime: z.string().optional(),
-        endTime: z.string().optional(),
+        leaveType: z.enum(["休", "有休"]).optional(),
         reason: z.string().optional(),
         status: z.enum(["pending", "approved", "rejected"]).optional(),
       }))
@@ -893,6 +885,100 @@ export const appRouter = router({
           pendingApproval: requests.filter(r => r.status === "pending").length,
           approved: requests.filter(r => r.status === "approved").length
         };
+      }),
+  }),
+
+  // Work Preferences (勤務希望)
+  workPreferences: router({
+    list: protectedProcedure.query(async () => {
+      return await db.getAllWorkPreferences();
+    }),
+    getByEmployee: protectedProcedure
+      .input(z.object({ employeeId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getWorkPreferencesByEmployee(input.employeeId);
+      }),
+    getByShift: protectedProcedure
+      .input(z.object({ shiftId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getWorkPreferencesByShift(input.shiftId);
+      }),
+    create: protectedProcedure
+      .input(z.object({
+        employeeId: z.number(),
+        shiftId: z.number().optional(),
+        requestDate: z.string().optional(), // deprecated
+        startDate: z.string(),
+        endDate: z.string(),
+        startTime: z.string(), // HH:MM format - required
+        endTime: z.string(), // HH:MM format - required
+        isAdditional: z.boolean().optional(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        // シフトIDが指定されている場合、締切を検証（leaveRequestsと同様）
+        if (input.shiftId) {
+          const shift = await db.getShiftById(input.shiftId);
+          if (!shift) {
+            throw new Error("シフトが見つかりません");
+          }
+
+          // 通常の希望締切チェック
+          if (!input.isAdditional && shift.leaveRequestDeadline) {
+            const deadline = new Date(shift.leaveRequestDeadline);
+            const now = new Date();
+            if (now > deadline) {
+              throw new Error(
+                `勤務希望の締切を過ぎています。締切: ${deadline.toLocaleString('ja-JP')}`
+              );
+            }
+          }
+
+          // 追加希望締切チェック（仮確定後）
+          if (input.isAdditional && shift.additionalRequestDeadline) {
+            const deadline = new Date(shift.additionalRequestDeadline);
+            const now = new Date();
+            if (now > deadline) {
+              throw new Error(
+                `追加勤務希望の締切を過ぎています。締切: ${deadline.toLocaleString('ja-JP')}`
+              );
+            }
+          }
+        }
+
+        return await db.createWorkPreference({
+          ...input,
+          requestDate: input.startDate, // fallback for backward compatibility
+        });
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        reason: z.string().optional(),
+        status: z.enum(["pending", "approved", "rejected"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateWorkPreference(id, data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteWorkPreference(input.id);
+      }),
+    approve: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.updateWorkPreference(input.id, { status: "approved" });
+      }),
+    reject: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.updateWorkPreference(input.id, { status: "rejected" });
       }),
   }),
 
