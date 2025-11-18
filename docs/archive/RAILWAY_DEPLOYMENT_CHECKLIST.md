@@ -45,10 +45,10 @@ NODE_ENV=production
 PORT=8080
 
 # データベース（Aiven MySQL）
-DATABASE_URL=mysql://avnadmin:***REMOVED***@shift-scheduler-kinyu000-c42a.i.aivencloud.com:21789/defaultdb?ssl-mode=REQUIRED
+DATABASE_URL=<YOUR_DATABASE_URL_HERE>
 
 # JWT認証
-JWT_SECRET=***REMOVED***
+JWT_SECRET=<YOUR_JWT_SECRET_HERE>
 ```
 
 ### AI機能（後のフェーズで設定）

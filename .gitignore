@@ -105,3 +105,16 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Security - credentials and secrets
+*.pem
+*.key
+*_TOKEN*
+*_SECRET*
+*_PASSWORD*
+credentials.json
+secrets.json
+secrets.yml
+secrets.yaml
+.credentials
+.secrets

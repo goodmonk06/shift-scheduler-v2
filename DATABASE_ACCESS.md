@@ -86,7 +86,7 @@ pnpm check-db
    - **Hostname**: `shift-scheduler-kinyu000-c42a.i.aivencloud.com`
    - **Port**: `21789`
    - **Username**: `avnadmin`
-   - **Password**: `***REMOVED***`
+   - **Password**: `<YOUR_PASSWORD_HERE>`
    - **Default Schema**: `defaultdb`
 
 4. 「SSL」タブで「Use SSL」を選択
@@ -125,7 +125,7 @@ pnpm check-db
    - **Host**: `shift-scheduler-kinyu000-c42a.i.aivencloud.com`
    - **Port**: `21789`
    - **User**: `avnadmin`
-   - **Password**: `***REMOVED***`
+   - **Password**: `<YOUR_PASSWORD_HERE>`
    - **Database**: `defaultdb`
    - **Use SSL**: ON
 

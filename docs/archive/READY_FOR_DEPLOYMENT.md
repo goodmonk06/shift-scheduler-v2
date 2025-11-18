@@ -56,8 +56,8 @@ Railwayプロジェクト（shift-scheduler-v2-production）の「Variables」�
 # 必須環境変数
 NODE_ENV=production
 PORT=8080
-DATABASE_URL=mysql://avnadmin:***REMOVED***@shift-scheduler-kinyu000-c42a.i.aivencloud.com:21789/defaultdb?ssl-mode=REQUIRED
-JWT_SECRET=***REMOVED***
+DATABASE_URL=<YOUR_DATABASE_URL_HERE>
+JWT_SECRET=<YOUR_JWT_SECRET_HERE>
 
 # AI機能（Phase 4以降で設定）
 LLM_PROVIDER=openai
