@@ -514,8 +514,28 @@ export async function phase3_ruleBasedAssignment(
         s.date === date && s.timeSlotId === slot.id
       ).length;
 
-      // 必要人数（デフォルト: 時間枠のrequiredStaff）
-      const required = slot.requiredStaff || 1;
+      // 必要人数を計算（requiredStaffingテーブル優先）
+      let required = slot.requiredStaff || 1;
+
+      // requiredStaffingテーブルから曜日・時間別の必要人数を取得
+      const [startHour] = slot.startTime.split(':').map(Number);
+      const [endHour] = slot.endTime.split(':').map(Number);
+
+      // この時間枠がカバーする時間帯の最大必要人数を取得
+      let maxRequiredFromTable = 0;
+      for (let hour = startHour; hour <= (endHour > startHour ? endHour : 23); hour++) {
+        const hourRequirement = requiredStaffing.find(
+          rs => rs.dayOfWeek === dayOfWeek && rs.hour === hour
+        );
+        if (hourRequirement && hourRequirement.requiredCount > maxRequiredFromTable) {
+          maxRequiredFromTable = hourRequirement.requiredCount;
+        }
+      }
+
+      // requiredStaffingテーブルの値がある場合はそちらを優先
+      if (maxRequiredFromTable > 0) {
+        required = maxRequiredFromTable;
+      }
 
       // 既に必要人数を満たしている場合はスキップ
       if (currentAssignments >= required) continue;
