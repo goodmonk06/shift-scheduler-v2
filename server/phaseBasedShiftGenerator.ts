@@ -533,7 +533,7 @@ async function invokeAIWithCustomTimeSupport(prompt: string): Promise<any[]> {
                     description: "カスタム終了時刻（HH:MM形式、30分刻み）。timeSlotIdがnullの場合に使用"
                   },
                 },
-                required: ["employeeId", "date", "timeSlotId"],
+                required: ["employeeId", "date", "timeSlotId", "startTime", "endTime"],
                 additionalProperties: false,
               },
             },
