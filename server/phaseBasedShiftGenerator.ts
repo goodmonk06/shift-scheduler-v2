@@ -397,10 +397,213 @@ export async function phase3_ruleBasedAssignment(
   console.log(`\n夜勤配置完了: ${generatedShifts.length}件`);
 
   // ========================================
-  // ステップ2: その他の時間帯の配置（TODO）
+  // ステップ2: 正社員の日中必須配置（9-16時）
   // ========================================
-  // 必要人数に基づいて、その他の時間帯も配置する
-  // 現時点では夜勤のみ実装
+  console.log('\n--- ステップ2: 正社員の9-16時配置 ---');
+
+  // 正社員を取得
+  const positionGroups = await db.getAllPositionGroups();
+  const fullTimeEmployees = employees.filter(e => {
+    const group = positionGroups.find(g => g.id === e.positionGroupId);
+    return group?.employmentType === 'fulltime';
+  });
+
+  // 9-16時をカバーする時間枠を取得（夜勤以外）
+  const daytimeSlots = workTimeSlots.filter(ts => {
+    if (ts.isNightShift) return false;
+
+    // 開始時刻と終了時刻をパース
+    const [startHour] = ts.startTime.split(':').map(Number);
+    const [endHour] = ts.endTime.split(':').map(Number);
+
+    // 9時以前に開始し、16時以降に終了する時間枠
+    return startHour <= 9 && endHour >= 16;
+  });
+
+  console.log(`9-16時をカバーする時間枠: ${daytimeSlots.length}件`);
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    // 既にこの日に正社員が配置されているかチェック
+    const hasFullTimeOnDate = generatedShifts.some(s => {
+      if (s.date !== date) return false;
+      const emp = fullTimeEmployees.find(e => e.id === s.employeeId);
+      return emp !== undefined;
+    });
+
+    if (hasFullTimeOnDate) {
+      console.log(`  ${date}: 既に正社員配置済み（スキップ）`);
+      continue;
+    }
+
+    // 配置可能な正社員を探す
+    const candidates = fullTimeEmployees.filter(emp => {
+      const key = `${emp.id}_${date}`;
+      const availability = availabilityMap.get(key);
+
+      if (!availability || !availability.canAssign) return false;
+      if (confirmedShifts.some(s => s.employeeId === emp.id && s.date === date)) return false;
+      if (generatedShifts.some(s => s.employeeId === emp.id && s.date === date)) return false;
+
+      return true;
+    });
+
+    if (candidates.length === 0) {
+      console.warn(`⚠️ ${date} の正社員配置不可: 候補者なし`);
+      continue;
+    }
+
+    // 最も勤務日数が少ない正社員を選択
+    candidates.sort((a, b) => {
+      const countA = workDayCount.get(a.id) || 0;
+      const countB = workDayCount.get(b.id) || 0;
+      return countA - countB;
+    });
+
+    const selected = candidates[0];
+
+    // 適切な時間枠を選択（最初に見つかったもの）
+    const timeSlot = daytimeSlots[0];
+
+    if (!timeSlot) {
+      console.warn(`⚠️ ${date} の正社員配置不可: 時間枠なし`);
+      continue;
+    }
+
+    // 正社員を配置
+    generatedShifts.push({
+      shiftId,
+      employeeId: selected.id,
+      date,
+      status: 'working',
+      timeSlotId: timeSlot.id,
+      startTime: null,
+      endTime: null,
+      leaveType: null,
+      generatedBy: 'rule_based',
+      reason: `正社員必須配置（9-16時カバー: ${timeSlot.name}）`,
+    });
+
+    workDayCount.set(selected.id, (workDayCount.get(selected.id) || 0) + 1);
+    console.log(`  ${date} 正社員配置: 職員${selected.id}(${selected.name}) - ${timeSlot.name}`);
+  }
+
+  console.log(`\n正社員配置完了: ${generatedShifts.length}件`);
+
+  // ========================================
+  // ステップ3: その他の時間帯の配置（必要人数に基づく）
+  // ========================================
+  console.log('\n--- ステップ3: その他の時間帯配置 ---');
+
+  // 各日・各時間枠で必要人数を満たすように配置
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay();
+
+    // この日の必要人数を取得（曜日別）
+    const dayRequirements = requiredStaffing.filter(rs => rs.dayOfWeek === dayOfWeek && rs.requiredCount > 0);
+
+    // 各時間枠について配置を試みる
+    for (const slot of workTimeSlots) {
+      if (slot.isNightShift) continue; // 夜勤は既に配置済み
+
+      // この時間枠の現在の配置数をカウント
+      const currentAssignments = generatedShifts.filter(s =>
+        s.date === date && s.timeSlotId === slot.id
+      ).length;
+
+      // 必要人数（デフォルト: 時間枠のrequiredStaff）
+      const required = slot.requiredStaff || 1;
+
+      // 既に必要人数を満たしている場合はスキップ
+      if (currentAssignments >= required) continue;
+
+      // 不足分を配置
+      const shortage = required - currentAssignments;
+
+      for (let i = 0; i < shortage; i++) {
+        // 配置可能な職員を探す（パートを優先）
+        const candidates = employees.filter(emp => {
+          const key = `${emp.id}_${date}`;
+          const availability = availabilityMap.get(key);
+
+          if (!availability || !availability.canAssign) return false;
+          if (confirmedShifts.some(s => s.employeeId === emp.id && s.date === date)) return false;
+          if (generatedShifts.some(s => s.employeeId === emp.id && s.date === date)) return false;
+
+          // 連続勤務制限チェック
+          const allShifts: ShiftDay[] = [...confirmedShifts, ...generatedShifts].map(s => ({
+            date: s.date,
+            employeeId: s.employeeId,
+            status: s.status as 'working' | 'off' | 'requested_off' | 'emergency_off',
+          }));
+
+          const consecutiveCheck = checkConsecutiveWorkLimit(emp.id, date, allShifts, 4);
+          if (!consecutiveCheck.canAssign) return false;
+
+          return true;
+        });
+
+        if (candidates.length === 0) break;
+
+        // パートを優先的に選択（正社員の公休確保のため）
+        candidates.sort((a, b) => {
+          const groupA = positionGroups.find(g => g.id === a.positionGroupId);
+          const groupB = positionGroups.find(g => g.id === b.positionGroupId);
+          const isPartTimeA = groupA?.employmentType === 'parttime' ? 1 : 0;
+          const isPartTimeB = groupB?.employmentType === 'parttime' ? 1 : 0;
+
+          // パート優先（降順）
+          if (isPartTimeB !== isPartTimeA) return isPartTimeB - isPartTimeA;
+
+          // 勤務日数が少ない順
+          const countA = workDayCount.get(a.id) || 0;
+          const countB = workDayCount.get(b.id) || 0;
+          return countA - countB;
+        });
+
+        const selected = candidates[0];
+
+        // 配置
+        generatedShifts.push({
+          shiftId,
+          employeeId: selected.id,
+          date,
+          status: 'working',
+          timeSlotId: slot.id,
+          startTime: null,
+          endTime: null,
+          leaveType: null,
+          generatedBy: 'rule_based',
+          reason: `必要人数配置（${slot.name}）`,
+        });
+
+        workDayCount.set(selected.id, (workDayCount.get(selected.id) || 0) + 1);
+        console.log(`  ${date} ${slot.name}: 職員${selected.id}(${selected.name})`);
+      }
+    }
+  }
+
+  console.log(`\nその他時間帯配置完了: ${generatedShifts.length}件`);
+
+  // ========================================
+  // ステップ4: 公休日数チェック（正社員）
+  // ========================================
+  console.log('\n--- ステップ4: 公休日数チェック ---');
+
+  for (const emp of fullTimeEmployees) {
+    const workDays = workDayCount.get(emp.id) || 0;
+    const publicHolidays = daysInMonth - workDays;
+    const requiredHolidays = month === 2 ? 8 : 9;
+
+    if (publicHolidays < requiredHolidays) {
+      console.warn(`⚠️ 職員${emp.id}(${emp.name}): 公休${publicHolidays}日（必要${requiredHolidays}日）- 不足${requiredHolidays - publicHolidays}日`);
+    } else {
+      console.log(`  職員${emp.id}(${emp.name}): 公休${publicHolidays}日（必要${requiredHolidays}日）- OK`);
+    }
+  }
 
   console.log(`\nPhase 3完了: ${generatedShifts.length}件のシフトを生成`);
 
