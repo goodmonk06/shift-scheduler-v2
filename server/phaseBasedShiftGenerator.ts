@@ -16,6 +16,7 @@ import {
 } from "./utils/employeeAvailability";
 import {
   checkConsecutiveWorkLimit,
+  getConsecutiveWorkDays,
   type ShiftDay
 } from "./utils/consecutiveWorkCheck";
 import {
@@ -309,6 +310,21 @@ export async function phase3_ruleBasedAssignment(
         // 既に生成したシフトがある場合はスキップ
         if (generatedShifts.some(s => s.employeeId === emp.id && s.date === date)) return false;
 
+        // 連続勤務制限チェック（夜勤入り〜夜勤明け＝2連勤扱い）
+        const allShifts: ShiftDay[] = [...confirmedShifts, ...generatedShifts].map(s => ({
+          date: s.date,
+          employeeId: s.employeeId,
+          status: s.status as 'working' | 'off' | 'requested_off' | 'emergency_off',
+        }));
+
+        // 前の連続勤務日数をチェック
+        const previousDays = getConsecutiveWorkDays(emp.id, date, allShifts, false);
+
+        // 夜勤入り + 夜勤明け = 2日分なので、前の連続勤務が3日以上の場合はNG（3+2=5連勤）
+        if (previousDays >= 3) {
+          return false;
+        }
+
         return true;
       });
 
@@ -340,22 +356,39 @@ export async function phase3_ruleBasedAssignment(
         reason: `夜勤配置（${nightSlot.name}）`,
       });
 
-      workDayCount.set(selected.id, (workDayCount.get(selected.id) || 0) + 1);
-      console.log(`  ${date} 夜勤: 職員${selected.id}(${selected.name})`);
+      // 夜勤入り + 夜勤明け = 2日分の勤務としてカウント
+      workDayCount.set(selected.id, (workDayCount.get(selected.id) || 0) + 2);
+      console.log(`  ${date} 夜勤: 職員${selected.id}(${selected.name}) ※夜勤入り+明け=2日分`);
 
-      // 夜勤の翌日を休みにする
+      // ルール適用: 夜勤入り→夜勤明け→休み
+
+      // 1. 夜勤の翌日は「夜勤明け」（配置不可）
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
       const nextDayStr = nextDay.toISOString().split('T')[0];
 
-      // 翌日が同月内の場合のみ処理
       if (nextDay.getFullYear() === year && nextDay.getMonth() + 1 === month) {
         const key = `${selected.id}_${nextDayStr}`;
         const avail = availabilityMap.get(key);
         if (avail) {
           avail.canAssign = false;
-          avail.reason = '夜勤の翌日（明け番）';
-          console.log(`    → ${nextDayStr} は休み（明け番）`);
+          avail.reason = '夜勤明け（9時まで勤務、その後休み）';
+          console.log(`    → ${nextDayStr} は夜勤明け（配置不可）`);
+        }
+      }
+
+      // 2. 夜勤明けの翌日は「休み」（配置不可）
+      const dayAfterNext = new Date(date);
+      dayAfterNext.setDate(dayAfterNext.getDate() + 2);
+      const dayAfterNextStr = dayAfterNext.toISOString().split('T')[0];
+
+      if (dayAfterNext.getFullYear() === year && dayAfterNext.getMonth() + 1 === month) {
+        const key = `${selected.id}_${dayAfterNextStr}`;
+        const avail = availabilityMap.get(key);
+        if (avail) {
+          avail.canAssign = false;
+          avail.reason = '夜勤明けの翌日（休み）';
+          console.log(`    → ${dayAfterNextStr} は休み（明け番翌日）`);
         }
       }
     }
