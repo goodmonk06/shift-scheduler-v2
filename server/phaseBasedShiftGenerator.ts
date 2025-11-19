@@ -272,6 +272,7 @@ export async function phase3_ruleBasedAssignment(
   const employees = await db.getAllEmployees();
   const workTimeSlots = await db.getAllWorkTimeSlots();
   const requiredStaffing = await db.getAllRequiredStaffing();
+  const workPreferences = await db.getWorkPreferencesByShift(shiftId);
 
   const generatedShifts: any[] = [];
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -286,6 +287,104 @@ export async function phase3_ruleBasedAssignment(
   // 各職員の勤務日数カウンター（公平性のため）
   const workDayCount = new Map<number, number>();
   employees.forEach(e => workDayCount.set(e.id, 0));
+
+  // ========================================
+  // ステップ0（新規）: パートタイム固定シフトの最優先配置
+  // ========================================
+  console.log('\n--- ステップ0: パートタイム固定シフト配置 ---');
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateObj = new Date(date);
+    const dayOfWeek = dateObj.getDay();
+
+    for (const employee of employees) {
+      // 既にconfirmedShiftsに含まれている場合はスキップ
+      const alreadyConfirmed = confirmedShifts.find(
+        s => s.employeeId === employee.id && s.date === date
+      );
+      if (alreadyConfirmed) continue;
+
+      // 既にgeneratedShiftsに含まれている場合はスキップ
+      const alreadyGenerated = generatedShifts.find(
+        s => s.employeeId === employee.id && s.date === date
+      );
+      if (alreadyGenerated) continue;
+
+      const constraints = employee.additionalConstraints as any;
+
+      // パターン1: weeklyFixed で must_work かつ時間指定がある場合
+      if (constraints?.weeklyFixed) {
+        const fixedPattern = constraints.weeklyFixed.find(
+          (wf: any) => wf.dayOfWeek === dayOfWeek && wf.type === 'must_work' && wf.startTime && wf.endTime
+        );
+
+        if (fixedPattern) {
+          generatedShifts.push({
+            shiftId,
+            employeeId: employee.id,
+            date,
+            status: 'working',
+            timeSlotId: null, // カスタム時間
+            startTime: fixedPattern.startTime,
+            endTime: fixedPattern.endTime,
+            leaveType: null,
+            generatedBy: 'rule_based',
+            reason: `固定シフト（毎週${['日', '月', '火', '水', '木', '金', '土'][dayOfWeek]}曜日 ${fixedPattern.startTime}-${fixedPattern.endTime}）`,
+          });
+
+          workDayCount.set(employee.id, (workDayCount.get(employee.id) || 0) + 1);
+          console.log(`  ${date} ${employee.name}: ${fixedPattern.startTime}-${fixedPattern.endTime} (固定)`);
+
+          // availabilityMapを更新（他のステップで配置されないように）
+          const key = `${employee.id}_${date}`;
+          const avail = availabilityMap.get(key);
+          if (avail) {
+            avail.canAssign = false;
+            avail.reason = '固定シフト配置済み';
+          }
+
+          continue;
+        }
+      }
+
+      // パターン2: workPreferences で指定された勤務希望
+      const workPref = workPreferences.find(wp =>
+        wp.employeeId === employee.id &&
+        (wp.status === 'approved' || wp.status === 'pending') &&
+        wp.startDate === date &&
+        wp.endDate === date
+      );
+
+      if (workPref) {
+        generatedShifts.push({
+          shiftId,
+          employeeId: employee.id,
+          date,
+          status: 'working',
+          timeSlotId: null, // カスタム時間
+          startTime: workPref.startTime,
+          endTime: workPref.endTime,
+          leaveType: null,
+          generatedBy: 'rule_based',
+          reason: `勤務希望（${workPref.startTime}-${workPref.endTime}）`,
+        });
+
+        workDayCount.set(employee.id, (workDayCount.get(employee.id) || 0) + 1);
+        console.log(`  ${date} ${employee.name}: ${workPref.startTime}-${workPref.endTime} (勤務希望)`);
+
+        // availabilityMapを更新
+        const key = `${employee.id}_${date}`;
+        const avail = availabilityMap.get(key);
+        if (avail) {
+          avail.canAssign = false;
+          avail.reason = '勤務希望配置済み';
+        }
+      }
+    }
+  }
+
+  console.log(`\n固定シフト配置完了: ${generatedShifts.length}件`);
 
   // ========================================
   // ステップ1: 夜勤の優先配置（全日程）

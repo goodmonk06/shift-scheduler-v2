@@ -1,0 +1,306 @@
+[
+  {
+    "name": "杉山美佳子",
+    "breakTime": 60,
+    "canWorkNightShift": true,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 5, "type": "off_or_night", "description": "毎週金曜日は休み又は夜勤のみ"}
+      ]
+    }
+  },
+  {
+    "name": "梅田英津子",
+    "breakTime": 60,
+    "canWorkNightShift": true,
+    "additionalConstraints": {
+      "noLateShift": true,
+      "allowedShiftTypes": ["夜勤", "早番", "日勤A", "日勤B"],
+      "description": "遅番なし、夜勤・早番・日勤のみ"
+    }
+  },
+  {
+    "name": "松嵜愛梨",
+    "breakTime": 60,
+    "canWorkNightShift": true,
+    "additionalConstraints": {
+      "description": "条件なし"
+    }
+  },
+  {
+    "name": "大橋健一",
+    "breakTime": 60,
+    "canWorkNightShift": true,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 5, "type": "night_forbidden", "description": "毎週金曜日は夜勤不可"}
+      ],
+      "nightShiftPreferred": true,
+      "nightShiftCount": {"min": 9, "max": 10, "description": "夜勤多め（月9～10回）"},
+      "canDoConsecutiveNightShifts": true,
+      "description": "夜勤・明け・夜勤・明け・休のパターン可能"
+    }
+  },
+  {
+    "name": "上条やえ子",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "workPatterns": [
+        {"type": "main", "startTime": "08:00", "endTime": "16:00", "daysPerMonth": 16},
+        {"type": "sub", "startTime": "09:00", "endTime": "15:00", "daysPerMonth": 2}
+      ],
+      "monthlyDays": {"target": 18, "min": 18, "max": 18},
+      "monthlyHours": 120,
+      "description": "8時～16時 月16日、9時～15時 月2日、合計月18日、月120時間"
+    }
+  },
+  {
+    "name": "若森直子",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "workPatterns": [
+        {"type": "main", "startTime": "08:00", "endTime": "14:00", "daysPerMonth": 12},
+        {"type": "sub", "startTime": "08:00", "endTime": "10:00", "daysPerMonth": 1}
+      ],
+      "monthlyDays": {"target": 13, "min": 13, "max": 13},
+      "description": "8時～14時 月12日、8時～10時 月1日、合計月13日"
+    }
+  },
+  {
+    "name": "足立洋子",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 1, "type": "must_work", "startTime": "09:00", "endTime": "16:00", "description": "月曜日 9時～16時"},
+        {"dayOfWeek": 4, "type": "must_work", "startTime": "08:00", "endTime": "16:00", "description": "木曜日 8時～16時"}
+      ],
+      "description": "月曜日と木曜日のみ勤務、固定時間"
+    }
+  },
+  {
+    "name": "野仲彩香",
+    "breakTime": 0,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "defaultWorkTime": {"startTime": "08:30", "endTime": "13:30"},
+      "description": "基本 8時半～13時半勤務"
+    }
+  },
+  {
+    "name": "桂川美幸",
+    "breakTime": 0,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 1, "type": "must_work", "startTime": "18:00", "endTime": "20:00"},
+        {"dayOfWeek": 3, "type": "must_work", "startTime": "18:00", "endTime": "20:00"},
+        {"dayOfWeek": 5, "type": "must_work", "startTime": "18:00", "endTime": "20:00"},
+        {"dayOfWeek": 0, "type": "must_work", "startTime": "18:00", "endTime": "20:00"}
+      ],
+      "description": "月曜・水曜・金曜・日曜日 18時～20時勤務"
+    }
+  },
+  {
+    "name": "加藤広大",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 2, "type": "off", "description": "火曜日は休み"},
+        {"dayOfWeek": 3, "type": "must_work", "startTime": "11:00", "endTime": "20:00"},
+        {"dayOfWeek": 6, "type": "must_work", "startTime": "11:00", "endTime": "20:00"}
+      ],
+      "description": "水曜・土曜日 11時～20時勤務、火曜日は休み"
+    }
+  },
+  {
+    "name": "湯本智子",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "workTimeRange": {"startTime": "08:00", "endTime": "18:00", "duration": 8},
+      "weeklyDays": 4,
+      "description": "8時～18時の間で8時間労働可、週4日勤務"
+    }
+  },
+  {
+    "name": "楠美佐",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 0, "type": "off", "description": "日曜日休み"},
+        {"dayOfWeek": 6, "type": "off", "description": "土曜日休み"},
+        {"dayOfWeek": 2, "type": "off", "description": "火曜日休み（12月より）"}
+      ],
+      "holidaysOff": true,
+      "useWorkPreferences": true,
+      "description": "土日祝休み、12月より毎週火曜日休み、本人希望シフト"
+    }
+  },
+  {
+    "name": "平井英子",
+    "breakTime": 30,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 3, "type": "must_work", "startTime": "10:00", "endTime": "16:00"},
+        {"dayOfWeek": 5, "type": "must_work", "startTime": "10:00", "endTime": "16:00"}
+      ],
+      "description": "毎週水曜・金曜日 10時～16時勤務"
+    }
+  },
+  {
+    "name": "海野はるか",
+    "breakTime": 30,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 0, "type": "off"},
+        {"dayOfWeek": 6, "type": "off"}
+      ],
+      "holidaysOff": true,
+      "defaultWorkTime": {"startTime": "09:00", "endTime": "14:00"},
+      "description": "土日祝日休み、9時～14時勤務"
+    }
+  },
+  {
+    "name": "山田明美",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "defaultWorkTime": {"startTime": "09:00", "endTime": "15:00"},
+      "monthlyDays": {"min": 14, "max": 15, "target": 15},
+      "description": "有休を除き9時～15時で月14日～15日勤務"
+    }
+  },
+  {
+    "name": "足立豊子",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "defaultWorkTime": {"startTime": "09:00", "endTime": "17:00"},
+      "monthlyDays": {"target": 18, "min": 18, "max": 18},
+      "monthlyHours": 120,
+      "maxConsecutiveDays": 3,
+      "weekendWorkPattern": "alternating",
+      "description": "9時～17時 月18日、土日出勤したら翌週の土日は休み、連勤最大3日"
+    }
+  },
+  {
+    "name": "関田あゆみ",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 0, "type": "off"},
+        {"dayOfWeek": 6, "type": "off"},
+        {"dayOfWeek": 1, "type": "must_work", "startTime": "09:00", "endTime": "15:00"},
+        {"dayOfWeek": 2, "type": "must_work", "startTime": "09:00", "endTime": "15:00"},
+        {"dayOfWeek": 4, "type": "must_work", "startTime": "09:00", "endTime": "15:00"},
+        {"dayOfWeek": 3, "type": "must_work", "startTime": "09:00", "endTime": "16:00"},
+        {"dayOfWeek": 5, "type": "must_work", "startTime": "09:00", "endTime": "16:00"}
+      ],
+      "holidaysOff": true,
+      "description": "土日祝日休み、月火木9時～15時、水金9時～16時"
+    }
+  },
+  {
+    "name": "長山真梨奈",
+    "breakTime": 0,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 0, "type": "off"},
+        {"dayOfWeek": 6, "type": "off"}
+      ],
+      "holidaysOff": true,
+      "defaultWorkTime": {"startTime": "09:00", "endTime": "13:30"},
+      "description": "土日祝日休み、平日9時～13時半勤務"
+    }
+  },
+  {
+    "name": "伊藤美穂",
+    "breakTime": 0,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 2, "type": "must_work", "startTime": "11:30", "endTime": "17:00"},
+        {"dayOfWeek": 4, "type": "must_work", "startTime": "11:30", "endTime": "17:00"},
+        {"dayOfWeek": 6, "type": "must_work", "startTime": "11:30", "endTime": "17:00"}
+      ],
+      "description": "毎週火曜・木曜・土曜日 11時半～17時勤務"
+    }
+  },
+  {
+    "name": "近藤由美子",
+    "breakTime": 0,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyDays": 1,
+      "defaultWorkTime": {"startTime": "09:00", "endTime": "13:00"},
+      "useWorkPreferences": true,
+      "description": "本人希望シフト、週1日 9時～13時"
+    }
+  },
+  {
+    "name": "大堀シェリー",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 0, "type": "off"},
+        {"dayOfWeek": 6, "type": "off"}
+      ],
+      "holidaysOff": true,
+      "weeklyDays": 4,
+      "defaultWorkTime": {"startTime": "09:00", "endTime": "18:00"},
+      "monthlyHours": 120,
+      "useWorkPreferences": true,
+      "description": "土日祝日休み、週4日 9時～18時、本人希望シフト、月120時間"
+    }
+  },
+  {
+    "name": "宝本龍騎",
+    "breakTime": 0,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "defaultWorkTime": {"startTime": "10:00", "endTime": "14:00", "endTimeAlt": "15:00"},
+      "useWorkPreferences": true,
+      "description": "曜日不定 10時～14時（15時）本人希望シフト"
+    }
+  },
+  {
+    "name": "岩崎亜友美",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "workTimeRange": {"startTime": "08:00", "endTime": "18:00", "duration": 8},
+      "weeklyDays": 4,
+      "weeklyFixed": [
+        {"dayOfWeek": 3, "type": "off", "description": "水曜日休み"},
+        {"dayOfWeek": 6, "type": "off", "description": "土曜日休み"},
+        {"dayOfWeek": 0, "type": "off", "description": "日曜日休み"}
+      ],
+      "description": "8時～18時の間で8時間勤務、週4日、毎週水土日休み"
+    }
+  },
+  {
+    "name": "淺野穂菜美",
+    "breakTime": 60,
+    "canWorkNightShift": false,
+    "additionalConstraints": {
+      "weeklyFixed": [
+        {"dayOfWeek": 4, "type": "off", "description": "木曜日休み"},
+        {"dayOfWeek": 6, "type": "off", "description": "土曜日休み"},
+        {"dayOfWeek": 0, "type": "off", "description": "日曜日休み"}
+      ],
+      "holidaysOff": true,
+      "defaultWorkTime": {"startTime": "08:00", "endTime": "16:30"},
+      "description": "木土日祝は基本休み、8時～16時半"
+    }
+  }
+]
