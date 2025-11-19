@@ -65,7 +65,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
   const [showPhaseResultDialog, setShowPhaseResultDialog] = useState(false);
   const [phaseResult, setPhaseResult] = useState<{
     confirmedShifts: number;
-    aiGeneratedShifts: number;
+    ruleBasedShifts: number;
     totalShifts: number;
   } | null>(null);
 
@@ -418,7 +418,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         // Store result and show detailed dialog
         setPhaseResult({
           confirmedShifts: result.confirmedShifts,
-          aiGeneratedShifts: result.aiGeneratedShifts,
+          ruleBasedShifts: result.ruleBasedShifts,
           totalShifts: result.totalShifts,
         });
         setShowPhaseResultDialog(true);
@@ -1115,9 +1115,9 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                   </Card>
                   <Card className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
                     <div className="text-center">
-                      <p className="text-sm text-purple-700 font-medium mb-1">AI生成</p>
-                      <p className="text-3xl font-bold text-purple-900">{phaseResult.aiGeneratedShifts}</p>
-                      <p className="text-xs text-purple-600 mt-1">最適配置</p>
+                      <p className="text-sm text-purple-700 font-medium mb-1">ルールベース配置</p>
+                      <p className="text-3xl font-bold text-purple-900">{phaseResult.ruleBasedShifts}</p>
+                      <p className="text-xs text-purple-600 mt-1">夜勤・必要人数配置</p>
                     </div>
                   </Card>
                   <Card className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border-green-200">

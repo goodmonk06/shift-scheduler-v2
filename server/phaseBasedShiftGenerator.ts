@@ -245,73 +245,133 @@ export async function phase2_calculateAvailability(
 }
 
 /**
- * Phase 3: AI最適化
- * - 必要人数充足
- * - 公平性・品質考慮
- * - 既存枠とカスタム時間の両対応
+ * Phase 3: ルールベース配置
+ * - 夜勤優先配置（毎日必須）
+ * - 夜勤→明け番（休み）のルール適用
+ * - その他の時間帯を必要人数に基づいて配置
+ * - 公平性を考慮
  *
  * @param shiftId シフトID
  * @param year 年
  * @param month 月
  * @param confirmedShifts Phase 1で確定したシフト
  * @param availabilityMap Phase 2で計算した勤務可能情報
- * @returns AI生成されたシフト
+ * @returns 生成されたシフト
  */
-export async function phase3_aiOptimization(
+export async function phase3_ruleBasedAssignment(
   shiftId: number,
   year: number,
   month: number,
   confirmedShifts: any[],
   availabilityMap: Map<string, any>
 ): Promise<any[]> {
-  console.log('\n=== Phase 3: AI最適化 ===');
+  console.log('\n=== Phase 3: ルールベース配置 ===');
 
   // データ取得
   const employees = await db.getAllEmployees();
   const workTimeSlots = await db.getAllWorkTimeSlots();
-  // requiredStaffingは現在未実装のため空配列を使用
-  const requiredStaffing: any[] = [];
+  const requiredStaffing = await db.getAllRequiredStaffing();
 
-  // 配置可能な職員・日付の組み合わせを抽出
-  const availableAssignments: any[] = [];
-  for (const [key, value] of availabilityMap.entries()) {
-    if (value.canAssign && value.timeRange) {
-      availableAssignments.push({
-        employeeId: value.employeeId,
-        date: value.date,
-        startTime: value.timeRange.startTime,
-        endTime: value.timeRange.endTime,
-        reason: value.reason,
+  const generatedShifts: any[] = [];
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  // 夜勤可能職員と夜勤スロット
+  const nightShiftCapable = employees.filter(e => e.canWorkNightShift);
+  const nightShiftSlots = workTimeSlots.filter(ts => ts.isNightShift);
+
+  console.log(`夜勤可能職員: ${nightShiftCapable.length}名`);
+  console.log(`夜勤スロット: ${nightShiftSlots.length}件`);
+
+  // 各職員の勤務日数カウンター（公平性のため）
+  const workDayCount = new Map<number, number>();
+  employees.forEach(e => workDayCount.set(e.id, 0));
+
+  // ========================================
+  // ステップ1: 夜勤の優先配置（全日程）
+  // ========================================
+  console.log('\n--- ステップ1: 夜勤配置 ---');
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    for (const nightSlot of nightShiftSlots) {
+      // 配置可能な候補者を探す
+      const candidates = nightShiftCapable.filter(emp => {
+        const key = `${emp.id}_${date}`;
+        const availability = availabilityMap.get(key);
+
+        // 配置可能でない場合はスキップ
+        if (!availability || !availability.canAssign) return false;
+
+        // 既に確定しているシフトがある場合はスキップ
+        if (confirmedShifts.some(s => s.employeeId === emp.id && s.date === date)) return false;
+
+        // 既に生成したシフトがある場合はスキップ
+        if (generatedShifts.some(s => s.employeeId === emp.id && s.date === date)) return false;
+
+        return true;
       });
+
+      if (candidates.length === 0) {
+        console.warn(`⚠️ ${date} の夜勤配置不可: 候補者なし`);
+        continue;
+      }
+
+      // 最も勤務日数が少ない職員を選択（公平性）
+      candidates.sort((a, b) => {
+        const countA = workDayCount.get(a.id) || 0;
+        const countB = workDayCount.get(b.id) || 0;
+        return countA - countB;
+      });
+
+      const selected = candidates[0];
+
+      // 夜勤を配置
+      generatedShifts.push({
+        shiftId,
+        employeeId: selected.id,
+        date,
+        status: 'working',
+        timeSlotId: nightSlot.id,
+        startTime: null,
+        endTime: null,
+        leaveType: null,
+        generatedBy: 'rule_based',
+        reason: `夜勤配置（${nightSlot.name}）`,
+      });
+
+      workDayCount.set(selected.id, (workDayCount.get(selected.id) || 0) + 1);
+      console.log(`  ${date} 夜勤: 職員${selected.id}(${selected.name})`);
+
+      // 夜勤の翌日を休みにする
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayStr = nextDay.toISOString().split('T')[0];
+
+      // 翌日が同月内の場合のみ処理
+      if (nextDay.getFullYear() === year && nextDay.getMonth() + 1 === month) {
+        const key = `${selected.id}_${nextDayStr}`;
+        const avail = availabilityMap.get(key);
+        if (avail) {
+          avail.canAssign = false;
+          avail.reason = '夜勤の翌日（明け番）';
+          console.log(`    → ${nextDayStr} は休み（明け番）`);
+        }
+      }
     }
   }
 
-  console.log(`配置可能: ${availableAssignments.length}件`);
+  console.log(`\n夜勤配置完了: ${generatedShifts.length}件`);
 
-  // AI生成用のプロンプトを構築
-  const prompt = buildAIPrompt(
-    year,
-    month,
-    employees,
-    workTimeSlots,
-    requiredStaffing,
-    confirmedShifts,
-    availableAssignments
-  );
+  // ========================================
+  // ステップ2: その他の時間帯の配置（TODO）
+  // ========================================
+  // 必要人数に基づいて、その他の時間帯も配置する
+  // 現時点では夜勤のみ実装
 
-  // AI呼び出し（カスタム時間対応スキーマ）
-  const aiShifts = await invokeAIWithCustomTimeSupport(prompt);
+  console.log(`\nPhase 3完了: ${generatedShifts.length}件のシフトを生成`);
 
-  // 生成結果の検証
-  const validatedShifts = validateAndFilterShifts(
-    aiShifts,
-    availableAssignments,
-    confirmedShifts
-  );
-
-  console.log(`AI生成: ${aiShifts.length}件 → 検証後: ${validatedShifts.length}件`);
-
-  return validatedShifts;
+  return generatedShifts;
 }
 
 /**
@@ -327,23 +387,71 @@ function buildAIPrompt(
   availableAssignments: any[]
 ): string {
   const daysInMonth = new Date(year, month, 0).getDate();
+  const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+
+  // 夜勤可能な職員をリストアップ
+  const nightShiftCapable = employees.filter(e => e.canWorkNightShift);
+
+  // 夜勤の時間枠を特定
+  const nightShiftSlots = workTimeSlots.filter(ts => ts.isNightShift);
+
+  // 必要人数の情報を整理（曜日・時間帯別）
+  const staffingByDay = new Map<number, any[]>();
+  for (const rs of requiredStaffing) {
+    if (!staffingByDay.has(rs.dayOfWeek)) {
+      staffingByDay.set(rs.dayOfWeek, []);
+    }
+    if (rs.requiredCount > 0) {
+      staffingByDay.get(rs.dayOfWeek)!.push(rs);
+    }
+  }
 
   return `
 あなたは介護施設のシフト管理の専門家です。
-以下の情報をもとに、最適なシフトを生成してください。
+以下の情報をもとに、**${year}年${month}月の全${daysInMonth}日間**のシフトを生成してください。
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ## 📋 基本情報
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**対象期間**: ${year}年${month}月（全${daysInMonth}日間）
+**対象期間**: ${year}年${month}月（**全${daysInMonth}日間、必ず全日をカバーすること**）
 **職員数**: ${employees.length}名
+**夜勤可能職員**: ${nightShiftCapable.length}名
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 👥 夜勤可能な職員（重要）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${nightShiftCapable.map((e: any) => `- 職員ID: ${e.id} - ${e.name} (スキルレベル: ${e.skillLevel})`).join("\n")}
+
+**注意**: 夜勤シフトは、上記の職員のみに割り当て可能です。
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ## ⏰ 勤務時間枠
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${workTimeSlots.map((ts: any) => `- **${ts.name}** (ID: ${ts.id}): ${ts.startTime}〜${ts.endTime} (必要${ts.requiredStaff}名)`).join("\n")}
+${workTimeSlots.map((ts: any) => {
+  const nightMark = ts.isNightShift ? ' 🌙 **夜勤**' : '';
+  return `- **${ts.name}** (ID: ${ts.id}): ${ts.startTime}〜${ts.endTime}${nightMark}`;
+}).join("\n")}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 📊 必要人数（曜日・時間帯別）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${Array.from(staffingByDay.entries()).sort((a, b) => a[0] - b[0]).map(([dow, reqs]) => {
+  const nightReqs = reqs.filter((r: any) => {
+    // 夜勤の時間帯（例: 16時〜翌9時）をカバーする時間帯
+    return r.hour >= 16 || r.hour <= 9;
+  });
+  const nightCount = nightReqs.length > 0 ? nightReqs[0].requiredCount : 0;
+
+  return `**${dayNames[dow]}曜日**: ${nightCount > 0 ? `🌙 夜勤 ${nightCount}名必須` : '夜勤なし'}`;
+}).join("\n")}
+
+**重要**:
+- **夜勤は毎日必ず配置が必要**です（上記の必要人数を確保すること）
+- 夜勤は夜勤可能職員のみに割り当て可能
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ## ✅ 既に確定しているシフト
@@ -355,28 +463,39 @@ ${confirmedShifts.length}件のシフトが確定済み（休み申請、時間�
 ## 📊 配置可能な職員・日付・時間
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${availableAssignments.slice(0, 50).map((a: any) => {
+${availableAssignments.slice(0, 100).map((a: any) => {
   const emp = employees.find(e => e.id === a.employeeId);
-  return `- ${a.date} 職員${a.employeeId}(${emp?.name}): ${a.startTime}〜${a.endTime} (${a.reason})`;
+  const canNight = emp?.canWorkNightShift ? '🌙' : '';
+  return `- ${a.date} 職員${a.employeeId}(${emp?.name})${canNight}: ${a.startTime}〜${a.endTime}`;
 }).join("\n")}
 
-${availableAssignments.length > 50 ? `... 他${availableAssignments.length - 50}件` : ''}
+${availableAssignments.length > 100 ? `... 他${availableAssignments.length - 100}件` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## 🎯 生成ルール
+## ⚠️ 【最重要】絶対に守るべきルール
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-### 1. 時間枠の選択
-- 配置可能時間が既存の時間枠（早番、遅番など）と完全一致する場合
-  → **timeSlotId** を使用
-- 配置可能時間がカスタム時間の場合
-  → **timeSlotId=null, startTime, endTime** を使用
+### 1. 夜勤の必須配置
+- **毎日必ず夜勤を配置すること**（${nightShiftSlots.map(ns => `ID:${ns.id}`).join(', ')}）
+- 夜勤は夜勤可能職員（🌙マーク付き）のみに割り当て
+- 必要人数を確保すること
 
-### 2. 必要人数の充足
-- 各時間帯で必要人数の80%以上を確保すること
+### 2. 夜勤→明け番→休みのルール
+- **夜勤の翌日は必ず休みにすること**
+- 夜勤の翌々日から勤務可能
+- 例: 1日に夜勤 → 2日は休み → 3日から勤務可能
 
-### 3. 公平性
-- 職員間で勤務日数を均等に配分
+### 3. 月全体のカバー
+- **${year}年${month}月1日〜${daysInMonth}日まで、全ての日にシフトを生成すること**
+- 特に夜勤は1日も欠かさず配置すること
+
+### 4. 時間枠の選択
+- 配置可能時間が既存の時間枠と完全一致する場合 → **timeSlotId** を使用
+- カスタム時間の場合 → **timeSlotId=null, startTime, endTime** を使用
+
+### 5. 公平性
+- 夜勤可能職員間で夜勤回数を均等に分散（±2回以内）
+- 職員間で勤務日数を公平に配分
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ## 📝 出力形式
@@ -401,6 +520,8 @@ ${availableAssignments.length > 50 ? `... 他${availableAssignments.length - 50}
   "startTime": "08:30",
   "endTime": "13:00"
 }
+
+**重要**: 全${daysInMonth}日分のシフトを生成し、特に夜勤は毎日必ず配置してください。
 `;
 }
 
@@ -410,9 +531,15 @@ ${availableAssignments.length > 50 ? `... 他${availableAssignments.length - 50}
 function validateAndFilterShifts(
   aiShifts: any[],
   availableAssignments: any[],
-  confirmedShifts: any[]
+  confirmedShifts: any[],
+  workTimeSlots?: any[]
 ): any[] {
   const validShifts: any[] = [];
+  const nightShiftSlots = workTimeSlots?.filter(ts => ts.isNightShift) || [];
+  const nightShiftIds = new Set(nightShiftSlots.map(ns => ns.id));
+
+  // 夜勤シフトのマップを作成（職員ID → 夜勤日付のセット）
+  const nightShiftDates = new Map<number, Set<string>>();
 
   for (const shift of aiShifts) {
     // 1. 既に確定しているシフトと重複チェック
@@ -469,11 +596,40 @@ function validateAndFilterShifts(
       }
     }
 
+    // 4. 夜勤シフトの場合、記録する
+    if (shift.timeSlotId !== null && nightShiftIds.has(shift.timeSlotId)) {
+      if (!nightShiftDates.has(shift.employeeId)) {
+        nightShiftDates.set(shift.employeeId, new Set());
+      }
+      nightShiftDates.get(shift.employeeId)!.add(shift.date);
+    }
+
     // 検証OK
     validShifts.push(shift);
   }
 
-  return validShifts;
+  // 5. 夜勤の翌日チェック - 夜勤の翌日にシフトが入っている場合は警告
+  const shiftsToRemove: any[] = [];
+  for (const shift of validShifts) {
+    const shiftDate = new Date(shift.date);
+    const prevDay = new Date(shiftDate);
+    prevDay.setDate(prevDay.getDate() - 1);
+    const prevDayStr = prevDay.toISOString().split('T')[0];
+
+    // 前日に夜勤があったかチェック
+    const employeeNightShifts = nightShiftDates.get(shift.employeeId);
+    if (employeeNightShifts?.has(prevDayStr)) {
+      console.warn(`⚠️ スキップ: 夜勤の翌日（職員${shift.employeeId}, ${shift.date}、前日${prevDayStr}に夜勤）`);
+      shiftsToRemove.push(shift);
+    }
+  }
+
+  // 夜勤翌日のシフトを削除
+  const finalShifts = validShifts.filter(s => !shiftsToRemove.includes(s));
+
+  console.log(`検証結果: ${aiShifts.length}件 → ${validShifts.length}件 → 夜勤翌日除外後 ${finalShifts.length}件`);
+
+  return finalShifts;
 }
 
 // ヘルパー: 時間をコマ番号に変換
@@ -575,7 +731,7 @@ export async function generateShiftWithPhases(
 ): Promise<{
   confirmedShifts: any[];
   availabilityMap: Map<string, any>;
-  aiGeneratedShifts: any[];
+  ruleBasedShifts: any[];
   allShifts: any[];
 }> {
   console.log(`\n🚀 段階的シフト生成開始: ${year}年${month}月`);
@@ -586,18 +742,18 @@ export async function generateShiftWithPhases(
   // Phase 2: 勤務可能枠計算
   const availabilityMap = await phase2_calculateAvailability(shiftId, year, month, confirmedShifts);
 
-  // Phase 3: AI最適化
-  const aiGeneratedShifts = await phase3_aiOptimization(shiftId, year, month, confirmedShifts, availabilityMap);
+  // Phase 3: ルールベース配置
+  const ruleBasedShifts = await phase3_ruleBasedAssignment(shiftId, year, month, confirmedShifts, availabilityMap);
 
   // 統合
-  const allShifts = [...confirmedShifts, ...aiGeneratedShifts];
+  const allShifts = [...confirmedShifts, ...ruleBasedShifts];
 
   console.log(`\n✅ シフト生成完了: 合計${allShifts.length}件`);
 
   return {
     confirmedShifts,
     availabilityMap,
-    aiGeneratedShifts,
+    ruleBasedShifts,
     allShifts,
   };
 }

@@ -493,13 +493,13 @@ export const appRouter = router({
             leaveType: shift.leaveType,
             startTime: shift.startTime,
             endTime: shift.endTime,
-            generatedBy: shift.generatedBy || 'ai',
+            generatedBy: shift.generatedBy || 'rule_based',
           });
         }
 
         console.log('[generatePhaseBased API] Generation completed:', {
           confirmedShifts: result.confirmedShifts.length,
-          aiGeneratedShifts: result.aiGeneratedShifts.length,
+          ruleBasedShifts: result.ruleBasedShifts.length,
           totalShifts: result.allShifts.length,
         });
 
@@ -507,7 +507,7 @@ export const appRouter = router({
           success: true,
           shiftId: input.shiftId,
           confirmedShifts: result.confirmedShifts.length,
-          aiGeneratedShifts: result.aiGeneratedShifts.length,
+          ruleBasedShifts: result.ruleBasedShifts.length,
           totalShifts: result.allShifts.length,
         };
       }),
