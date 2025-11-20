@@ -331,28 +331,29 @@ export async function generateImprovedShift(
 
   if (options.usePhased) {
     // 段階的生成を使用（固定シフトを考慮した生成）
-    const { phase2_calculateAvailability, phase3_ruleBasedAssignment } = await import("./phaseBasedShiftGenerator");
+    // TODO: アーカイブされたジェネレーターの再実装が必要
+    console.log("  ⚠️ 段階的生成は改良版の実装が必要です");
 
-    // Phase 2: 勤務可能枠の計算（固定シフトを考慮）
-    const availabilityMapPhase = await phase2_calculateAvailability(shiftId, year, month, fixedShifts);
+    // const { phase2_calculateAvailability, phase3_ruleBasedAssignment } = await import("./archived-generators/phaseBasedShiftGenerator");
+    // // Phase 2: 勤務可能枠の計算（固定シフトを考慮）
+    // const availabilityMapPhase = await phase2_calculateAvailability(shiftId, year, month, fixedShifts);
+    // // Phase 3: ルールベース配置（固定シフト以外を生成）
+    // generatedShifts = await phase3_ruleBasedAssignment(shiftId, year, month, fixedShifts, availabilityMapPhase);
 
-    // Phase 3: ルールベース配置（固定シフト以外を生成）
-    generatedShifts = await phase3_ruleBasedAssignment(shiftId, year, month, fixedShifts, availabilityMapPhase);
-
-    // 生成されたシフトをデータベースに保存
-    if (generatedShifts.length > 0) {
-      // isFixed=falseで保存（生成データ）
-      const shiftsToSave = generatedShifts.map(shift => ({
-        ...shift,
-        isFixed: false,
-        sourceType: shift.generatedBy || 'rule_based'
-      }));
-      await db.insert(shiftDetails).values(shiftsToSave);
-      console.log(`  ✅ 生成シフトを保存: ${generatedShifts.length}件`);
-    }
+    // // 生成されたシフトをデータベースに保存
+    // if (generatedShifts.length > 0) {
+    //   // isFixed=falseで保存（生成データ）
+    //   const shiftsToSave = generatedShifts.map(shift => ({
+    //     ...shift,
+    //     isFixed: false,
+    //     sourceType: shift.generatedBy || 'rule_based'
+    //   }));
+    //   await db.insert(shiftDetails).values(shiftsToSave);
+    //   console.log(`  ✅ 生成シフトを保存: ${generatedShifts.length}件`);
+    // }
   } else if (options.useAI) {
     // AI生成を使用
-    const { generateShiftWithAI } = await import("./aiShiftGenerator");
+    // const { generateShiftWithAI } = await import("./archived-generators/aiShiftGenerator");
     // AI生成のロジックを呼び出す
     console.log("  ⚠️ AI生成は別途実装が必要です");
   }

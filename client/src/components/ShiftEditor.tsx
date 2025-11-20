@@ -598,7 +598,9 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                 読み取り専用
               </Badge>
             )}
-            {(currentShift.status === "vacation_only" || currentShift.status === "draft") && (
+            {(currentShift.status === "vacation_only" || currentShift.status === "draft" ||
+              // Always show buttons after reset or when there are no shifts
+              assignments.length === 0) && (
               <>
                 {generationMethod === 'phase_based' && (
                   <>
@@ -613,18 +615,20 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                         <><Sparkles className="w-4 h-4 mr-2" /> 段階的配置生成</>
                       )}
                     </Button>
-                    <Button
-                      onClick={handlePhaseBasedReset}
-                      disabled={isGeneratingPhaseBased || isGeneratingAI || isResettingPhaseBased}
-                      variant="outline"
-                      className="rounded-xl border-orange-300 text-orange-700 hover:bg-orange-50"
-                    >
-                      {isResettingPhaseBased ? (
-                        <><LoadingInline /> <span className="ml-2">リセット中...</span></>
-                      ) : (
-                        <><RotateCcw className="w-4 h-4 mr-2" /> 段階的配置をリセット</>
-                      )}
-                    </Button>
+                    {assignments.length > 0 && (
+                      <Button
+                        onClick={handlePhaseBasedReset}
+                        disabled={isGeneratingPhaseBased || isGeneratingAI || isResettingPhaseBased}
+                        variant="outline"
+                        className="rounded-xl border-orange-300 text-orange-700 hover:bg-orange-50"
+                      >
+                        {isResettingPhaseBased ? (
+                          <><LoadingInline /> <span className="ml-2">リセット中...</span></>
+                        ) : (
+                          <><RotateCcw className="w-4 h-4 mr-2" /> 段階的配置をリセット</>
+                        )}
+                      </Button>
+                    )}
                   </>
                 )}
                 {generationMethod === 'ai' && (
@@ -656,7 +660,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         </div>
 
         {/* 生成方式選択 */}
-        {(currentShift.status === "vacation_only" || currentShift.status === "draft") && (
+        {(currentShift.status === "vacation_only" || currentShift.status === "draft" ||
+          assignments.length === 0) && (
           <Card className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50">
             <div className="space-y-3">
               <div className="flex items-center gap-2">

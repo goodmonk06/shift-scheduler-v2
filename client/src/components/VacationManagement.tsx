@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
-import { Clock, Check, X, Sparkles, Settings, Users, CheckCheck } from "lucide-react";
+import { Clock, Check, X, Sparkles, Settings, Users, CheckCheck, Briefcase } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { VacationRequestCard } from "./VacationRequestCard";
+import { WorkPreferenceCard } from "./WorkPreferenceCard";
 import { leaveRequestService, type SubmissionStatus, type LeaveRequest } from "../services/leaveRequestService";
+import { workPreferenceService, type WorkPreference } from "../services/workPreferenceService";
 import { formatDeadline } from "../utils/vacationManagementHelpers";
 import { StatsCards } from "./vacation/StatsCards";
 import { RequestDetailDialog } from "./vacation/RequestDetailDialog";
@@ -82,6 +84,27 @@ export function VacationManagement() {
     }
   );
 
+  // 勤務希望データを取得 - 12月でフィルタ
+  const {
+    data: workPreferencesData,
+    isLoading: isLoadingWorkPrefs,
+    refetch: refetchWorkPrefs,
+  } = useAsync(
+    async () => {
+      // 全ての勤務希望を取得
+      const allPreferences = await workPreferenceService.getAll();
+      // 12月のデータのみフィルタ
+      return allPreferences.filter(pref => {
+        if (!pref.date) return false;
+        const date = new Date(pref.date);
+        return date.getFullYear() === nextMonthYear && (date.getMonth() + 1) === nextMonthNum;
+      });
+    },
+    {
+      onError: () => toast.error("勤務希望データの取得に失敗しました"),
+    }
+  );
+
   // 従業員データを取得
   const {
     data: employeesData,
@@ -140,6 +163,33 @@ export function VacationManagement() {
   // 追加希望のみフィルタ（元データがisAdditional=trueのもの）
   const additionalRequests = vacationRequests.filter((req) =>
     (req as any).rawData?.some((r: LeaveRequest) => r.isAdditional === true)
+  );
+
+  // 勤務希望を職員ごとにグループ化
+  const workPreferencesByEmployee = useMemo(() => {
+    if (!workPreferencesData || !employees.length) return new Map();
+
+    const grouped = new Map<number, WorkPreference[]>();
+
+    workPreferencesData.forEach((pref) => {
+      if (!grouped.has(pref.employeeId)) {
+        grouped.set(pref.employeeId, []);
+      }
+      grouped.get(pref.employeeId)!.push(pref);
+    });
+
+    return grouped;
+  }, [workPreferencesData, employees]);
+
+  // 勤務希望をステータスごとにフィルタリング
+  const pendingWorkPrefs = Array.from(workPreferencesByEmployee.entries()).filter(([, prefs]) =>
+    prefs.some(p => p.status === "pending")
+  );
+  const approvedWorkPrefs = Array.from(workPreferencesByEmployee.entries()).filter(([, prefs]) =>
+    prefs.every(p => p.status === "approved")
+  );
+  const rejectedWorkPrefs = Array.from(workPreferencesByEmployee.entries()).filter(([, prefs]) =>
+    prefs.some(p => p.status === "rejected")
   );
 
   // 承認・却下のミューテーション
@@ -321,7 +371,7 @@ export function VacationManagement() {
   );
 
   // ローディング中
-  if (isLoadingShift || isLoadingRequests || isLoadingEmployees) {
+  if (isLoadingShift || isLoadingRequests || isLoadingEmployees || isLoadingWorkPrefs) {
     return (
       <div className="min-h-screen bg-background p-8">
         <div className="max-w-7xl mx-auto space-y-8">
@@ -355,10 +405,10 @@ export function VacationManagement() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="space-y-2">
             <h1 className="flex items-center gap-2">
-              希望休管理
+              希望休・勤務希望管理
               <Sparkles className="w-7 h-7 text-accent" />
             </h1>
-            <p className="text-muted-foreground">職員からの希望休申請を確認・承認</p>
+            <p className="text-muted-foreground">職員からの希望休・勤務希望申請を確認・承認</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -436,66 +486,174 @@ export function VacationManagement() {
           additionalCount={additionalRequests.length}
         />
 
-        {/* Tabs */}
-        <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              未承認 ({pendingRequests.length})
+        {/* Main Tabs for Leave Requests and Work Preferences */}
+        <Tabs defaultValue="leave" className="space-y-6">
+          <TabsList className="grid w-full max-w-lg grid-cols-2">
+            <TabsTrigger value="leave" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              希望休 ({vacationRequests.length})
             </TabsTrigger>
-            <TabsTrigger value="approved" className="flex items-center gap-2">
-              <Check className="w-4 h-4" />
-              承認済 ({approvedRequests.length})
-            </TabsTrigger>
-            <TabsTrigger value="rejected" className="flex items-center gap-2">
-              <X className="w-4 h-4" />
-              却下 ({rejectedRequests.length})
+            <TabsTrigger value="work" className="flex items-center gap-2">
+              <Briefcase className="w-4 h-4" />
+              勤務希望 ({workPreferencesByEmployee.size})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="pending" className="space-y-4">
-            {pendingRequests.length === 0 ? (
-              <Card className="p-12 text-center">
-                <div className="text-6xl mb-4">✨</div>
-                <h3 className="text-muted-foreground">未承認の申請はありません</h3>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingRequests.map((request) => (
-                  <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
-                ))}
-              </div>
-            )}
+          {/* Leave Requests Tab */}
+          <TabsContent value="leave" className="space-y-6">
+            <Tabs defaultValue="pending" className="space-y-6">
+              <TabsList className="grid w-full max-w-md grid-cols-3">
+                <TabsTrigger value="pending" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  未承認 ({pendingRequests.length})
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  承認済 ({approvedRequests.length})
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="flex items-center gap-2">
+                  <X className="w-4 h-4" />
+                  却下 ({rejectedRequests.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pending" className="space-y-4">
+                {pendingRequests.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <div className="text-6xl mb-4">✨</div>
+                    <h3 className="text-muted-foreground">未承認の希望休はありません</h3>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pendingRequests.map((request) => (
+                      <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="approved" className="space-y-4">
+                {approvedRequests.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <div className="text-6xl mb-4">📋</div>
+                    <h3 className="text-muted-foreground">承認済の希望休はありません</h3>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {approvedRequests.map((request) => (
+                      <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="rejected" className="space-y-4">
+                {rejectedRequests.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <div className="text-6xl mb-4">🗑️</div>
+                    <h3 className="text-muted-foreground">却下した希望休はありません</h3>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {rejectedRequests.map((request) => (
+                      <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
-          <TabsContent value="approved" className="space-y-4">
-            {approvedRequests.length === 0 ? (
-              <Card className="p-12 text-center">
-                <div className="text-6xl mb-4">📋</div>
-                <h3 className="text-muted-foreground">承認済の申請はありません</h3>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {approvedRequests.map((request) => (
-                  <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
+          {/* Work Preferences Tab */}
+          <TabsContent value="work" className="space-y-6">
+            <Tabs defaultValue="pending" className="space-y-6">
+              <TabsList className="grid w-full max-w-md grid-cols-3">
+                <TabsTrigger value="pending" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  未承認 ({pendingWorkPrefs.length})
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  承認済 ({approvedWorkPrefs.length})
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="flex items-center gap-2">
+                  <X className="w-4 h-4" />
+                  却下 ({rejectedWorkPrefs.length})
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="rejected" className="space-y-4">
-            {rejectedRequests.length === 0 ? (
-              <Card className="p-12 text-center">
-                <div className="text-6xl mb-4">🗑️</div>
-                <h3 className="text-muted-foreground">却下した申請はありません</h3>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {rejectedRequests.map((request) => (
-                  <VacationRequestCard key={request.id} request={request} onClick={openDetail} />
-                ))}
-              </div>
-            )}
+              <TabsContent value="pending" className="space-y-4">
+                {pendingWorkPrefs.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <div className="text-6xl mb-4">⏰</div>
+                    <h3 className="text-muted-foreground">未承認の勤務希望はありません</h3>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pendingWorkPrefs.map(([employeeId, preferences]) => {
+                      const employee = employees.find(e => e.id === employeeId);
+                      return (
+                        <WorkPreferenceCard
+                          key={employeeId}
+                          preferences={preferences}
+                          employeeName={employee?.name || "不明"}
+                          employeeId={employeeId}
+                          onClick={(id) => console.log("Work preference clicked:", id)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="approved" className="space-y-4">
+                {approvedWorkPrefs.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <div className="text-6xl mb-4">📋</div>
+                    <h3 className="text-muted-foreground">承認済の勤務希望はありません</h3>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {approvedWorkPrefs.map(([employeeId, preferences]) => {
+                      const employee = employees.find(e => e.id === employeeId);
+                      return (
+                        <WorkPreferenceCard
+                          key={employeeId}
+                          preferences={preferences}
+                          employeeName={employee?.name || "不明"}
+                          employeeId={employeeId}
+                          onClick={(id) => console.log("Work preference clicked:", id)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="rejected" className="space-y-4">
+                {rejectedWorkPrefs.length === 0 ? (
+                  <Card className="p-12 text-center">
+                    <div className="text-6xl mb-4">🗑️</div>
+                    <h3 className="text-muted-foreground">却下した勤務希望はありません</h3>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {rejectedWorkPrefs.map(([employeeId, preferences]) => {
+                      const employee = employees.find(e => e.id === employeeId);
+                      return (
+                        <WorkPreferenceCard
+                          key={employeeId}
+                          preferences={preferences}
+                          employeeName={employee?.name || "不明"}
+                          employeeId={employeeId}
+                          onClick={(id) => console.log("Work preference clicked:", id)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         </Tabs>
       </div>
