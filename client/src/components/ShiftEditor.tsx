@@ -255,6 +255,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           positionGroup: "fulltime", // TODO: 実際のデータから取得
           timeSlotId: detail.timeSlotId?.toString() || null,
           timeSlotName: displayName,
+          startTime: detail.startTime || undefined, // 開始時刻（夜勤明けなどに必要）
+          endTime: detail.endTime || undefined,     // 終了時刻
           isVacationRequest: detail.status === "requested_off",
           shiftDetailId: detail.id, // Include the ID for editing
           employeeDbId: detail.employeeId, // Database numeric ID
