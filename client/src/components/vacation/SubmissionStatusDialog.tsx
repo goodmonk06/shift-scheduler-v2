@@ -21,8 +21,8 @@ export function SubmissionStatusDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl rounded-3xl border-2 border-secondary/30 max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
-        <DialogHeader className="sticky top-0 bg-background z-10 pb-4">
+      <DialogContent className="max-w-2xl max-h-[85vh] rounded-3xl border-2 border-secondary/30 flex flex-col" aria-describedby={undefined}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" />
             希望休提出状況
@@ -30,7 +30,7 @@ export function SubmissionStatusDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1 min-h-0">
           {/* Summary Stats */}
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-4 bg-gradient-to-br from-success/10 to-success/5 border-success/20">
@@ -111,7 +111,7 @@ export function SubmissionStatusDialog({
           </div>
         </div>
 
-        <DialogFooter className="sticky bottom-0 bg-background border-t pt-4 gap-2">
+        <DialogFooter className="flex-shrink-0 gap-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}

@@ -26,8 +26,8 @@ export function RequestDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl rounded-3xl border-2 border-secondary/30" aria-describedby={undefined}>
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] rounded-3xl border-2 border-secondary/30 flex flex-col" aria-describedby={undefined}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5 text-primary" />
             {request.staffName}さんの希望休申請
@@ -35,7 +35,7 @@ export function RequestDetailDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1 min-h-0">
           {/* Basic Info */}
           <div className="flex items-center justify-between p-4 bg-secondary/10 rounded-2xl">
             <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ export function RequestDetailDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 flex-shrink-0">
           {request.status === "pending" && (
             <>
               <Button

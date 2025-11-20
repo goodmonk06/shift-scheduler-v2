@@ -26,8 +26,8 @@ export function DeadlineSettingDialog({
 }: DeadlineSettingDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-3xl border-2 border-secondary/30" aria-describedby={undefined}>
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[85vh] rounded-3xl border-2 border-secondary/30 flex flex-col" aria-describedby={undefined}>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-primary" />
             希望休申請の締切設定
@@ -35,7 +35,7 @@ export function DeadlineSettingDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1 min-h-0">
           <Card className="p-4 bg-gradient-to-br from-warning/10 to-warning/5 border-2 border-warning/30">
             <div className="flex gap-3">
               <div className="text-2xl">💡</div>
@@ -97,7 +97,7 @@ export function DeadlineSettingDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 flex-shrink-0">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
