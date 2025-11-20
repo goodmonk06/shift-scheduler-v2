@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 interface LeaveRequestData {
   employeeName: string;
   date: string;
-  leaveType: '休' | '有休';
+  leaveType: '休' | '有休' | '休職';
   reason?: string;
 }
 
@@ -32,7 +32,7 @@ async function registerDecemberLeaves() {
     console.log('📋 12月の希望休データを読み込み中...\n');
 
     // データ読み込み
-    const dataPath = path.join(__dirname, 'december-leave-requests.json');
+    const dataPath = path.join(__dirname, 'complete-december-leaves.json');
     const jsonData = await fs.readFile(dataPath, 'utf-8');
     const decemberData: DecemberData = JSON.parse(jsonData);
 
@@ -50,11 +50,11 @@ async function registerDecemberLeaves() {
 
     // 2025年12月のシフトを作成または取得
     console.log('📅 2025年12月のシフトを確認中...\n');
-    const existingShifts = await db.getShiftsByMonth(2025, 12);
+    const existingShift = await db.getShiftByYearMonth(2025, 12);
 
     let shiftId: number;
-    if (existingShifts.length > 0) {
-      shiftId = existingShifts[0].id;
+    if (existingShift) {
+      shiftId = existingShift.id;
       console.log(`✅ 既存のシフト (ID: ${shiftId}) を使用します\n`);
     } else {
       console.log('📝 新しいシフトを作成中...\n');

@@ -101,7 +101,7 @@ OAuth ユーザー（管理者など）
 
 ### 1. 認証システム
 - **AdminAuth** (`/api/admin-auth/login`): 管理者ログイン（メールのみ、パスワードレス）
-- **SimpleAuth** (`/api/simple-auth/login`): 職員ログイン（メール + 誕生日）
+- **SimpleAuth** (`/api/simple-auth/login`): 職員ログイン（職員IDまたはメールアドレスのみ）
 - **OAuth**: オプション（OAUTH_SERVER_URL 設定時のみ有効）
 - **レート制限**: 管理者 5回/15分、職員 10回/15分
 

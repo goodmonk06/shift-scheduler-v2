@@ -33,8 +33,8 @@
 特定の機能に関する作業を行う場合は、以下の追加ファイルも読み込んでください：
 
 ### 認証関連
-- `server/simpleAuth.ts`
-- `server/adminAuth.ts`
+- `server/simpleAuth.ts` - 職員認証（職員IDまたはメールアドレスのみ）
+- `server/adminAuth.ts` - 管理者認証（メールのみ、パスワードレス）
 - `server/_core/context.ts`
 
 ### データベース関連

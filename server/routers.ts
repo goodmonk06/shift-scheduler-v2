@@ -3,7 +3,6 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 // Dynamic import to avoid bundling OpenAI at build time
-// import { generateShiftWithAI } from "./aiShiftGenerator";
 import { generateShiftPDF } from "./pdfGenerator";
 // Dynamic import to avoid bundling OpenAI at build time
 // import { structureEmployeeData, getEmployeeConstraints } from "./employeeDataStructurer";
@@ -444,13 +443,19 @@ export const appRouter = router({
           userId: ctx.user?.id || null,
         });
 
-        // Run AI generation on the new shift
-        const { generateShiftWithAI } = await import("./aiShiftGenerator");
-        await generateShiftWithAI({
-          shiftId: aiShift.id,
-          year: aiShift.year,
-          month: aiShift.month,
-        });
+        // Run improved generation on the new shift (uses AI mode if available)
+        const { generateImprovedShift } = await import("./improvedShiftGenerator");
+        await generateImprovedShift(
+          aiShift.id,
+          aiShift.year,
+          aiShift.month,
+          {
+            keepApprovedRequests: true,  // 希望休は保護
+            keepManualEdits: false,
+            usePhased: true,
+            useAI: true,  // AI生成モードを使用
+          }
+        );
 
         return {
           success: true,
@@ -458,10 +463,14 @@ export const appRouter = router({
         };
       }),
 
-    // 段階的配置アルゴリズム（カスタム時間対応）
+    // 段階的配置アルゴリズム（改善版：固定データ保護）
     generatePhaseBased: protectedProcedure
       .input(z.object({
         shiftId: z.number(),
+        options: z.object({
+          keepApprovedRequests: z.boolean().default(true),
+          keepManualEdits: z.boolean().default(false),
+        }).optional(),
       }))
       .mutation(async ({ input }) => {
         const draftShift = await db.getShiftById(input.shiftId);
@@ -472,50 +481,46 @@ export const appRouter = router({
           throw new Error("段階的生成は希望休のみまたは下書きのシフトでのみ実行できます");
         }
 
-        console.log('[generatePhaseBased API] Starting generation for shiftId:', input.shiftId);
+        console.log('[generatePhaseBased API] Starting improved generation for shiftId:', input.shiftId);
 
-        // Run phase-based generation
-        const { generateShiftWithPhases } = await import("./phaseBasedShiftGenerator");
-        const result = await generateShiftWithPhases(
+        // Use improved shift generator with fixed data protection
+        const { generateImprovedShift } = await import("./improvedShiftGenerator");
+        const result = await generateImprovedShift(
           input.shiftId,
           draftShift.year,
-          draftShift.month
+          draftShift.month,
+          {
+            keepApprovedRequests: input.options?.keepApprovedRequests ?? true,
+            keepManualEdits: input.options?.keepManualEdits ?? false,
+            useAI: false,
+            usePhased: true,
+          }
         );
 
-        // Save generated shifts to database
-        for (const shift of result.allShifts) {
-          await db.createShiftDetail({
-            shiftId: input.shiftId,
-            employeeId: shift.employeeId,
-            date: shift.date,
-            status: shift.status,
-            timeSlotId: shift.timeSlotId,
-            leaveType: shift.leaveType,
-            startTime: shift.startTime,
-            endTime: shift.endTime,
-            generatedBy: shift.generatedBy || 'rule_based',
-          });
-        }
-
         console.log('[generatePhaseBased API] Generation completed:', {
-          confirmedShifts: result.confirmedShifts.length,
-          ruleBasedShifts: result.ruleBasedShifts.length,
-          totalShifts: result.allShifts.length,
+          fixedShifts: result.fixedShifts.length,
+          generatedShifts: result.generatedShifts.length,
+          totalShifts: result.totalShifts,
         });
 
         return {
           success: true,
           shiftId: input.shiftId,
-          confirmedShifts: result.confirmedShifts.length,
-          ruleBasedShifts: result.ruleBasedShifts.length,
-          totalShifts: result.allShifts.length,
+          fixedShifts: result.fixedShifts.length,
+          generatedShifts: result.generatedShifts.length,
+          totalShifts: result.totalShifts,
+          statistics: result.statistics,
         };
       }),
 
-    // 段階的配置をリセット（rule_basedで生成されたシフトを削除）
+    // 段階的配置をリセット（改善版：固定データ保護）
     resetPhaseBased: protectedProcedure
       .input(z.object({
         shiftId: z.number(),
+        options: z.object({
+          keepApprovedRequests: z.boolean().default(true),
+          keepManualEdits: z.boolean().default(false),
+        }).optional(),
       }))
       .mutation(async ({ input }) => {
         const shift = await db.getShiftById(input.shiftId);
@@ -526,27 +531,29 @@ export const appRouter = router({
           throw new Error("段階的配置のリセットは希望休のみまたは下書きのシフトでのみ実行できます");
         }
 
-        console.log('[resetPhaseBased API] Starting reset for shiftId:', input.shiftId);
+        console.log('[resetPhaseBased API] Starting improved reset for shiftId:', input.shiftId);
 
-        // Delete all rule_based generated shifts
-        const details = await db.getShiftDetailsByShiftId(input.shiftId);
-        const ruleBasedShifts = details.filter(d => d.generatedBy === 'rule_based');
-
-        let deletedCount = 0;
-        for (const detail of ruleBasedShifts) {
-          await db.deleteShiftDetail(detail.id);
-          deletedCount++;
-        }
+        // Use improved reset with fixed data protection
+        const { resetShifts } = await import("./improvedShiftGenerator");
+        const result = await resetShifts(
+          input.shiftId,
+          {
+            keepApprovedRequests: input.options?.keepApprovedRequests ?? true,
+            keepManualEdits: input.options?.keepManualEdits ?? false,
+            useAI: false,
+            usePhased: true,
+          }
+        );
 
         console.log('[resetPhaseBased API] Reset completed:', {
-          deletedCount,
-          remainingShifts: details.length - deletedCount,
+          deletedCount: result.deletedCount,
+          keptCount: result.keptCount,
         });
 
         return {
           success: true,
-          deletedCount,
-          remainingShifts: details.length - deletedCount,
+          deletedCount: result.deletedCount,
+          keptCount: result.keptCount,
         };
       }),
 

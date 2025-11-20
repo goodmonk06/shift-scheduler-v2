@@ -14,6 +14,11 @@ interface EmployeeConstraintData {
   additionalConstraints: any;
 }
 
+// 名前を正規化（スペースを削除）
+function normalizeName(name: string): string {
+  return name.replace(/\s+/g, '');
+}
+
 async function registerEmployeeConstraints() {
   try {
     console.log('📋 個別条件データを読み込み中...\n');
@@ -32,8 +37,9 @@ async function registerEmployeeConstraints() {
     let notFoundCount = 0;
 
     for (const constraintData of constraintsData) {
-      // 名前で従業員を検索
-      const employee = allEmployees.find(e => e.name === constraintData.name);
+      // 名前で従業員を検索（スペースを無視）
+      const normalizedSearchName = normalizeName(constraintData.name);
+      const employee = allEmployees.find(e => normalizeName(e.name) === normalizedSearchName);
 
       if (!employee) {
         console.log(`⚠️  従業員が見つかりません: ${constraintData.name}`);
@@ -48,7 +54,7 @@ async function registerEmployeeConstraints() {
         additionalConstraints: constraintData.additionalConstraints,
       });
 
-      console.log(`✅ ${constraintData.name}: 休憩${constraintData.breakTime}分、夜勤=${constraintData.canWorkNightShift}`);
+      console.log(`✅ ${employee.name}: 休憩${constraintData.breakTime}分、夜勤=${constraintData.canWorkNightShift}`);
       updatedCount++;
     }
 

@@ -193,6 +193,9 @@ export const shiftDetails = mysqlTable("shiftDetails", {
   generatedBy: mysqlEnum("generatedBy", ["manual", "ai", "leave_request", "rule_based"]).default("manual").notNull(), // Track if shift was manually created, AI-generated, from leave request, or rule-based
   isChanged: boolean("isChanged").default(false).notNull(),
   previousTimeSlotId: int("previousTimeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable
+  isFixed: boolean("isFixed").default(false).notNull(), // 固定データフラグ（希望休・勤務希望由来の場合true）
+  sourceType: varchar("sourceType", { length: 50 }), // データソース（leave_request, work_preference, manual, ai_generated, rule_based）
+  sourceId: int("sourceId"), // ソースデータのID（leaveRequests.id または workPreferences.id）
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -211,7 +214,7 @@ export const leaveRequests = mysqlTable("leaveRequests", {
   requestDate: varchar("requestDate", { length: 10 }), // YYYY-MM-DD format (deprecated, use startDate/endDate)
   startDate: varchar("startDate", { length: 10 }).notNull(), // YYYY-MM-DD format
   endDate: varchar("endDate", { length: 10 }).notNull(), // YYYY-MM-DD format
-  leaveType: mysqlEnum("leaveType", ["休", "有休"]).default("休").notNull(), // 休みの種類
+  leaveType: mysqlEnum("leaveType", ["休", "有休", "夏", "冬"]).default("休").notNull(), // 休みの種類（夏季・冬季休暇含む）
   isAdditional: boolean("isAdditional").default(false).notNull(), // 追加希望休（仮確定後）
   reason: text("reason"),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
@@ -240,6 +243,9 @@ export const workPreferences = mysqlTable("workPreferences", {
   isAdditional: boolean("isAdditional").default(false).notNull(), // 追加希望（仮確定後）
   reason: text("reason"),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  preferenceType: mysqlEnum("preferenceType", ["time_specified", "night_shift", "post_night", "training", "other"]).default("time_specified").notNull(), // 勤務希望タイプ
+  isCountAsStaff: boolean("isCountAsStaff").default(true).notNull(), // 勤務人数にカウントするか（研修時false）
+  displayIcon: varchar("displayIcon", { length: 10 }), // 表示用アイコン（研修時は！など）
   submittedAt: timestamp("submittedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
