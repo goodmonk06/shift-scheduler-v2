@@ -512,6 +512,44 @@ export const appRouter = router({
         };
       }),
 
+    // 段階的配置をリセット（rule_basedで生成されたシフトを削除）
+    resetPhaseBased: protectedProcedure
+      .input(z.object({
+        shiftId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const shift = await db.getShiftById(input.shiftId);
+        if (!shift) throw new Error("シフトが見つかりません");
+
+        // Verify the shift is in vacation_only or draft status
+        if (shift.status !== "vacation_only" && shift.status !== "draft") {
+          throw new Error("段階的配置のリセットは希望休のみまたは下書きのシフトでのみ実行できます");
+        }
+
+        console.log('[resetPhaseBased API] Starting reset for shiftId:', input.shiftId);
+
+        // Delete all rule_based generated shifts
+        const details = await db.getShiftDetailsByShiftId(input.shiftId);
+        const ruleBasedShifts = details.filter(d => d.generatedBy === 'rule_based');
+
+        let deletedCount = 0;
+        for (const detail of ruleBasedShifts) {
+          await db.deleteShiftDetail(detail.id);
+          deletedCount++;
+        }
+
+        console.log('[resetPhaseBased API] Reset completed:', {
+          deletedCount,
+          remainingShifts: details.length - deletedCount,
+        });
+
+        return {
+          success: true,
+          deletedCount,
+          remainingShifts: details.length - deletedCount,
+        };
+      }),
+
     transitionPhase: protectedProcedure
       .input(z.object({
         sourceShiftId: z.number(),

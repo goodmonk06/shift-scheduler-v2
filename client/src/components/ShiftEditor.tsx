@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Sparkles, Save, FileDown, AlertCircle,
   ChevronLeft, ChevronRight, Settings, MessageSquare,
-  CheckCircle, AlertTriangle, Info, Calendar, Zap, Send, Users
+  CheckCircle, AlertTriangle, Info, Calendar, Zap, Send, Users, RotateCcw
 } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -444,6 +444,49 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     generatePhaseBased();
   };
 
+  // 段階的配置をリセット
+  const { mutate: resetPhaseBased, isLoading: isResettingPhaseBased } = useMutation(
+    async () => {
+      if (!shiftId) {
+        throw new Error("シフトIDが指定されていません");
+      }
+
+      const numericShiftId = parseInt(shiftId);
+      if (isNaN(numericShiftId)) {
+        throw new Error("無効なシフトIDです");
+      }
+
+      const result = await trpcClient.shifts.resetPhaseBased.mutate({
+        shiftId: numericShiftId,
+      });
+      return result;
+    },
+    {
+      onSuccess: async (result) => {
+        toast.success("段階的配置をリセットしました", {
+          description: `${result.deletedCount}件のシフトを削除しました`,
+          duration: 5000,
+        });
+        // Reload shift data and details
+        await loadShiftData();
+        await loadData();
+      },
+      onError: (error: Error) => {
+        toast.error("段階的配置リセットに失敗しました", {
+          description: error.message,
+          duration: 7000,
+        });
+      },
+    }
+  );
+
+  const handlePhaseBasedReset = async () => {
+    if (window.confirm("段階的配置で生成されたシフトをすべて削除します。よろしいですか？\n（希望休申請は削除されません）")) {
+      toast.info("段階的配置をリセット中...");
+      resetPhaseBased();
+    }
+  };
+
   // Phase transition mutation
   const { mutate: transitionPhase, isLoading: isTransitioning } = useMutation(
     async (targetStatus: "tentative" | "tentative_revised" | "confirmed" | "actual") => {
@@ -556,17 +599,31 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
             {(currentShift.status === "vacation_only" || currentShift.status === "draft") && (
               <>
                 {generationMethod === 'phase_based' && (
-                  <Button
-                    onClick={handlePhaseBasedGenerate}
-                    disabled={isGeneratingPhaseBased || isGeneratingAI}
-                    className="rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
-                  >
-                    {isGeneratingPhaseBased ? (
-                      <><LoadingInline /> <span className="ml-2">段階的配置生成中...</span></>
-                    ) : (
-                      <><Sparkles className="w-4 h-4 mr-2" /> 段階的配置生成</>
-                    )}
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handlePhaseBasedGenerate}
+                      disabled={isGeneratingPhaseBased || isGeneratingAI || isResettingPhaseBased}
+                      className="rounded-xl bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-700 hover:to-orange-600"
+                    >
+                      {isGeneratingPhaseBased ? (
+                        <><LoadingInline /> <span className="ml-2">段階的配置生成中...</span></>
+                      ) : (
+                        <><Sparkles className="w-4 h-4 mr-2" /> 段階的配置生成</>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={handlePhaseBasedReset}
+                      disabled={isGeneratingPhaseBased || isGeneratingAI || isResettingPhaseBased}
+                      variant="outline"
+                      className="rounded-xl border-orange-300 text-orange-700 hover:bg-orange-50"
+                    >
+                      {isResettingPhaseBased ? (
+                        <><LoadingInline /> <span className="ml-2">リセット中...</span></>
+                      ) : (
+                        <><RotateCcw className="w-4 h-4 mr-2" /> 段階的配置をリセット</>
+                      )}
+                    </Button>
+                  </>
                 )}
                 {generationMethod === 'ai' && (
                   <Button
