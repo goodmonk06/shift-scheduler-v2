@@ -467,6 +467,20 @@ export async function phase3_ruleBasedAssignment(
       const nextDayStr = nextDay.toISOString().split('T')[0];
 
       if (nextDay.getFullYear() === year && nextDay.getMonth() + 1 === month) {
+        // 夜勤明けのシフト詳細を作成
+        generatedShifts.push({
+          shiftId,
+          employeeId: selected.id,
+          date: nextDayStr,
+          status: 'working',
+          timeSlotId: null,  // 特定の時間枠ではない
+          startTime: '00:00',
+          endTime: '09:00',
+          leaveType: null,
+          generatedBy: 'rule_based',
+          reason: '夜勤明け（9時まで勤務）',
+        });
+
         const key = `${selected.id}_${nextDayStr}`;
         const avail = availabilityMap.get(key);
         if (avail) {

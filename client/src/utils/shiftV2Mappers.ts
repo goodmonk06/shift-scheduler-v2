@@ -91,9 +91,6 @@ export function convertAssignmentToCell(
   // employeeIdを数値に変換（"EMP001" -> 1 の形式を想定）
   const employeeId = assignment.employeeDbId || parseInt(assignment.employeeId?.replace(/\D/g, '') || '0');
 
-  // timeSlotNameからShiftTypeを取得
-  const shiftType = mapTimeSlotNameToShiftType(assignment.timeSlotName);
-
   // timeSlotIdから時間情報を取得
   let startTime: string | undefined;
   let endTime: string | undefined;
@@ -104,6 +101,23 @@ export function convertAssignmentToCell(
       startTime = slot.startTime;
       endTime = slot.endTime;
     }
+  }
+
+  // assignmentに直接startTime/endTimeが設定されている場合（夜勤明けなど）
+  if (assignment.startTime) startTime = assignment.startTime;
+  if (assignment.endTime) endTime = assignment.endTime;
+
+  // timeSlotNameからShiftTypeを取得
+  let shiftType = mapTimeSlotNameToShiftType(assignment.timeSlotName);
+
+  // timeSlotNameが無い場合は、時間情報から判定
+  if (!shiftType && startTime && endTime) {
+    // 夜勤明け: 00:00-09:00
+    if (startTime === '00:00' && endTime === '09:00') {
+      shiftType = 'YAKIN_AKE';
+    }
+    // パート・事務員など、カスタム時間の場合はPARTとして扱う
+    // （TODO: より詳細な判定が必要な場合は追加）
   }
 
   // ソースを判定

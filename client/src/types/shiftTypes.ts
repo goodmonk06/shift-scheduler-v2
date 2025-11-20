@@ -16,6 +16,8 @@ export interface ShiftAssignment {
   positionGroup?: "fulltime" | "parttime";
   timeSlotId: string | null;
   timeSlotName: string | null;
+  startTime?: string; // 開始時刻（HH:MM形式）
+  endTime?: string;   // 終了時刻（HH:MM形式）
   isVacationRequest: boolean;
   hasWarning?: boolean;
   warningMessage?: string;
