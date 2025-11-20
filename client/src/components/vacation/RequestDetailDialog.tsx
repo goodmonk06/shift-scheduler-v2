@@ -71,41 +71,43 @@ export function RequestDetailDialog({
                 申請内容 ({request.requests.length}件)
               </h4>
               <div className="space-y-2">
-                {request.requests.map((req, index) => {
-                  const typeConfig = getTypeConfig(req.type);
-                  const monthPart = request.month.split("年")[1]?.replace("月", "/") || "";
-                  return (
-                    <Card key={index} className="p-4 bg-gradient-to-br from-card to-secondary/5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className="text-2xl">{typeConfig.emoji}</div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span>
-                                {monthPart}
-                                {req.day}日
-                              </span>
-                              <Badge variant="outline" className={`${typeConfig.color} border-2`}>
-                                {typeConfig.label}
-                              </Badge>
+                {request.requests
+                  .sort((a, b) => a.day - b.day)
+                  .map((req, index) => {
+                    const typeConfig = getTypeConfig(req.type);
+                    const monthPart = request.month.split("年")[1]?.replace("月", "/") || "";
+                    return (
+                      <Card key={index} className="p-4 bg-gradient-to-br from-card to-secondary/5">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="text-2xl">{typeConfig.emoji}</div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span>
+                                  {monthPart}
+                                  {req.day}日
+                                </span>
+                                <Badge variant="outline" className={`${typeConfig.color} border-2`}>
+                                  {typeConfig.label}
+                                </Badge>
+                              </div>
+                              {req.type === "時間指定" && req.startTime && req.endTime && (
+                                <p className="text-muted-foreground flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {req.startTime} - {req.endTime}
+                                </p>
+                              )}
+                              {req.reason && (
+                                <p className="text-muted-foreground">
+                                  💭 {req.reason}
+                                </p>
+                              )}
                             </div>
-                            {req.type === "時間指定" && req.startTime && req.endTime && (
-                              <p className="text-muted-foreground flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                {req.startTime} - {req.endTime}
-                              </p>
-                            )}
-                            {req.reason && (
-                              <p className="text-muted-foreground">
-                                💭 {req.reason}
-                              </p>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                      </Card>
+                    );
+                  })}
               </div>
             </div>
           </div>
