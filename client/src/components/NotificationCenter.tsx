@@ -277,8 +277,11 @@ export function NotificationCenter({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] p-0">
-        <DialogHeader className="px-6 pt-6 pb-0">
+      <DialogContent
+        className="max-w-3xl max-h-[85vh] p-0 flex flex-col overflow-hidden"
+        style={{ height: '85vh' }}
+      >
+        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div>
               <DialogTitle className="flex items-center gap-2">
@@ -312,7 +315,7 @@ export function NotificationCenter({
           </div>
         </DialogHeader>
 
-        <div className="px-6 py-4 border-b space-y-4">
+        <div className="px-6 py-4 border-b space-y-4 flex-shrink-0">
           {/* 検索とフィルター */}
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -389,7 +392,7 @@ export function NotificationCenter({
         </div>
 
         {/* 通知リスト */}
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-6 min-h-0">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <LoadingInline />
@@ -472,7 +475,7 @@ export function NotificationCenter({
           )}
         </ScrollArea>
 
-        <div className="px-6 py-4 border-t bg-muted/50">
+        <div className="px-6 py-4 border-t bg-muted/50 flex-shrink-0">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
               {filteredNotifications.length}件の通知を表示中
