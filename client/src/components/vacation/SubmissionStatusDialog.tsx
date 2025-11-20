@@ -22,8 +22,9 @@ export function SubmissionStatusDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-2xl h-[85vh] max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden rounded-3xl border-2 border-secondary/30"
+        className="max-w-2xl max-h-[85vh] p-0 gap-0 flex flex-col overflow-hidden rounded-3xl border-2 border-secondary/30"
         aria-describedby={undefined}
+        style={{ height: '85vh' }}
       >
         {/* Fixed Header */}
         <div className="flex-shrink-0 p-6 border-b">
