@@ -26,7 +26,7 @@ export function DeadlineSettingDialog({
 }: DeadlineSettingDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[85vh] rounded-3xl border-2 border-secondary/30 flex flex-col" aria-describedby={undefined}>
+      <DialogContent className="!flex !flex-col max-w-md max-h-[85vh] rounded-3xl border-2 border-secondary/30 overflow-hidden" aria-describedby={undefined}>
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Settings className="w-5 h-5 text-primary" />
