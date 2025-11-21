@@ -381,12 +381,25 @@ export async function getShiftByYearMonth(year: number, month: number) {
 export async function createShift(data: InsertShift) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(shifts).values(data);
 
-  // INSERTの直後に、year/monthで取得（一意制約があるため安全）
-  const created = await getShiftByYearMonth(data.year, data.month);
+  // Insert and get the insertId
+  const result = await db.insert(shifts).values(data);
+
+  // Get the insertId from the result
+  // @ts-ignore - mysql2 returns insertId in the result
+  const insertId = result[0]?.insertId;
+
+  if (!insertId) {
+    console.error('[createShift] No insertId returned from INSERT:', result);
+    throw new Error("Failed to get insertId from shift creation");
+  }
+
+  console.log(`[createShift] Created shift with ID: ${insertId}`);
+
+  // Retrieve the created shift to return full data
+  const created = await getShiftById(insertId);
   if (!created) {
-    throw new Error(`Failed to retrieve created shift for ${data.year}/${data.month}`);
+    throw new Error(`Failed to retrieve created shift with ID ${insertId}`);
   }
 
   return created;
