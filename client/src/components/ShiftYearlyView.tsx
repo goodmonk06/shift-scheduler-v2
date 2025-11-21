@@ -60,12 +60,22 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyVie
 
   // カードクリック処理
   const handleCardClick = async (card: MonthCardData) => {
-    // 12月の場合は外部システムに遷移
+    // 12月の場合：保存済みシフトがあれば編集、なければ生成画面へ
     if (card.month === 12) {
-      if (onDecemberClick) {
-        onDecemberClick();
+      if (card.shift) {
+        // 保存済みシフトがある場合は編集画面へ
+        if (onEditShift) {
+          onEditShift(card.shift.id.toString());
+        } else {
+          toast.info("シフト編集画面へ遷移します");
+        }
       } else {
-        toast.info("12月シフト生成画面へ遷移します");
+        // シフトがない場合は12月シフト生成画面へ
+        if (onDecemberClick) {
+          onDecemberClick();
+        } else {
+          toast.info("12月シフト生成画面へ遷移します");
+        }
       }
       return;
     }
@@ -107,6 +117,8 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyVie
     switch (status) {
       case "draft":
         return "下書き";
+      case "ai_generated":
+        return "AI生成済";
       case "tentative":
         return "仮確定";
       case "confirmed":
@@ -123,6 +135,8 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyVie
     switch (status) {
       case "draft":
         return "from-gray-100 to-gray-50 border-gray-300";
+      case "ai_generated":
+        return "from-purple-100 to-pink-50 border-purple-300";
       case "tentative":
         return "from-yellow-100 to-yellow-50 border-yellow-300";
       case "confirmed":
@@ -139,6 +153,8 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyVie
     switch (status) {
       case "draft":
         return "bg-gray-200 text-gray-700";
+      case "ai_generated":
+        return "bg-purple-200 text-purple-800";
       case "tentative":
         return "bg-yellow-200 text-yellow-800";
       case "confirmed":
