@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
+import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 
 import { trpcClient } from "../lib/trpc";
@@ -343,12 +343,17 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 };
 
 // --- コンポーネント本体 ---
-export function DecemberShiftGeneration() {
+interface DecemberShiftGenerationProps {
+  initialShiftId?: number | null;
+}
+
+export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerationProps = {}) {
   const toast = useToast();
   const [dates] = useState(generateDateRange(START_DATE, END_DATE));
   const [staffList] = useState(STAFF_RAW_DATA);
   const [shifts, setShifts] = useState<any>({});
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
   const [progress, setProgress] = useState(0);
   const [loadingStage, setLoadingStage] = useState('');
   const [printPreview, setPrintPreview] = useState(false);
@@ -427,6 +432,67 @@ export function DecemberShiftGeneration() {
     setSaveName(defaultName);
     setIsSaveModalOpen(true);
   };
+
+  // 初期シフトデータの読み込み
+  useEffect(() => {
+    if (!initialShiftId) return;
+
+    const loadInitialShiftData = async () => {
+      try {
+        setIsLoadingInitialData(true);
+        toast.info("シフトデータを読み込んでいます...");
+
+        // シフト詳細を取得
+        const shiftData = await trpcClient.shifts.getById.query({ id: initialShiftId });
+
+        if (!shiftData || !shiftData.shiftDetails || shiftData.shiftDetails.length === 0) {
+          toast.error("シフトデータが見つかりませんでした");
+          return;
+        }
+
+        // shiftDetails を shifts オブジェクトに変換
+        const newShifts: any = {};
+        for (const detail of shiftData.shiftDetails) {
+          // employeeIdからstaff情報を検索
+          const staff = staffList.find(s => {
+            // employeeIdとstaffIdのマッピングが必要
+            // ここでは名前で検索する方法を使用
+            return detail.employee?.name === s.name;
+          });
+
+          if (!staff) continue;
+
+          // 日付をパース (YYYY-MM-DD形式)
+          const dateObj = new Date(detail.date);
+          const key = `${staff.id}_${detail.date}`;
+
+          // statusとtimeSlotから表示テキストを生成
+          let customText = '';
+          if (detail.status === 'off') {
+            customText = detail.leaveType || '休';
+          } else if (detail.timeSlot) {
+            customText = detail.timeSlot.displayLabel || detail.timeSlot.name || '';
+          }
+
+          newShifts[key] = {
+            type: detail.status === 'off' ? 'OFF' : 'WORK',
+            customText: customText,
+            backgroundColor: undefined, // デフォルトの色を使用
+          };
+        }
+
+        setShifts(newShifts);
+        toast.success(`シフトデータを読み込みました (${shiftData.name})`);
+      } catch (error: any) {
+        console.error("Failed to load initial shift data:", error);
+        toast.error("シフトデータの読み込みに失敗しました", { description: error.message });
+      } finally {
+        setIsLoadingInitialData(false);
+      }
+    };
+
+    loadInitialShiftData();
+  }, [initialShiftId]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -894,6 +960,20 @@ export function DecemberShiftGeneration() {
               <span>Processing...</span>
               <span>{progress}%</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* データ読み込み中ローディング */}
+      {isLoadingInitialData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+          <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-2xl text-center border border-slate-200">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">シフトデータ読み込み中</h2>
+            <div className="mb-8 flex justify-center relative">
+              <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-75"></div>
+              <Loader2 className="animate-spin text-blue-600 relative z-10" size={56} />
+            </div>
+            <p className="text-slate-600 mb-6 font-medium text-lg">保存されたシフトを読み込んでいます...</p>
           </div>
         </div>
       )}

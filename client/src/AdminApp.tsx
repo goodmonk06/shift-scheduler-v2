@@ -27,6 +27,7 @@ import { ShiftArchive } from "./components/ShiftArchive";
 import { ServerManagement } from "./components/ServerManagement";
 import { FacilityEventManagement } from "./components/FacilityEventManagement";
 import { DecemberShiftGeneration } from "./components/DecemberShiftGeneration";
+import { DecemberShiftSelectionModal } from "./components/DecemberShiftSelectionModal";
 import { VacationProvider } from "./contexts/VacationContext";
 
 type AdminView =
@@ -57,6 +58,8 @@ interface AdminAppProps {
 export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLogout }: AdminAppProps) {
   const [adminView, setAdminView] = useState<AdminView>("dashboard");
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
+  const [isDecemberSelectionModalOpen, setIsDecemberSelectionModalOpen] = useState(false);
+  const [selectedDecemberShiftId, setSelectedDecemberShiftId] = useState<number | null>(null);
 
   // シフト編集画面へ遷移
   const handleEditShift = (shiftId: string) => {
@@ -72,8 +75,20 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     setAdminView("shifts");
   };
 
-  // 12月シフト生成画面へ遷移
+  // 12月シフト生成画面へ遷移（年間ビューから）
   const handleDecemberClick = () => {
+    setIsDecemberSelectionModalOpen(true);
+  };
+
+  // 12月シフト：新規作成
+  const handleDecemberNew = () => {
+    setSelectedDecemberShiftId(null);
+    setAdminView("december-shift-generation");
+  };
+
+  // 12月シフト：既存データから作成
+  const handleDecemberExisting = (shiftId: number) => {
+    setSelectedDecemberShiftId(shiftId);
     setAdminView("december-shift-generation");
   };
 
@@ -107,7 +122,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
         }
         return <ShiftEditor shiftId={editingShiftId} onBack={handleBackToShiftList} />;
       case "december-shift-generation":
-        return <DecemberShiftGeneration />;
+        return <DecemberShiftGeneration initialShiftId={selectedDecemberShiftId} />;
       case "leave-requests":
         return <VacationManagement />;
       case "work-preferences":
@@ -230,7 +245,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
               <Button
                 variant={adminView === "december-shift-generation" ? "default" : "ghost"}
                 className="w-full justify-start rounded-xl"
-                onClick={() => handleViewChange("december-shift-generation")}
+                onClick={() => setIsDecemberSelectionModalOpen(true)}
               >
                 <Calendar className="w-4 h-4 mr-2" />
                 12月シフト生成
@@ -322,7 +337,15 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       {/* Main Content */}
       <main className="flex-1">
         {renderAdminView()}
-        
+
+        {/* December Shift Selection Modal */}
+        <DecemberShiftSelectionModal
+          isOpen={isDecemberSelectionModalOpen}
+          onClose={() => setIsDecemberSelectionModalOpen(false)}
+          onSelectNew={handleDecemberNew}
+          onSelectExisting={handleDecemberExisting}
+        />
+
         {/* デモ用：通知を切り替えるボタン */}
         {onNotificationsToggle && (
           <div className="fixed bottom-4 right-4">
