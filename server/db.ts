@@ -432,8 +432,16 @@ export async function getShiftDetailsByShiftId(shiftId: number) {
 export async function createShiftDetail(data: InsertShiftDetail) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(shiftDetails).values(data);
-  return result;
+
+  try {
+    const result = await db.insert(shiftDetails).values(data);
+    console.log(`[createShiftDetail] Inserted shift detail for shift ${data.shiftId}, employee ${data.employeeId}, date ${data.date}`);
+    return result;
+  } catch (error: any) {
+    console.error(`[createShiftDetail] ERROR inserting shift detail:`, error);
+    console.error(`[createShiftDetail] Data:`, JSON.stringify(data, null, 2));
+    throw error;
+  }
 }
 
 export async function updateShiftDetail(id: number, data: Partial<InsertShiftDetail>) {
