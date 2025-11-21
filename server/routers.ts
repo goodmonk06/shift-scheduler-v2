@@ -463,6 +463,102 @@ export const appRouter = router({
         };
       }),
 
+    saveStandalone: protectedProcedure
+      .input(z.object({
+        year: z.number(),
+        month: z.number(),
+        name: z.string(),
+        entries: z.array(z.object({
+          employeeName: z.string(),
+          date: z.number(), // Day of month
+          type: z.string(), // 'work' | 'holiday'
+          text: z.string(), // e.g. "9:00～18:00" or "休"
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // 1. Create Shift Record using db helper
+        const newShift = await db.createShift({
+          year: input.year,
+          month: input.month,
+          name: input.name,
+          status: "ai_generated", // Treat as AI generated so it can be edited
+          generatedBy: "ai",
+          userId: ctx.user?.id || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        const newShiftId = newShift.id;
+
+        // 2. Prepare Data for Details
+        const employees = await db.getAllEmployees();
+        const timeSlots = await db.getAllWorkTimeSlots();
+
+        // Helper to find employee ID by name
+        const getEmployeeId = (name: string) => {
+          const emp = employees.find(e => e.name === name);
+          return emp?.id;
+        };
+
+        // Helper to find time slot ID by text (fuzzy match or exact?)
+        // The text from frontend is like "9:00～18:00" or "早番"
+        // We'll try to match displayLabel or name, or construct from times
+        const getTimeSlotId = (text: string) => {
+          // Try matching displayLabel
+          const byLabel = timeSlots.find(ts => ts.displayLabel === text || ts.name === text);
+          if (byLabel) return byLabel.id;
+
+          // Try matching time range "HH:MM～HH:MM"
+          const rangeMatch = text.match(/(\d{1,2}:\d{2})～(\d{1,2}:\d{2})/);
+          if (rangeMatch) {
+            const start = rangeMatch[1].padStart(5, '0');
+            const end = rangeMatch[2].padStart(5, '0');
+            const byTime = timeSlots.find(ts => ts.startTime === start && ts.endTime === end);
+            if (byTime) return byTime.id;
+          }
+          return null;
+        };
+
+        // 3. Create Shift Details using db helper
+        for (const entry of input.entries) {
+          const employeeId = getEmployeeId(entry.employeeName);
+          if (!employeeId) continue; // Skip if employee not found
+
+          const dateStr = `${input.year}-${String(input.month).padStart(2, '0')}-${String(entry.date).padStart(2, '0')}`;
+
+          let status: "working" | "off" = "working";
+          let timeSlotId: number | null = null;
+          let leaveType: "休" | "有休" | null = null;
+
+          if (entry.type === 'holiday') {
+            status = "off";
+            leaveType = "休"; // Default to normal holiday
+          } else {
+            status = "working";
+            timeSlotId = getTimeSlotId(entry.text);
+          }
+
+          await db.createShiftDetail({
+            shiftId: newShiftId,
+            employeeId: employeeId,
+            date: dateStr,
+            status: status,
+            timeSlotId: timeSlotId,
+            leaveType: leaveType,
+            generatedBy: "ai",
+            isChanged: false,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        }
+
+        return {
+          success: true,
+          shiftId: newShiftId,
+          message: "保存しました",
+        };
+      }),
+
     // 段階的配置アルゴリズム（改善版：固定データ保護）
     generatePhaseBased: protectedProcedure
       .input(z.object({
@@ -1315,8 +1411,8 @@ export const appRouter = router({
           status: currentShift.status,
           leaveRequestDeadline: currentShift.leaveRequestDeadline
             ? (typeof currentShift.leaveRequestDeadline === 'string'
-                ? currentShift.leaveRequestDeadline
-                : new Date(currentShift.leaveRequestDeadline).toISOString())
+              ? currentShift.leaveRequestDeadline
+              : new Date(currentShift.leaveRequestDeadline).toISOString())
             : null,
         } : null,
         emergencyNotifications: emergencyNotifications.length,

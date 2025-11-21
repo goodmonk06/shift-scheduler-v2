@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle, Download, Upload } from 'lucide-react';
+import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
+
+import { trpcClient } from "../lib/trpc";
 
 // --- 設定定数 ---
 const START_DATE = new Date(2025, 11, 1); // 2025年12月1日
@@ -51,7 +53,7 @@ const STAFF_RAW_DATA = [
     constraints: { defaultShift: '9～18', specialRule: 'SUGIYAMA_FRIDAY' }
   },
   { id: '6', name: '梅田 英津子', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-03': '休', '2025-12-25': '休', '2025-12-28': '有給', '2025-12-29': '冬', '2025-12-30': '夜', '2025-12-31': '明', '2026-01-01': '休', '2026-01-03': '夜', '2026-01-04': '明', '2026-01-05': '休' }, constraints: { defaultShift: '9～18', forbiddenTypes: ['LATE', '11～20'] } },
-  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-06': '休', '2025-12-07': '休', '2025-12-29': '夜', '2025-12-30': '明', '2025-12-31': '休', '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', offDayOfWeek: [5], nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO' } },
+  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-06': '休', '2025-12-07': '休', '2025-12-28': '夜', '2025-12-30': '明', '2025-12-31': '休', '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', offDayOfWeek: [5], nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO' } },
   {
     id: '8', name: '上条 やえ子', role: 'staff', qualification: '介護福祉士',
     schedule: { '2025-12-01': '休', '2025-12-07': '休', '2025-12-14': '休', '2025-12-16': '休', '2025-12-21': '休', '2025-12-27': '休', '2025-12-28': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
@@ -103,7 +105,7 @@ const STAFF_RAW_DATA = [
     id: '26', name: '伊藤 美穂', role: 'staff', qualification: '初任者研修',
     // 火木土 11半～17、それ以外休
     schedule: {},
-    constraints: { offDayOfWeek: [0,1,3,5], fixedDayOfWeek: { 2: '11半～17', 4: '11半～17', 6: '11半～17' }, fixedTimeOnly: true }
+    constraints: { offDayOfWeek: [0, 1, 3, 5], fixedDayOfWeek: { 2: '11半～17', 4: '11半～17', 6: '11半～17' }, fixedTimeOnly: true }
   },
   { id: '27', name: '浅野 穂菜美', role: 'staff', qualification: '初任者研修', schedule: { '2025-12-01': '8～16半', '2025-12-02': '8～16半', '2025-12-03': '8～16半', '2025-12-04': '休', '2025-12-05': '8～16半', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '8～16半', '2025-12-09': '8～16半', '2025-12-10': '8～16半', '2025-12-11': '休', '2025-12-12': '8～16半', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '8～16半', '2025-12-16': '8～16半', '2025-12-17': '休', '2025-12-18': '休', '2025-12-19': '8～16半', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '8～16半', '2025-12-23': '8～16半', '2025-12-24': '休', '2025-12-25': '休', '2025-12-26': '8～16半', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '8～16半', '2025-12-30': '8～16半', '2025-12-31': '8～16半', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '8～16半', '2026-01-04': '8～16半', '2026-01-05': '8～16半' }, constraints: { offHolidays: true, offDayOfWeek: [0, 4, 6], defaultShift: '8～16半', fixedTimeOnly: true } },
 ];
@@ -208,7 +210,7 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
     }
 
     if (text !== '明') {
-        days++;
+      days++;
     }
 
     if (text === '夜' || type === 'NIGHT') {
@@ -319,8 +321,8 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 
       if (h >= 9 && h < 16) {
         if (hourlyFullTimeCounts[h] < 1) {
-             shortageDetails.push(`${h}時:正社員不足`);
-             maxShortage = Math.max(maxShortage, 2);
+          shortageDetails.push(`${h}時:正社員不足`);
+          maxShortage = Math.max(maxShortage, 2);
         }
       }
 
@@ -357,11 +359,6 @@ export function DecemberShiftGeneration() {
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
 
-  // Backup state
-  const [backups, setBackups] = useState<Array<{filename: string; createdAt: string; size: number}>>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoadingBackups, setIsLoadingBackups] = useState(false);
-
   // Scroll state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isScrolledLeft, setIsScrolledLeft] = useState(false);
@@ -377,6 +374,59 @@ export function DecemberShiftGeneration() {
     targetRect: null,
     currentValue: null
   });
+
+
+
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveToDB = async () => {
+    if (!saveName) {
+      toast.error("保存名を入力してください");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const entries = [];
+      for (const staff of staffList) {
+        for (const date of dates) {
+          const key = `${staff.id}_${getIsoDate(date)}`;
+          const cell = shifts[key];
+          if (cell) {
+            entries.push({
+              employeeName: staff.name,
+              date: date.getDate(),
+              type: cell.type === 'OFF' ? 'holiday' : 'work',
+              text: cell.customText
+            });
+          }
+        }
+      }
+
+      await trpcClient.shifts.saveStandalone.mutate({
+        year: 2025,
+        month: 12,
+        name: saveName,
+        entries: entries
+      });
+
+      toast.success("シフトを保存しました");
+      setIsSaveModalOpen(false);
+    } catch (error: any) {
+      toast.error("保存に失敗しました", { description: error.message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const openSaveModal = () => {
+    // Generate default name: "12月シフト_v{count}" (we don't know count, so just timestamp or random)
+    const defaultName = `12月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
+    setSaveName(defaultName);
+    setIsSaveModalOpen(true);
+  };
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -478,127 +528,6 @@ export function DecemberShiftGeneration() {
     await runAICheck(shiftData);
   };
 
-  // シフトデータを保存する関数
-  const handleSaveShifts = async () => {
-    try {
-      setIsSaving(true);
-
-      // シフトデータを変換
-      const shiftsArray = dates.flatMap(date => {
-        return staffList.map(staff => {
-          const key = `${staff.id}_${getIsoDate(date)}`;
-          const cell = shifts[key];
-          if (!cell || !cell.customText) return null;
-
-          return {
-            employeeId: staff.id,
-            employeeName: staff.name,
-            date: getIsoDate(date),
-            shiftType: cell.type,
-            customText: cell.customText,
-            isLocked: cell.isLocked || false
-          };
-        }).filter(Boolean);
-      });
-
-      const shiftData = {
-        year: 2025,
-        month: 12,
-        shifts: shiftsArray
-      };
-
-      const response = await fetch('/api/external-shifts/december', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(shiftData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'シフトの保存に失敗しました');
-      }
-
-      const result = await response.json();
-      toast.success('シフトを保存しました', {
-        description: result.backupFile ? `バックアップ: ${result.backupFile}` : undefined
-      });
-
-      // バックアップ一覧を再読み込み
-      await fetchBackups();
-    } catch (error: any) {
-      console.error('Save shifts failed:', error);
-      toast.error('シフトの保存に失敗しました', {
-        description: error.message
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // バックアップ一覧を取得する関数
-  const fetchBackups = async () => {
-    try {
-      setIsLoadingBackups(true);
-      const response = await fetch('/api/external-shifts/december/backups');
-
-      if (!response.ok) {
-        throw new Error('バックアップ一覧の取得に失敗しました');
-      }
-
-      const result = await response.json();
-      setBackups(result.backups || []);
-    } catch (error: any) {
-      console.error('Fetch backups failed:', error);
-      toast.error('バックアップ一覧の取得に失敗しました', {
-        description: error.message
-      });
-    } finally {
-      setIsLoadingBackups(false);
-    }
-  };
-
-  // バックアップを読み込む関数
-  const handleLoadBackup = async (filename: string) => {
-    try {
-      const response = await fetch(`/api/external-shifts/december/backups/${filename}`);
-
-      if (!response.ok) {
-        throw new Error('バックアップの読み込みに失敗しました');
-      }
-
-      const result = await response.json();
-      const loadedShifts = result.shifts || [];
-
-      // シフトデータを現在の形式に変換
-      const newShifts: any = {};
-      loadedShifts.forEach((shift: any) => {
-        const key = `${shift.employeeId}_${shift.date}`;
-        newShifts[key] = {
-          type: shift.shiftType,
-          customText: shift.customText,
-          isLocked: shift.isLocked || false
-        };
-      });
-
-      setShifts(newShifts);
-      toast.success('バックアップを読み込みました', {
-        description: filename
-      });
-    } catch (error: any) {
-      console.error('Load backup failed:', error);
-      toast.error('バックアップの読み込みに失敗しました', {
-        description: error.message
-      });
-    }
-  };
-
-  // 初回マウント時にバックアップ一覧を取得
-  useEffect(() => {
-    fetchBackups();
-  }, []);
-
   const startFakeAIGeneration = () => {
     setIsGenerating(true);
     setProgress(0);
@@ -630,10 +559,10 @@ export function DecemberShiftGeneration() {
   };
 
   const normalizeShiftText = (text: string): string => {
-      if (text === '8～17' || text === '8:00～17:00') return '日A';
-      if (text === '9～18' || text === '9:00～18:00') return '日B';
-      if (text === '早') return '早';
-      return text;
+    if (text === '8～17' || text === '8:00～17:00') return '日A';
+    if (text === '9～18' || text === '9:00～18:00') return '日B';
+    if (text === '早') return '早';
+    return text;
   };
 
   const completeGeneration = () => {
@@ -641,240 +570,240 @@ export function DecemberShiftGeneration() {
     const nightCandidates = getNightShiftCandidates(staffList);
 
     try {
-        // 1. 固定スケジュール
-        staffList.forEach(staff => {
-          dates.forEach(date => {
-            const key = `${staff.id}_${getIsoDate(date)}`;
-            const dateStr = getIsoDate(date);
-            const dayOfWeek = date.getDay();
-            const isHolidayFlag = isHoliday(date);
-            const cons = staff.constraints || {};
+      // 1. 固定スケジュール
+      staffList.forEach(staff => {
+        dates.forEach(date => {
+          const key = `${staff.id}_${getIsoDate(date)}`;
+          const dateStr = getIsoDate(date);
+          const dayOfWeek = date.getDay();
+          const isHolidayFlag = isHoliday(date);
+          const cons = staff.constraints || {};
 
-            let val = null;
+          let val = null;
 
-            if (staff.schedule && staff.schedule[dateStr]) {
-              const req = staff.schedule[dateStr];
-              val = { type: 'DAY', customText: normalizeShiftText(req), isLocked: true };
-              if (req === '休') val = { type: 'OFF', customText: '休', isLocked: true };
-              else if (req === '有給' || req === '有') val = { type: 'HOPE', customText: '有', isLocked: true };
-              else if (req === '冬' || req === '冬休み') val = { type: 'WINTER', customText: '冬', isLocked: true };
-              else if (req === '夜' || req === '夜勤') val = { type: 'NIGHT', customText: '夜', isLocked: true };
-              else if (req === '明' || req === '明け') val = { type: 'EARLY', customText: '明', isLocked: true };
-              else if (req === '早' || req === '早番') val = { type: 'EARLY', customText: '早', isLocked: true };
-              else if (req === '遅' || req === '遅番') val = { type: 'LATE', customText: '遅', isLocked: true };
+          if (staff.schedule && staff.schedule[dateStr]) {
+            const req = staff.schedule[dateStr];
+            val = { type: 'DAY', customText: normalizeShiftText(req), isLocked: true };
+            if (req === '休') val = { type: 'OFF', customText: '休', isLocked: true };
+            else if (req === '有給' || req === '有') val = { type: 'HOPE', customText: '有', isLocked: true };
+            else if (req === '冬' || req === '冬休み') val = { type: 'WINTER', customText: '冬', isLocked: true };
+            else if (req === '夜' || req === '夜勤') val = { type: 'NIGHT', customText: '夜', isLocked: true };
+            else if (req === '明' || req === '明け') val = { type: 'EARLY', customText: '明', isLocked: true };
+            else if (req === '早' || req === '早番') val = { type: 'EARLY', customText: '早', isLocked: true };
+            else if (req === '遅' || req === '遅番') val = { type: 'LATE', customText: '遅', isLocked: true };
+          }
+          else if (staff.note && (staff.note.includes('休職') || staff.note.includes('スポット勤務'))) {
+            val = { type: 'OFF', customText: staff.note.includes('休職') ? '休職' : '', isLocked: true };
+          }
+          else {
+            // 条件付き自動入力
+            if ((cons.offDayOfWeek && cons.offDayOfWeek.includes(dayOfWeek)) || (cons.offHolidays && isHolidayFlag)) {
+              val = { type: 'OFF', customText: '休', isLocked: true };
+            } else if (cons.fixedDayOfWeek && cons.fixedDayOfWeek[dayOfWeek]) {
+              val = { type: 'DAY', customText: normalizeShiftText(cons.fixedDayOfWeek[dayOfWeek]), isLocked: true };
             }
-            else if (staff.note && (staff.note.includes('休職') || staff.note.includes('スポット勤務'))) {
-               val = { type: 'OFF', customText: staff.note.includes('休職') ? '休職' : '', isLocked: true };
-            }
-            else {
-               // 条件付き自動入力
-               if ((cons.offDayOfWeek && cons.offDayOfWeek.includes(dayOfWeek)) || (cons.offHolidays && isHolidayFlag)) {
-                  val = { type: 'OFF', customText: '休', isLocked: true };
-               } else if (cons.fixedDayOfWeek && cons.fixedDayOfWeek[dayOfWeek]) {
-                  val = { type: 'DAY', customText: normalizeShiftText(cons.fixedDayOfWeek[dayOfWeek]), isLocked: true };
-               }
-            }
+          }
 
-            newShifts[key] = val;
-          });
+          newShifts[key] = val;
+        });
+      });
+
+      // 2. 夜勤自動割り当て
+      for (let i = 0; i < dates.length - 1; i++) {
+        const date = dates[i];
+        const keySuffix = getIsoDate(date);
+
+        const hasNight = staffList.some(s => {
+          const cell = newShifts[`${s.id}_${keySuffix}`];
+          return cell && (cell.type === 'NIGHT' || cell.customText === '夜');
         });
 
-        // 2. 夜勤自動割り当て
-        for (let i = 0; i < dates.length - 1; i++) {
-             const date = dates[i];
-             const keySuffix = getIsoDate(date);
+        if (!hasNight) {
+          const candidates = [...nightCandidates].sort(() => 0.5 - Math.random());
 
-             const hasNight = staffList.some(s => {
-                const cell = newShifts[`${s.id}_${keySuffix}`];
-                return cell && (cell.type === 'NIGHT' || cell.customText === '夜');
-             });
+          let assigned = false;
+          for (const staffId of candidates) {
+            const staff = staffList.find(s => s.id === staffId);
+            if (!staff) continue;
+            if (staff.note === 'スポット勤務') continue;
+            if (staff.constraints?.fixedTimeOnly) continue;
+            if (staff.constraints?.forbiddenTypes?.includes('NIGHT')) continue;
 
-             if (!hasNight) {
-                 const candidates = [...nightCandidates].sort(() => 0.5 - Math.random());
+            if (date.getDay() === 5 && staff.constraints?.specialRule === 'OHASHI_NIGHT_COMBO') continue;
 
-                 let assigned = false;
-                 for (const staffId of candidates) {
-                     const staff = staffList.find(s => s.id === staffId);
-                     if (!staff) continue;
-                     if (staff.note === 'スポット勤務') continue;
-                     if (staff.constraints?.fixedTimeOnly) continue;
-                     if (staff.constraints?.forbiddenTypes?.includes('NIGHT')) continue;
+            const d0 = date;
+            const d1 = new Date(date); d1.setDate(d1.getDate() + 1);
+            const d2 = new Date(date); d2.setDate(d2.getDate() + 2);
 
-                     if (date.getDay() === 5 && staff.constraints?.specialRule === 'OHASHI_NIGHT_COMBO') continue;
+            const k0 = `${staffId}_${getIsoDate(d0)}`;
+            const k1 = `${staffId}_${getIsoDate(d1)}`;
+            const k2 = `${staffId}_${getIsoDate(d2)}`;
 
-                     const d0 = date;
-                     const d1 = new Date(date); d1.setDate(d1.getDate() + 1);
-                     const d2 = new Date(date); d2.setDate(d2.getDate() + 2);
+            const s0 = newShifts[k0];
+            const s1 = d1 <= END_DATE ? newShifts[k1] : null;
+            const s2 = d2 <= END_DATE ? newShifts[k2] : null;
 
-                     const k0 = `${staffId}_${getIsoDate(d0)}`;
-                     const k1 = `${staffId}_${getIsoDate(d1)}`;
-                     const k2 = `${staffId}_${getIsoDate(d2)}`;
+            const isS0Available = !s0 || (!s0.isLocked && s0.type !== 'OFF');
+            const isS1Available = !s1 || (!s1.isLocked && s1.type !== 'OFF' && s1.type !== 'HOPE' && s1.type !== 'WINTER');
 
-                     const s0 = newShifts[k0];
-                     const s1 = d1 <= END_DATE ? newShifts[k1] : null;
-                     const s2 = d2 <= END_DATE ? newShifts[k2] : null;
-
-                     const isS0Available = !s0 || (!s0.isLocked && s0.type !== 'OFF');
-                     const isS1Available = !s1 || (!s1.isLocked && s1.type !== 'OFF' && s1.type !== 'HOPE' && s1.type !== 'WINTER');
-
-                     if (isS0Available && isS1Available) {
-                         newShifts[k0] = { type: 'NIGHT', customText: '夜', isLocked: false };
-                         if (s1 !== undefined) newShifts[k1] = { type: 'EARLY', customText: '明', isLocked: false };
-                         if (s2 !== undefined && (!s2 || !s2.isLocked)) {
-                             newShifts[k2] = { type: 'OFF', customText: '休', isLocked: false };
-                         }
-                         assigned = true;
-                         break;
-                     }
-                 }
-             }
+            if (isS0Available && isS1Available) {
+              newShifts[k0] = { type: 'NIGHT', customText: '夜', isLocked: false };
+              if (s1 !== undefined) newShifts[k1] = { type: 'EARLY', customText: '明', isLocked: false };
+              if (s2 !== undefined && (!s2 || !s2.isLocked)) {
+                newShifts[k2] = { type: 'OFF', customText: '休', isLocked: false };
+              }
+              assigned = true;
+              break;
+            }
+          }
         }
+      }
 
-        // 2.5 早番自動割り当て
-        for (let i = 0; i < dates.length; i++) {
-             const date = dates[i];
-             const keySuffix = getIsoDate(date);
+      // 2.5 早番自動割り当て
+      for (let i = 0; i < dates.length; i++) {
+        const date = dates[i];
+        const keySuffix = getIsoDate(date);
 
-             const hasEarly = staffList.some(s => {
-                const cell = newShifts[`${s.id}_${keySuffix}`];
-                return cell && (cell.customText === '早' || cell.customText === '6～15');
-             });
+        const hasEarly = staffList.some(s => {
+          const cell = newShifts[`${s.id}_${keySuffix}`];
+          return cell && (cell.customText === '早' || cell.customText === '6～15');
+        });
 
-             if (!hasEarly) {
-                 const availableStaff = staffList.filter((s: any) => {
-                    if (s.note === 'スポット勤務' || s.note === '休職') return false;
-                    if (s.constraints?.fixedTimeOnly) return false;
-                    if (s.constraints?.forbiddenTypes?.includes('EARLY')) return false;
+        if (!hasEarly) {
+          const availableStaff = staffList.filter((s: any) => {
+            if (s.note === 'スポット勤務' || s.note === '休職') return false;
+            if (s.constraints?.fixedTimeOnly) return false;
+            if (s.constraints?.forbiddenTypes?.includes('EARLY')) return false;
 
-                    const cell = newShifts[`${s.id}_${keySuffix}`];
-                    if (cell === null) return true;
-                    if (!cell.isLocked && cell.type !== 'OFF' && cell.type !== 'NIGHT' && cell.type !== 'HOPE' && cell.type !== 'WINTER' && cell.customText !== '明') return true;
-                    return false;
-                 });
-
-                 if (availableStaff.length > 0) {
-                     const selectedStaff = availableStaff[Math.floor(Math.random() * availableStaff.length)];
-                     const key = `${selectedStaff.id}_${keySuffix}`;
-                     newShifts[key] = { type: 'EARLY', customText: '早', isLocked: false };
-                 }
-             }
-        }
-
-        // 4.5. 遅番バックアップロジック
-        for (let i = 0; i < dates.length; i++) {
-             const date = dates[i];
-             const keySuffix = getIsoDate(date);
-
-             // 桂川or加藤が「～20」に入っているか？
-             const isLateCovered = ['12', '13'].some(id => {
-                 const cell = newShifts[`${id}_${keySuffix}`];
-                 return cell && (cell.customText.includes('20') || cell.type === 'LATE');
-             });
-
-             if (!isLateCovered) {
-                 const backupId = (i % 2 === 0) ? '2' : '4';
-                 const targetId = backupId;
-
-                 const key = `${targetId}_${keySuffix}`;
-                 const cell = newShifts[key];
-                 if (!cell || (!cell.isLocked && cell.type !== 'OFF')) {
-                     newShifts[key] = { type: 'LATE', customText: '11～20', isLocked: false };
-                 } else {
-                     const altId = (backupId === '2') ? '4' : '2';
-                     const altKey = `${altId}_${keySuffix}`;
-                     const altCell = newShifts[altKey];
-                     if (!altCell || (!altCell.isLocked && altCell.type !== 'OFF')) {
-                         newShifts[altKey] = { type: 'LATE', customText: '11～20', isLocked: false };
-                     }
-                 }
-             }
-        }
-
-
-        // 5. 正社員の休日確保
-        staffList.forEach(staff => {
-          if (!FULL_TIME_STAFF_IDS.includes(staff.id)) return;
-
-          let currentHolidays = 0;
-          dates.forEach(date => {
-             const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
-             if (s && (s.type === 'OFF' || s.customText === '休')) currentHolidays++;
+            const cell = newShifts[`${s.id}_${keySuffix}`];
+            if (cell === null) return true;
+            if (!cell.isLocked && cell.type !== 'OFF' && cell.type !== 'NIGHT' && cell.type !== 'HOPE' && cell.type !== 'WINTER' && cell.customText !== '明') return true;
+            return false;
           });
 
-          let needed = REQUIRED_HOLIDAYS_FULLTIME - currentHolidays;
+          if (availableStaff.length > 0) {
+            const selectedStaff = availableStaff[Math.floor(Math.random() * availableStaff.length)];
+            const key = `${selectedStaff.id}_${keySuffix}`;
+            newShifts[key] = { type: 'EARLY', customText: '早', isLocked: false };
+          }
+        }
+      }
 
-          if (needed > 0) {
-             const candidates = dates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
-             const shuffled = candidates.sort(() => 0.5 - Math.random());
-             for (let i = 0; i < needed && i < shuffled.length; i++) {
-                const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
+      // 4.5. 遅番バックアップロジック
+      for (let i = 0; i < dates.length; i++) {
+        const date = dates[i];
+        const keySuffix = getIsoDate(date);
+
+        // 桂川or加藤が「～20」に入っているか？
+        const isLateCovered = ['12', '13'].some(id => {
+          const cell = newShifts[`${id}_${keySuffix}`];
+          return cell && (cell.customText.includes('20') || cell.type === 'LATE');
+        });
+
+        if (!isLateCovered) {
+          const backupId = (i % 2 === 0) ? '2' : '4';
+          const targetId = backupId;
+
+          const key = `${targetId}_${keySuffix}`;
+          const cell = newShifts[key];
+          if (!cell || (!cell.isLocked && cell.type !== 'OFF')) {
+            newShifts[key] = { type: 'LATE', customText: '11～20', isLocked: false };
+          } else {
+            const altId = (backupId === '2') ? '4' : '2';
+            const altKey = `${altId}_${keySuffix}`;
+            const altCell = newShifts[altKey];
+            if (!altCell || (!altCell.isLocked && altCell.type !== 'OFF')) {
+              newShifts[altKey] = { type: 'LATE', customText: '11～20', isLocked: false };
+            }
+          }
+        }
+      }
+
+
+      // 5. 正社員の休日確保
+      staffList.forEach(staff => {
+        if (!FULL_TIME_STAFF_IDS.includes(staff.id)) return;
+
+        let currentHolidays = 0;
+        dates.forEach(date => {
+          const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
+          if (s && (s.type === 'OFF' || s.customText === '休')) currentHolidays++;
+        });
+
+        let needed = REQUIRED_HOLIDAYS_FULLTIME - currentHolidays;
+
+        if (needed > 0) {
+          const candidates = dates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
+          const shuffled = candidates.sort(() => 0.5 - Math.random());
+          for (let i = 0; i < needed && i < shuffled.length; i++) {
+            const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
+            newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+          }
+        }
+      });
+
+      // 6. 残りの空欄を埋める
+      staffList.forEach(staff => {
+        let specialShiftCount = 0;
+
+        dates.forEach((date, idx) => {
+          const key = `${staff.id}_${getIsoDate(date)}`;
+
+          if (newShifts[key] === null) {
+            let consecutiveWorkDays = 0;
+            for (let i = 1; i <= MAX_CONSECUTIVE_WORK_DAYS; i++) {
+              const prevDate = new Date(date);
+              prevDate.setDate(date.getDate() - i);
+              const prevKey = `${staff.id}_${getIsoDate(prevDate)}`;
+              const prevShift = newShifts[prevKey];
+              if (prevShift && prevShift.type !== 'OFF' && prevShift.customText !== '休') {
+                consecutiveWorkDays++;
+              } else {
+                break;
+              }
+            }
+
+            if (consecutiveWorkDays >= MAX_CONSECUTIVE_WORK_DAYS) {
+              newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+            } else {
+              const cons = staff.constraints || {};
+              let text = normalizeShiftText(cons.defaultShift || '9～18');
+
+              if (cons.randomShifts && cons.randomShifts.length > 0) {
+                text = cons.randomShifts[Math.floor(Math.random() * cons.randomShifts.length)];
+              }
+              else if (FULL_TIME_STAFF_IDS.includes(staff.id) && !cons.fixedTimeOnly) {
+                if (text === '日B' || text === '9～18') {
+                  if (Math.random() > 0.5) text = '日A';
+                }
+              }
+              else if (cons.monthlyShiftCounts) {
+                for (const [shiftName, count] of Object.entries(cons.monthlyShiftCounts)) {
+                  if (specialShiftCount < count && Math.random() > 0.8) {
+                    text = shiftName;
+                    specialShiftCount++;
+                    break;
+                  }
+                }
+              }
+
+              if (cons.workDaysPerWeek && Math.random() > 0.6) {
                 newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-             }
+              } else if (cons.workDaysPerMonth && Math.random() > 0.8) {
+                newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+              } else {
+                newShifts[key] = { type: 'DAY', customText: text, isLocked: false };
+              }
+            }
           }
         });
+      });
 
-        // 6. 残りの空欄を埋める
-        staffList.forEach(staff => {
-          let specialShiftCount = 0;
-
-          dates.forEach((date, idx) => {
-            const key = `${staff.id}_${getIsoDate(date)}`;
-
-            if (newShifts[key] === null) {
-              let consecutiveWorkDays = 0;
-              for (let i = 1; i <= MAX_CONSECUTIVE_WORK_DAYS; i++) {
-                 const prevDate = new Date(date);
-                 prevDate.setDate(date.getDate() - i);
-                 const prevKey = `${staff.id}_${getIsoDate(prevDate)}`;
-                 const prevShift = newShifts[prevKey];
-                 if (prevShift && prevShift.type !== 'OFF' && prevShift.customText !== '休') {
-                    consecutiveWorkDays++;
-                 } else {
-                    break;
-                 }
-              }
-
-              if (consecutiveWorkDays >= MAX_CONSECUTIVE_WORK_DAYS) {
-                 newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-              } else {
-                 const cons = staff.constraints || {};
-                 let text = normalizeShiftText(cons.defaultShift || '9～18');
-
-                 if (cons.randomShifts && cons.randomShifts.length > 0) {
-                    text = cons.randomShifts[Math.floor(Math.random() * cons.randomShifts.length)];
-                 }
-                 else if (FULL_TIME_STAFF_IDS.includes(staff.id) && !cons.fixedTimeOnly) {
-                    if (text === '日B' || text === '9～18') {
-                        if (Math.random() > 0.5) text = '日A';
-                    }
-                 }
-                 else if (cons.monthlyShiftCounts) {
-                    for (const [shiftName, count] of Object.entries(cons.monthlyShiftCounts)) {
-                        if (specialShiftCount < count && Math.random() > 0.8) {
-                            text = shiftName;
-                            specialShiftCount++;
-                            break;
-                        }
-                    }
-                 }
-
-                 if (cons.workDaysPerWeek && Math.random() > 0.6) {
-                    newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-                 } else if (cons.workDaysPerMonth && Math.random() > 0.8) {
-                     newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-                 } else {
-                    newShifts[key] = { type: 'DAY', customText: text, isLocked: false };
-                 }
-              }
-            }
-          });
-        });
-
-        setShifts(newShifts);
+      setShifts(newShifts);
     } catch (e) {
-        console.error("Generation Error:", e);
+      console.error("Generation Error:", e);
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
   };
 
@@ -902,10 +831,10 @@ export function DecemberShiftGeneration() {
     if (editLockEnabled && currentVal.isLocked) return;
 
     setContextMenu({
-        x: e.clientX,
-        y: e.clientY,
-        staffId: staff.id,
-        date: date
+      x: e.clientX,
+      y: e.clientY,
+      staffId: staff.id,
+      date: date
     });
     setPopoverState((prev: any) => ({ ...prev, isOpen: false }));
   };
@@ -914,8 +843,8 @@ export function DecemberShiftGeneration() {
     if (!contextMenu) return;
     const key = `${contextMenu.staffId}_${getIsoDate(contextMenu.date)}`;
     setShifts((prev: any) => ({
-        ...prev,
-        [key]: { ...prev[key], type, customText, isLocked: false }
+      ...prev,
+      [key]: { ...prev[key], type, customText, isLocked: false }
     }));
     setContextMenu(null);
   };
@@ -954,8 +883,8 @@ export function DecemberShiftGeneration() {
           <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-2xl text-center border border-slate-200">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">AI シフト生成中</h2>
             <div className="mb-8 flex justify-center relative">
-               <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-75"></div>
-               <Settings className="animate-spin text-indigo-600 relative z-10" size={56} />
+              <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-75"></div>
+              <Settings className="animate-spin text-indigo-600 relative z-10" size={56} />
             </div>
             <p className="text-slate-600 mb-6 font-medium text-lg">{loadingStage}</p>
             <div className="w-full bg-slate-100 rounded-full h-3 mb-2 overflow-hidden border border-slate-200">
@@ -975,8 +904,8 @@ export function DecemberShiftGeneration() {
           <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-2xl text-center border border-slate-200">
             <h2 className="text-2xl font-bold text-slate-800 mb-6">AIシフトチェック中</h2>
             <div className="mb-8 flex justify-center relative">
-               <div className="absolute inset-0 bg-purple-100 rounded-full animate-ping opacity-75"></div>
-               <Sparkles className="animate-pulse text-purple-600 relative z-10" size={56} />
+              <div className="absolute inset-0 bg-purple-100 rounded-full animate-ping opacity-75"></div>
+              <Sparkles className="animate-pulse text-purple-600 relative z-10" size={56} />
             </div>
             <p className="text-slate-600 mb-6 font-medium text-lg">シフトを分析しています...</p>
           </div>
@@ -986,44 +915,43 @@ export function DecemberShiftGeneration() {
       {/* 右クリックメニュー */}
       {contextMenu && (
         <div
-            className="context-menu fixed z-50 bg-white border border-slate-200 shadow-xl rounded-lg py-1 w-32 animate-in fade-in zoom-in-95 duration-75"
-            style={{ top: contextMenu.y, left: contextMenu.x }}
+          className="context-menu fixed z-50 bg-white border border-slate-200 shadow-xl rounded-lg py-1 w-32 animate-in fade-in zoom-in-95 duration-75"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
         >
-            <div className="text-xs font-bold text-slate-400 px-3 py-1 border-b border-slate-100 mb-1">
-                クイック選択
-            </div>
-            {[
-                { label: '日 (通常)', type: 'DAY', text: '日' },
-                { label: '休 (公休)', type: 'OFF', text: '休' },
-                { label: '夜 (夜勤)', type: 'NIGHT', text: '夜' },
-                { label: '明 (明け)', type: 'EARLY', text: '明' },
-                { label: '日A (8-17)', type: 'DAY', text: '日A' },
-                { label: '日B (9-18)', type: 'DAY', text: '日B' },
-                { label: '有 (有給)', type: 'HOPE', text: '有' },
-                { label: '早 (早番)', type: 'EARLY', text: '早' },
-            ].map((item) => (
-                <button
-                    key={item.text}
-                    onClick={() => applyQuickShift(item.type, item.text)}
-                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 transition-colors flex items-center gap-2"
-                >
-                    <span className={`w-2 h-2 rounded-full ${
-                        item.text === '休' ? 'bg-red-400' :
-                        item.text === '夜' ? 'bg-yellow-400' :
-                        item.text === '日A' ? 'bg-pink-300' :
-                        item.text === '日B' ? 'bg-sky-300' :
-                        'bg-slate-300'
-                    }`}></span>
-                    {item.label}
-                </button>
-            ))}
-            <div className="border-t border-slate-100 my-1"></div>
+          <div className="text-xs font-bold text-slate-400 px-3 py-1 border-b border-slate-100 mb-1">
+            クイック選択
+          </div>
+          {[
+            { label: '日 (通常)', type: 'DAY', text: '日' },
+            { label: '休 (公休)', type: 'OFF', text: '休' },
+            { label: '夜 (夜勤)', type: 'NIGHT', text: '夜' },
+            { label: '明 (明け)', type: 'EARLY', text: '明' },
+            { label: '日A (8-17)', type: 'DAY', text: '日A' },
+            { label: '日B (9-18)', type: 'DAY', text: '日B' },
+            { label: '有 (有給)', type: 'HOPE', text: '有' },
+            { label: '早 (早番)', type: 'EARLY', text: '早' },
+          ].map((item) => (
             <button
-                onClick={() => applyQuickShift('OFF', '')}
-                className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 font-bold"
+              key={item.text}
+              onClick={() => applyQuickShift(item.type, item.text)}
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 transition-colors flex items-center gap-2"
             >
-                クリア
+              <span className={`w-2 h-2 rounded-full ${item.text === '休' ? 'bg-red-400' :
+                item.text === '夜' ? 'bg-yellow-400' :
+                  item.text === '日A' ? 'bg-pink-300' :
+                    item.text === '日B' ? 'bg-sky-300' :
+                      'bg-slate-300'
+                }`}></span>
+              {item.label}
             </button>
+          ))}
+          <div className="border-t border-slate-100 my-1"></div>
+          <button
+            onClick={() => applyQuickShift('OFF', '')}
+            className="w-full text-left px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 font-bold"
+          >
+            クリア
+          </button>
         </div>
       )}
 
@@ -1037,20 +965,20 @@ export function DecemberShiftGeneration() {
         >
           <div className="absolute -top-2 left-8 w-4 h-4 bg-white border-t border-l border-slate-200 transform rotate-45"></div>
           <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-             <div className="flex items-center gap-2">
-               <div className="bg-indigo-100 p-1.5 rounded-md">
-                 <Clock size={16} className="text-indigo-600" />
-               </div>
-               <div className="flex flex-col">
-                 <span className="font-bold text-slate-800 text-sm leading-tight">
-                   {popoverState.date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', weekday: 'short' })}
-                 </span>
-                 <span className="text-xs text-slate-500">{popoverState.staffName}</span>
-               </div>
-             </div>
-             <button onClick={() => setPopoverState((prev: any) => ({ ...prev, isOpen: false }))} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors">
-               <X size={18} />
-             </button>
+            <div className="flex items-center gap-2">
+              <div className="bg-indigo-100 p-1.5 rounded-md">
+                <Clock size={16} className="text-indigo-600" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-slate-800 text-sm leading-tight">
+                  {popoverState.date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', weekday: 'short' })}
+                </span>
+                <span className="text-xs text-slate-500">{popoverState.staffName}</span>
+              </div>
+            </div>
+            <button onClick={() => setPopoverState((prev: any) => ({ ...prev, isOpen: false }))} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors">
+              <X size={18} />
+            </button>
           </div>
 
           <div className="space-y-4">
@@ -1061,11 +989,10 @@ export function DecemberShiftGeneration() {
                   <button
                     key={p.text}
                     onClick={() => saveShiftChange({ type: p.type, customText: p.text })}
-                    className={`text-xs py-2 rounded-lg font-bold transition-all border ${
-                      popoverState.currentValue.customText === p.text
-                        ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50'
-                    }`}
+                    className={`text-xs py-2 rounded-lg font-bold transition-all border ${popoverState.currentValue.customText === p.text
+                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50'
+                      }`}
                   >
                     {p.text}
                   </button>
@@ -1080,11 +1007,10 @@ export function DecemberShiftGeneration() {
                   <button
                     key={t}
                     onClick={() => saveShiftChange({ type: 'DAY', customText: t })}
-                    className={`text-[10px] py-1.5 rounded-md font-medium transition-all border ${
-                      popoverState.currentValue.customText === t
-                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50'
-                    }`}
+                    className={`text-[10px] py-1.5 rounded-md font-medium transition-all border ${popoverState.currentValue.customText === t
+                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50'
+                      }`}
                   >
                     {t}
                   </button>
@@ -1146,11 +1072,10 @@ export function DecemberShiftGeneration() {
 
           <button
             onClick={() => setEditLockEnabled(!editLockEnabled)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
-              editLockEnabled
-                ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
-                : 'bg-rose-900/30 text-rose-400 border-rose-900/50 hover:bg-rose-900/50 animate-pulse'
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${editLockEnabled
+              ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
+              : 'bg-rose-900/30 text-rose-400 border-rose-900/50 hover:bg-rose-900/50 animate-pulse'
+              }`}
           >
             {editLockEnabled ? <Lock size={14} /> : <Unlock size={14} />}
             {editLockEnabled ? '保護中' : '編集可'}
@@ -1158,11 +1083,10 @@ export function DecemberShiftGeneration() {
 
           <button
             onClick={() => setPrintPreview(!printPreview)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${
-              printPreview
-                ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
-                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${printPreview
+              ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
+              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+              }`}
           >
             <RefreshCw size={14} className={printPreview ? "" : ""} />
             {printPreview ? '編集に戻る' : 'プレビュー'}
@@ -1177,6 +1101,14 @@ export function DecemberShiftGeneration() {
           </button>
 
           <button
+            onClick={openSaveModal}
+            className="flex items-center gap-2 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all shadow-lg hover:shadow-emerald-500/30 text-xs font-bold border border-emerald-500"
+          >
+            <Save size={14} />
+            Save to DB
+          </button>
+
+          <button
             onClick={handleAICheck}
             disabled={isChecking}
             className="flex items-center gap-2 px-5 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-all shadow-lg hover:shadow-purple-500/30 text-xs font-bold border border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1186,21 +1118,13 @@ export function DecemberShiftGeneration() {
           </button>
 
           <button
-            onClick={handleSaveShifts}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-all shadow-lg hover:shadow-green-500/30 text-xs font-bold border border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Save size={14} />
-            {isSaving ? '保存中...' : 'シフト保存'}
-          </button>
-
-          <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-500/30 text-xs font-bold border border-indigo-500"
           >
             <Printer size={14} />
             PDF出力
           </button>
+
         </div>
       </header>
 
@@ -1227,11 +1151,10 @@ export function DecemberShiftGeneration() {
               </div>
 
               {/* サマリー */}
-              <div className={`p-4 rounded-xl border-2 mb-4 ${
-                checkResult.violations.length === 0
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-yellow-50 border-yellow-200'
-              }`}>
+              <div className={`p-4 rounded-xl border-2 mb-4 ${checkResult.violations.length === 0
+                ? 'bg-green-50 border-green-200'
+                : 'bg-yellow-50 border-yellow-200'
+                }`}>
                 <div className="flex items-start gap-3">
                   {checkResult.violations.length === 0 ? (
                     <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
@@ -1255,11 +1178,10 @@ export function DecemberShiftGeneration() {
                     {checkResult.violations.map((violation: any, index: number) => (
                       <div
                         key={index}
-                        className={`p-3 rounded-lg border ${
-                          violation.severity === 'error'
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-yellow-50 border-yellow-200'
-                        }`}
+                        className={`p-3 rounded-lg border ${violation.severity === 'error'
+                          ? 'bg-red-50 border-red-200'
+                          : 'bg-yellow-50 border-yellow-200'
+                          }`}
                       >
                         <div className="flex items-start gap-2">
                           {violation.severity === 'error' ? (
@@ -1303,81 +1225,49 @@ export function DecemberShiftGeneration() {
             </div>
           )}
 
-          {/* バックアップ読み込みセクション */}
-          {backups.length > 0 && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl border-2 border-slate-200 print:hidden">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <Download className="w-4 h-4 text-slate-600" />
-                  バックアップから復元
-                </h3>
-                <button
-                  onClick={fetchBackups}
-                  disabled={isLoadingBackups}
-                  className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 disabled:opacity-50"
-                >
-                  <RefreshCw size={12} className={isLoadingBackups ? 'animate-spin' : ''} />
-                  更新
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {backups.map((backup) => (
-                  <button
-                    key={backup.filename}
-                    onClick={() => handleLoadBackup(backup.filename)}
-                    className="text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 transition-all font-medium flex items-center gap-2 shadow-sm"
-                  >
-                    <Upload size={12} />
-                    {backup.filename.replace('december-2025_', '').replace('.json', '')}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Legend moved to top as requested */}
           <div className="mb-4 flex justify-between text-[10px] font-serif items-start">
-             <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap print:hidden">
-               <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
-               <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-100">休: 公休</span>
-               <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
-               <span className="text-slate-900 bg-sky-200 px-2 py-0.5 rounded border border-sky-200">早: 早番</span>
-               <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">遅: 遅番</span>
-               <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">有: 有給</span>
-               <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-200">日A: 8-17</span>
-               <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-200">日B: 9-18</span>
-             </div>
-             <div className="flex gap-8 mr-8">
-               <div className="flex flex-col items-center group">
-                 <div className="border border-slate-400 w-24 h-20 mb-1 bg-white group-hover:border-slate-600 transition-colors"></div>
-                 <span className="text-slate-600 font-medium">施設長</span>
-               </div>
-               <div className="flex flex-col items-center group">
-                 <div className="border border-slate-400 w-24 h-20 mb-1 bg-white group-hover:border-slate-600 transition-colors"></div>
-                 <span className="text-slate-600 font-medium">管理者</span>
-               </div>
-             </div>
+            <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap print:hidden">
+              <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
+              <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-100">休: 公休</span>
+              <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
+              <span className="text-slate-900 bg-sky-200 px-2 py-0.5 rounded border border-sky-200">早: 早番</span>
+              <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">遅: 遅番</span>
+              <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">有: 有給</span>
+              <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-200">日A: 8-17</span>
+              <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-200">日B: 9-18</span>
+            </div>
+            <div className="flex gap-8 mr-8">
+              <div className="flex flex-col items-center group">
+                <div className="border border-slate-400 w-24 h-20 mb-1 bg-white group-hover:border-slate-600 transition-colors"></div>
+                <span className="text-slate-600 font-medium">施設長</span>
+              </div>
+              <div className="flex flex-col items-center group">
+                <div className="border border-slate-400 w-24 h-20 mb-1 bg-white group-hover:border-slate-600 transition-colors"></div>
+                <span className="text-slate-600 font-medium">管理者</span>
+              </div>
+            </div>
           </div>
 
           <div className="mb-6 border-b-2 border-slate-800 pb-4 print:mb-2">
             <div className="flex justify-between items-end">
-               <div>
-                 <h1 className="text-3xl font-serif font-bold text-slate-900 tracking-widest mb-2">
-                   {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
-                 </h1>
-                 <p className="text-xs text-slate-500 font-medium ml-1">SHIFT SCHEDULE TABLE</p>
-               </div>
-               <div className="text-xs text-right">
-                 <table className="border-collapse border border-slate-400 inline-table mr-4 shadow-sm bg-white">
-                   <tbody>
-                     <tr>
-                       <td className="border border-slate-400 px-4 py-1.5 bg-slate-100 font-bold text-slate-600">作成日</td>
-                       <td className="border border-slate-400 px-4 py-1.5 font-mono text-slate-700">{new Date().toLocaleDateString()}</td>
-                     </tr>
-                   </tbody>
-                 </table>
-                 <div className="mt-1 text-slate-400 font-mono text-[10px]">ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
-               </div>
+              <div>
+                <h1 className="text-3xl font-serif font-bold text-slate-900 tracking-widest mb-2">
+                  {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
+                </h1>
+                <p className="text-xs text-slate-500 font-medium ml-1">SHIFT SCHEDULE TABLE</p>
+              </div>
+              <div className="text-xs text-right">
+                <table className="border-collapse border border-slate-400 inline-table mr-4 shadow-sm bg-white">
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-400 px-4 py-1.5 bg-slate-100 font-bold text-slate-600">作成日</td>
+                      <td className="border border-slate-400 px-4 py-1.5 font-mono text-slate-700">{new Date().toLocaleDateString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div className="mt-1 text-slate-400 font-mono text-[10px]">ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
+              </div>
             </div>
           </div>
 
@@ -1385,19 +1275,19 @@ export function DecemberShiftGeneration() {
             <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
-                   <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-20 shadow-md sticky left-0 z-30" colSpan={1}>
-                     行事予定
-                   </th>
-                   <th className="border border-slate-600 bg-slate-100" colSpan={1}></th>
+                  <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-20 shadow-md sticky left-0 z-30" colSpan={1}>
+                    行事予定
+                  </th>
+                  <th className="border border-slate-600 bg-slate-100" colSpan={1}></th>
 
-                   {dates.map(date => (
-                     <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent max-w-[32px]">
-                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
-                         {getEventName(date)}
-                       </div>
-                     </td>
-                   ))}
-                   <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={4}></th>
+                  {dates.map(date => (
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent max-w-[32px]">
+                      <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
+                        {getEventName(date)}
+                      </div>
+                    </td>
+                  ))}
+                  <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={4}></th>
                 </tr>
 
                 <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-40 shadow-md">
@@ -1411,11 +1301,11 @@ export function DecemberShiftGeneration() {
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 w-8 min-w-[32px]" style={{...style, borderBottomWidth: '2px'}}>
+                      <th key={date.toString()} className="border border-slate-600 w-8 min-w-[32px]" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
-                            {['日','月','火','水','木','金','土'][day]}
+                            {['日', '月', '火', '水', '木', '金', '土'][day]}
                           </span>
                         </div>
                       </th>
@@ -1431,166 +1321,166 @@ export function DecemberShiftGeneration() {
                 {staffList.map((staff, index) => {
                   const stats = staffStats[staff.id] || { days: 0, hours: 0, nightCount: 0, paidHolidays: 0 };
                   return (
-                  <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
-                    {/* 氏名列 */}
-                    <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-md w-20 min-w-[80px]">
-                      {isScrolledLeft ? getSurname(staff.name) : staff.name}
-                    </td>
-                    <td className="border border-slate-600 px-1 text-center text-[9px] whitespace-nowrap text-slate-600 bg-white font-medium">
-                      {staff.qualification || '介護職員'}
-                    </td>
-                    {dates.map(date => {
-                      const key = `${staff.id}_${getIsoDate(date)}`;
-                      const cellData = shifts[key] || { type: 'OFF', customText: '', isLocked: false };
+                    <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
+                      {/* 氏名列 */}
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-md w-20 min-w-[80px]">
+                        {isScrolledLeft ? getSurname(staff.name) : staff.name}
+                      </td>
+                      <td className="border border-slate-600 px-1 text-center text-[9px] whitespace-nowrap text-slate-600 bg-white font-medium">
+                        {staff.qualification || '介護職員'}
+                      </td>
+                      {dates.map(date => {
+                        const key = `${staff.id}_${getIsoDate(date)}`;
+                        const cellData = shifts[key] || { type: 'OFF', customText: '', isLocked: false };
 
-                      const isLocked = cellData.isLocked;
-                      const isLockedAndActive = isLocked && editLockEnabled;
-                      const isHoveredRow = hoveredCell.staffId === staff.id;
-                      const isHoveredCol = hoveredCell.dateStr === getIsoDate(date);
+                        const isLocked = cellData.isLocked;
+                        const isLockedAndActive = isLocked && editLockEnabled;
+                        const isHoveredRow = hoveredCell.staffId === staff.id;
+                        const isHoveredCol = hoveredCell.dateStr === getIsoDate(date);
 
-                      let textColor = 'text-slate-900';
+                        let textColor = 'text-slate-900';
 
-                      const lockPatternClass = isLockedAndActive
-                        ? 'bg-[repeating-linear-gradient(45deg,#f8fafc,#f8fafc_5px,#f1f5f9_5px,#f1f5f9_10px)]'
-                        : '';
+                        const lockPatternClass = isLockedAndActive
+                          ? 'bg-[repeating-linear-gradient(45deg,#f8fafc,#f8fafc_5px,#f1f5f9_5px,#f1f5f9_10px)]'
+                          : '';
 
-                      // クロスハイライトクラス
-                      const highlightClass = (isHoveredRow || isHoveredCol) ? 'bg-slate-50' : '';
+                        // クロスハイライトクラス
+                        const highlightClass = (isHoveredRow || isHoveredCol) ? 'bg-slate-50' : '';
 
-                      const styles: any = {};
+                        const styles: any = {};
 
-                      if (cellData.customText === '休' || cellData.customText === '休職') {
-                        styles.color = '#b91c1c';
-                        styles.backgroundColor = isLockedAndActive ? '#fef2f2' : '#fff1f2';
-                      }
-                      else if (cellData.customText === '有' || cellData.customText === '有給') {
-                        styles.color = '#c2410c';
-                        styles.backgroundColor = isLockedAndActive ? '#ffedd5' : '#fff7ed';
-                      }
-                      else if (cellData.customText === '夜') {
-                        styles.color = '#ffffff';
-                        styles.backgroundColor = isLockedAndActive ? '#1e3a8a' : '#1e3a8a';
-                        styles.fontWeight = 'bold';
-                      }
-                      else if (cellData.customText === '明') {
-                        styles.color = '#1f2937';
-                        styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe';
-                      }
-                      else if (cellData.customText === '早') {
-                        styles.color = '#1f2937';
-                        styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe';
-                      }
-                      else if (cellData.customText === '遅' || cellData.customText.startsWith('11')) {
-                        styles.color = '#1f2937';
-                        styles.backgroundColor = isLockedAndActive ? '#86efac' : '#dcfce7';
-                      }
-                      else if (cellData.customText === '冬') {
-                        styles.color = '#1e40af';
-                        styles.backgroundColor = isLockedAndActive ? '#bfdbfe' : '#dbeafe';
-                      }
-                      else if (cellData.customText === '日A') {
-                        styles.color = '#1f2937';
-                        styles.backgroundColor = isLockedAndActive ? '#fce7f3' : '#fce7f3'; // Pink 100
-                      }
-                      else if (cellData.customText === '日B') {
-                        styles.color = '#1f2937';
-                        styles.backgroundColor = isLockedAndActive ? '#e0f2fe' : '#e0f2fe'; // Sky 100
-                      }
+                        if (cellData.customText === '休' || cellData.customText === '休職') {
+                          styles.color = '#b91c1c';
+                          styles.backgroundColor = isLockedAndActive ? '#fef2f2' : '#fff1f2';
+                        }
+                        else if (cellData.customText === '有' || cellData.customText === '有給') {
+                          styles.color = '#c2410c';
+                          styles.backgroundColor = isLockedAndActive ? '#ffedd5' : '#fff7ed';
+                        }
+                        else if (cellData.customText === '夜') {
+                          styles.color = '#ffffff';
+                          styles.backgroundColor = isLockedAndActive ? '#1e3a8a' : '#1e3a8a';
+                          styles.fontWeight = 'bold';
+                        }
+                        else if (cellData.customText === '明') {
+                          styles.color = '#1f2937';
+                          styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe';
+                        }
+                        else if (cellData.customText === '早') {
+                          styles.color = '#1f2937';
+                          styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe';
+                        }
+                        else if (cellData.customText === '遅' || cellData.customText.startsWith('11')) {
+                          styles.color = '#1f2937';
+                          styles.backgroundColor = isLockedAndActive ? '#86efac' : '#dcfce7';
+                        }
+                        else if (cellData.customText === '冬') {
+                          styles.color = '#1e40af';
+                          styles.backgroundColor = isLockedAndActive ? '#bfdbfe' : '#dbeafe';
+                        }
+                        else if (cellData.customText === '日A') {
+                          styles.color = '#1f2937';
+                          styles.backgroundColor = isLockedAndActive ? '#fce7f3' : '#fce7f3'; // Pink 100
+                        }
+                        else if (cellData.customText === '日B') {
+                          styles.color = '#1f2937';
+                          styles.backgroundColor = isLockedAndActive ? '#e0f2fe' : '#e0f2fe'; // Sky 100
+                        }
 
-                      // ハイライトを適用 (色が設定されていない場合のみ)
-                      if (!styles.backgroundColor && (isHoveredRow || isHoveredCol)) {
-                         styles.backgroundColor = '#f8fafc'; // Very light slate
-                      }
+                        // ハイライトを適用 (色が設定されていない場合のみ)
+                        if (!styles.backgroundColor && (isHoveredRow || isHoveredCol)) {
+                          styles.backgroundColor = '#f8fafc'; // Very light slate
+                        }
 
-                      const isNightPrint = cellData.customText === '夜';
+                        const isNightPrint = cellData.customText === '夜';
 
-                      return (
-                        <td
-                          key={key}
-                          onClick={(e) => handleCellClick(e, staff, date)}
-                          onContextMenu={(e) => handleContextMenu(e, staff, date)}
-                          onMouseEnter={() => setHoveredCell({ staffId: staff.id, dateStr: getIsoDate(date) })}
-                          onMouseLeave={() => setHoveredCell({ staffId: null, dateStr: null })}
-                          className={`
+                        return (
+                          <td
+                            key={key}
+                            onClick={(e) => handleCellClick(e, staff, date)}
+                            onContextMenu={(e) => handleContextMenu(e, staff, date)}
+                            onMouseEnter={() => setHoveredCell({ staffId: staff.id, dateStr: getIsoDate(date) })}
+                            onMouseLeave={() => setHoveredCell({ staffId: null, dateStr: null })}
+                            className={`
                             border border-slate-600 p-0 overflow-hidden relative
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:z-10 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
                           `}
-                          style={styles}
-                          title={isLockedAndActive ? "固定シフト (編集不可)" : "右クリックでクイック選択"}
-                        >
-                          {isLockedAndActive && (
-                            <div className="absolute top-0.5 right-0.5 text-slate-500 print:hidden opacity-70">
-                              <Lock size={8} strokeWidth={3} />
-                            </div>
-                          )}
+                            style={styles}
+                            title={isLockedAndActive ? "固定シフト (編集不可)" : "右クリックでクイック選択"}
+                          >
+                            {isLockedAndActive && (
+                              <div className="absolute top-0.5 right-0.5 text-slate-500 print:hidden opacity-70">
+                                <Lock size={8} strokeWidth={3} />
+                              </div>
+                            )}
 
-                          <div className={`w-full h-full flex items-center justify-center ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
-                             <span className={`transform inline-block whitespace-nowrap ${cellData.customText.length > 4 ? 'scale-75' : cellData.customText.length > 2 ? 'scale-90' : 'scale-100'}`}>
-                               {cellData.customText}
-                             </span>
-                          </div>
-                        </td>
-                      );
-                    })}
-                    <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden">{stats.days}</td>
-                    <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.hours}</td>
-                    <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.nightCount}</td>
-                    <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.paidHolidays}</td>
-                  </tr>
-                );
+                            <div className={`w-full h-full flex items-center justify-center ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
+                              <span className={`transform inline-block whitespace-nowrap ${cellData.customText.length > 4 ? 'scale-75' : cellData.customText.length > 2 ? 'scale-90' : 'scale-100'}`}>
+                                {cellData.customText}
+                              </span>
+                            </div>
+                          </td>
+                        );
+                      })}
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden">{stats.days}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.hours}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.nightCount}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.paidHolidays}</td>
+                    </tr>
+                  );
                 })}
 
                 {[...Array(3)].map((_, i) => (
                   <tr key={`empty-${i}`} className="h-10">
                     <td className="border border-slate-600 bg-slate-50 sticky left-0 z-10 shadow-md"></td>
                     <td className="border border-slate-600 bg-slate-50"></td>
-                     {dates.map((d, idx) => <td key={idx} className="border border-slate-600 bg-slate-50"></td>)}
-                     <td className="border border-slate-600 bg-slate-100 border-l-2 border-l-slate-800 print:hidden"></td>
-                     <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
-                     <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
-                     <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
+                    {dates.map((d, idx) => <td key={idx} className="border border-slate-600 bg-slate-50"></td>)}
+                    <td className="border border-slate-600 bg-slate-100 border-l-2 border-l-slate-800 print:hidden"></td>
+                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
+                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
+                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
                   </tr>
                 ))}
 
               </tbody>
               {/* 不足判定フッター */}
               <tfoot className="print:hidden">
-                  <tr className="h-12 border-t-4 border-slate-800">
-                    <td className="border border-slate-600 bg-slate-800 text-white font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2}>
-                        配置判定
-                    </td>
-                    {dates.map(date => {
-                        const dateIso = getIsoDate(date);
-                        const result = sufficiencyData[dateIso];
-                        let bgClass = "bg-emerald-50";
-                        let textClass = "text-emerald-700";
+                <tr className="h-12 border-t-4 border-slate-800">
+                  <td className="border border-slate-600 bg-slate-800 text-white font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2}>
+                    配置判定
+                  </td>
+                  {dates.map(date => {
+                    const dateIso = getIsoDate(date);
+                    const result = sufficiencyData[dateIso];
+                    let bgClass = "bg-emerald-50";
+                    let textClass = "text-emerald-700";
 
-                        if (result && result.maxShortage >= 2) {
-                            bgClass = "bg-yellow-200"; // 濃い黄色
-                            textClass = "text-yellow-900 font-bold";
-                        } else if (result && result.maxShortage >= 1) {
-                            bgClass = "bg-yellow-50"; // 薄い黄色
-                            textClass = "text-yellow-800";
-                        }
+                    if (result && result.maxShortage >= 2) {
+                      bgClass = "bg-yellow-200"; // 濃い黄色
+                      textClass = "text-yellow-900 font-bold";
+                    } else if (result && result.maxShortage >= 1) {
+                      bgClass = "bg-yellow-50"; // 薄い黄色
+                      textClass = "text-yellow-800";
+                    }
 
-                        return (
-                            <td key={date.toString()} className={`border border-slate-600 text-[9px] align-top p-1 ${bgClass}`}>
-                                {result && result.details.length > 0 ? (
-                                    <div className="flex flex-col gap-0.5">
-                                        {result.details.map((d: string, i: number) => (
-                                            <span key={i} className="text-red-600 font-bold leading-tight block">{d}</span>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <span className="text-emerald-600 flex justify-center pt-1">OK</span>
-                                )}
-                            </td>
-                        );
-                    })}
-                    <td colSpan={4} className="border border-slate-600 bg-slate-100"></td>
-                  </tr>
+                    return (
+                      <td key={date.toString()} className={`border border-slate-600 text-[9px] align-top p-1 ${bgClass}`}>
+                        {result && result.details.length > 0 ? (
+                          <div className="flex flex-col gap-0.5">
+                            {result.details.map((d: string, i: number) => (
+                              <span key={i} className="text-red-600 font-bold leading-tight block">{d}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-emerald-600 flex justify-center pt-1">OK</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td colSpan={4} className="border border-slate-600 bg-slate-100"></td>
+                </tr>
               </tfoot>
             </table>
           </div>
@@ -1611,13 +1501,6 @@ export function DecemberShiftGeneration() {
             width: 100%;
             height: 100%;
           }
-
-          /* ヘッダーとボタン類を非表示 */
-          header {
-            display: none !important;
-          }
-
-          /* print:hiddenクラスの要素を非表示 */
           .print\\:hidden {
             display: none !important;
           }
@@ -1630,54 +1513,22 @@ export function DecemberShiftGeneration() {
           .print\\:bg-transparent {
             background-color: transparent !important;
           }
-          .print\\:p-0 {
-            padding: 0 !important;
-          }
-          .print\\:mb-2 {
-            margin-bottom: 0.5rem !important;
-          }
 
-          /* テーブルのボーダー設定 */
           table, th, td {
             border: 1px solid #000 !important;
             border-collapse: collapse !important;
           }
 
-          /* メインコンテナ */
           main {
             margin: 0;
             padding: 0;
             width: 100%;
             background: white !important;
-            overflow: visible !important;
+            overflow: visible !important; /* Print fix */
           }
-
-          /* シフト表コンテナ */
-          main > div {
-            box-shadow: none !important;
-            border: none !important;
-            border-radius: 0 !important;
-            margin: 0 !important;
-            padding: 10px !important;
-          }
-
-          /* スティッキーヘッダーの位置をリセット */
+          /* Print specific fix for sticky headers which might be annoying in print */
           thead tr th, tbody tr td {
             position: static !important;
-          }
-
-          /* セル内の編集アイコンなどを非表示 */
-          .print\\:cursor-default {
-            cursor: default !important;
-          }
-          .print\\:ring-0 {
-            box-shadow: none !important;
-          }
-
-          /* ズームをリセット */
-          main > div {
-            zoom: 1 !important;
-            transform: none !important;
           }
         }
 
