@@ -521,9 +521,12 @@ export const appRouter = router({
 
         // 3. Create Shift Details using db helper
         console.log(`[saveStandalone] Processing ${input.entries.length} entries...`);
+        console.log(`[saveStandalone] New shift ID: ${newShiftId}`);
         let savedCount = 0;
         let skippedEmployeeCount = 0;
+        let errorCount = 0;
         const skippedEmployees = new Set<string>();
+        const errors: string[] = [];
 
         for (const entry of input.entries) {
           const employeeId = getEmployeeId(entry.employeeName);
@@ -548,29 +551,55 @@ export const appRouter = router({
           }
 
           try {
-            await db.createShiftDetail({
+            const detailData = {
               shiftId: newShiftId,
               employeeId: employeeId,
               date: dateStr,
               status: status,
               timeSlotId: timeSlotId,
               leaveType: leaveType,
-              generatedBy: "ai",
+              generatedBy: "ai" as const,
               isChanged: false,
               createdAt: new Date(),
               updatedAt: new Date(),
-            });
+            };
+
+            // Log first entry for debugging
+            if (savedCount === 0) {
+              console.log(`[saveStandalone] Sample detail data:`, JSON.stringify(detailData, null, 2));
+            }
+
+            await db.createShiftDetail(detailData);
             savedCount++;
-          } catch (error) {
-            console.error(`[saveStandalone] Failed to save detail for ${entry.employeeName} on ${dateStr}:`, error);
+          } catch (error: any) {
+            errorCount++;
+            const errorMsg = `Failed for ${entry.employeeName} on ${dateStr}: ${error.message}`;
+            console.error(`[saveStandalone] ${errorMsg}`, error);
+            errors.push(errorMsg);
+
+            // Log first error in detail
+            if (errorCount === 1) {
+              console.error(`[saveStandalone] First error details:`, error);
+            }
           }
         }
 
-        console.log(`[saveStandalone] Saved ${savedCount} shift details`);
-        console.log(`[saveStandalone] Skipped ${skippedEmployeeCount} entries (employee not found)`);
+        console.log(`[saveStandalone] ========== SAVE SUMMARY ==========`);
+        console.log(`[saveStandalone] Total entries: ${input.entries.length}`);
+        console.log(`[saveStandalone] Saved: ${savedCount}`);
+        console.log(`[saveStandalone] Skipped (employee not found): ${skippedEmployeeCount}`);
+        console.log(`[saveStandalone] Errors: ${errorCount}`);
         if (skippedEmployees.size > 0) {
           console.log(`[saveStandalone] Skipped employees:`, Array.from(skippedEmployees));
         }
+        if (errors.length > 0) {
+          console.error(`[saveStandalone] First 5 errors:`, errors.slice(0, 5));
+        }
+        console.log(`[saveStandalone] ====================================`);
+
+        // Verify the save
+        const savedDetails = await db.getShiftDetails(newShiftId);
+        console.log(`[saveStandalone] VERIFICATION: Found ${savedDetails.length} shift details in database for shift ${newShiftId}`);
 
         return {
           success: true,
@@ -578,6 +607,7 @@ export const appRouter = router({
           message: "保存しました",
           savedCount,
           skippedCount: skippedEmployeeCount,
+          errorCount,
         };
       }),
 
