@@ -381,6 +381,12 @@ export function DecemberShiftGeneration() {
   const [saveName, setSaveName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Component mount log
+  useEffect(() => {
+    console.log('[DecemberShiftGeneration] Component mounted successfully');
+    console.log('[DecemberShiftGeneration] isSaveModalOpen:', isSaveModalOpen);
+  }, []);
+
   const handleSaveToDB = async () => {
     if (!saveName) {
       toast.error("保存名を入力してください");
@@ -388,6 +394,8 @@ export function DecemberShiftGeneration() {
     }
 
     setIsSaving(true);
+    console.log('[DecemberShiftGeneration] Starting save operation...');
+
     try {
       const entries = [];
       for (const staff of staffList) {
@@ -405,16 +413,26 @@ export function DecemberShiftGeneration() {
         }
       }
 
-      await trpcClient.shifts.saveStandalone.mutate({
+      console.log(`[DecemberShiftGeneration] Saving ${entries.length} shift entries...`);
+
+      const result = await trpcClient.shifts.saveStandalone.mutate({
         year: 2025,
         month: 12,
         name: saveName,
         entries: entries
       });
 
-      toast.success("シフトを保存しました");
+      console.log('[DecemberShiftGeneration] Save successful! Result:', result);
+
+      // Show success message with shift ID and navigation instructions
+      toast.success("シフトを保存しました", {
+        description: `シフトID: ${result.shiftId}\n「シフト作成・編集」タブの年間ビューから、12月カードをクリックして編集できます。`,
+        duration: 10000 // Show for 10 seconds
+      });
+
       setIsSaveModalOpen(false);
     } catch (error: any) {
+      console.error('[DecemberShiftGeneration] Save failed:', error);
       toast.error("保存に失敗しました", { description: error.message });
     } finally {
       setIsSaving(false);
@@ -422,10 +440,14 @@ export function DecemberShiftGeneration() {
   };
 
   const openSaveModal = () => {
+    console.log('[DecemberShiftGeneration] openSaveModal called - button clicked!');
     // Generate default name: "12月シフト_v{count}" (we don't know count, so just timestamp or random)
     const defaultName = `12月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
+    console.log('[DecemberShiftGeneration] Default name generated:', defaultName);
     setSaveName(defaultName);
+    console.log('[DecemberShiftGeneration] Opening modal...');
     setIsSaveModalOpen(true);
+    console.log('[DecemberShiftGeneration] Modal should be open now. isSaveModalOpen:', true);
   };
 
   useEffect(() => {
