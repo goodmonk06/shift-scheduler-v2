@@ -33,7 +33,7 @@ const REQUIRED_STAFF_MATRIX = {
 // monthlyShiftCounts: { 'シフト名': 回数 } -> 特定のシフトを月に何回入れるか（残りはdefaultShift）
 const STAFF_RAW_DATA = [
   {
-    id: '1', name: '高野 幹成', role: 'admin', qualification: '管理者',
+    id: '1', name: '髙野 幹成', role: 'admin', qualification: '管理者',
     note: 'スポット勤務',
     schedule: { '2025-12-11': '夜', '2025-12-12': '明', '2025-12-13': '休', '2025-12-24': '夜', '2025-12-25': '明', '2025-12-26': '休' },
     constraints: { fixedTimeOnly: true }
@@ -85,7 +85,7 @@ const STAFF_RAW_DATA = [
   { id: '21', name: '長山 真梨奈', role: 'staff', qualification: '初任者研修', schedule: { '2025-12-01': '休', '2025-12-02': '9～14', '2025-12-03': '9～14', '2025-12-04': '9～14', '2025-12-05': '休', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～14', '2025-12-09': '9～14', '2025-12-10': '休', '2025-12-11': '9～12半', '2025-12-12': '9～12半', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '9～13', '2025-12-16': '休', '2025-12-17': '9～13', '2025-12-18': '9～13', '2025-12-19': '休', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '9～14', '2025-12-23': '9～14', '2025-12-24': '休', '2025-12-25': '9～14', '2025-12-26': '9～14', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2025-12-31': '9～12半', '2026-01-01': '休', '2026-01-02': '9～12半', '2026-01-03': '9～12半', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], defaultShift: '9～13半', fixedTimeOnly: true } },
   { id: '22', name: '近藤 由美子', role: 'staff', qualification: '看護師', schedule: { '2025-12-01': '休', '2025-12-02': '休', '2025-12-03': '休', '2025-12-04': '休', '2025-12-05': '9～13', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '休', '2025-12-09': '休', '2025-12-10': '休', '2025-12-11': '休', '2025-12-12': '9～13', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '休', '2025-12-16': '休', '2025-12-17': '休', '2025-12-18': '休', '2025-12-19': '9～13', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '休', '2025-12-23': '休', '2025-12-24': '休', '2025-12-25': '休', '2025-12-26': '9～13', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2025-12-31': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { workDaysPerWeek: 1, defaultShift: '9～13', fixedTimeOnly: true } },
   {
-    id: '23', name: '大堀 シェリー', role: 'staff', qualification: '初任者研修',
+    id: '23', name: '大堀SHIRLEY TAN', role: 'staff', qualification: '初任者研修',
     schedule: {
       '2025-12-01': '休', '2025-12-02': '9～18', '2025-12-03': '9～18', '2025-12-04': '9～18', '2025-12-05': '9～18',
       '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～18', '2025-12-09': '9～18', '2025-12-10': '9～18', '2025-12-11': '9～18', '2025-12-12': '9～18',
@@ -381,12 +381,6 @@ export function DecemberShiftGeneration() {
   const [saveName, setSaveName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Component mount log
-  useEffect(() => {
-    console.log('[DecemberShiftGeneration] Component mounted successfully');
-    console.log('[DecemberShiftGeneration] isSaveModalOpen:', isSaveModalOpen);
-  }, []);
-
   const handleSaveToDB = async () => {
     if (!saveName) {
       toast.error("保存名を入力してください");
@@ -394,8 +388,6 @@ export function DecemberShiftGeneration() {
     }
 
     setIsSaving(true);
-    console.log('[DecemberShiftGeneration] Starting save operation...');
-
     try {
       const entries = [];
       for (const staff of staffList) {
@@ -413,26 +405,16 @@ export function DecemberShiftGeneration() {
         }
       }
 
-      console.log(`[DecemberShiftGeneration] Saving ${entries.length} shift entries...`);
-
-      const result = await trpcClient.shifts.saveStandalone.mutate({
+      await trpcClient.shifts.saveStandalone.mutate({
         year: 2025,
         month: 12,
         name: saveName,
         entries: entries
       });
 
-      console.log('[DecemberShiftGeneration] Save successful! Result:', result);
-
-      // Show success message with shift ID and navigation instructions
-      toast.success("シフトを保存しました", {
-        description: `シフトID: ${result.shiftId}\n「シフト作成・編集」タブの年間ビューから、12月カードをクリックして編集できます。`,
-        duration: 10000 // Show for 10 seconds
-      });
-
+      toast.success("シフトを保存しました");
       setIsSaveModalOpen(false);
     } catch (error: any) {
-      console.error('[DecemberShiftGeneration] Save failed:', error);
       toast.error("保存に失敗しました", { description: error.message });
     } finally {
       setIsSaving(false);
@@ -440,14 +422,10 @@ export function DecemberShiftGeneration() {
   };
 
   const openSaveModal = () => {
-    console.log('[DecemberShiftGeneration] openSaveModal called - button clicked!');
     // Generate default name: "12月シフト_v{count}" (we don't know count, so just timestamp or random)
     const defaultName = `12月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
-    console.log('[DecemberShiftGeneration] Default name generated:', defaultName);
     setSaveName(defaultName);
-    console.log('[DecemberShiftGeneration] Opening modal...');
     setIsSaveModalOpen(true);
-    console.log('[DecemberShiftGeneration] Modal should be open now. isSaveModalOpen:', true);
   };
 
   useEffect(() => {
@@ -1124,9 +1102,9 @@ export function DecemberShiftGeneration() {
 
           <button
             onClick={openSaveModal}
-            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-400 hover:to-blue-400 transition-all shadow-xl hover:shadow-2xl hover:shadow-cyan-500/50 text-xs font-extrabold border-2 border-white/30 hover:border-white/50 ring-2 ring-cyan-400/50 hover:ring-cyan-300 hover:scale-105"
+            className="flex items-center gap-2 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all shadow-lg hover:shadow-emerald-500/30 text-xs font-bold border border-emerald-500"
           >
-            <Save size={14} className="drop-shadow-lg" />
+            <Save size={14} />
             Save to DB
           </button>
 
@@ -1563,40 +1541,6 @@ export function DecemberShiftGeneration() {
           transform-origin: top center;
         }
       `}</style>
-
-      {/* 保存モーダル */}
-      {isSaveModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
-            <h2 className="text-lg font-bold mb-4">シフトを保存</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">バージョン名</label>
-              <input
-                type="text"
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="例: 12月シフト_20251122_001"
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setIsSaveModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleSaveToDB}
-                disabled={isSaving}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
-              >
-                {isSaving ? '保存中...' : '保存'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
