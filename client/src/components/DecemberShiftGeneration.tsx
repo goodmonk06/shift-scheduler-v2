@@ -1182,9 +1182,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           <button
             onClick={openSaveModal}
-            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md text-sm font-semibold"
+            className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-green-700"
           >
-            <Save size={16} />
+            <Save size={18} />
             保存
           </button>
 
@@ -1566,6 +1566,41 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           </div>
         </div>
       </main>
+
+      {/* 保存モーダル */}
+      {isSaveModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">シフトを保存</h2>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold mb-3 text-gray-700">バージョン名</label>
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                placeholder="例: 12月シフト_20251122_001"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setIsSaveModalOpen(false)}
+                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 font-semibold transition-all text-base"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSaveToDB}
+                disabled={isSaving}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-base shadow-lg hover:shadow-xl"
+              >
+                {isSaving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @media print {
