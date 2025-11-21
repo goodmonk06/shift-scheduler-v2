@@ -98,11 +98,21 @@ AIチェックに渡すデータは以下の形式を推奨:
 
 ### ステップ3: 環境変数の設定
 
+**ローカル開発環境**:
 `.env` ファイルに OpenAI API キーを設定:
 
 ```bash
 OPENAI_API_KEY=sk-xxxxx
 ```
+
+**Railway本番環境**:
+1. Railway ダッシュボードにアクセス: https://railway.app/dashboard
+2. プロジェクトを選択
+3. Variables タブを開く
+4. 以下の環境変数を追加:
+   - 変数名: `OPENAI_API_KEY`
+   - 値: あなたのOpenAI APIキー
+5. Deploy をクリックして再デプロイ
 
 ## AIチェックの流れ
 
