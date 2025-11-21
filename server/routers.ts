@@ -520,9 +520,18 @@ export const appRouter = router({
         };
 
         // 3. Create Shift Details using db helper
+        console.log(`[saveStandalone] Processing ${input.entries.length} entries...`);
+        let savedCount = 0;
+        let skippedEmployeeCount = 0;
+        const skippedEmployees = new Set<string>();
+
         for (const entry of input.entries) {
           const employeeId = getEmployeeId(entry.employeeName);
-          if (!employeeId) continue; // Skip if employee not found
+          if (!employeeId) {
+            skippedEmployeeCount++;
+            skippedEmployees.add(entry.employeeName);
+            continue; // Skip if employee not found
+          }
 
           const dateStr = `${input.year}-${String(input.month).padStart(2, '0')}-${String(entry.date).padStart(2, '0')}`;
 
@@ -538,24 +547,37 @@ export const appRouter = router({
             timeSlotId = getTimeSlotId(entry.text);
           }
 
-          await db.createShiftDetail({
-            shiftId: newShiftId,
-            employeeId: employeeId,
-            date: dateStr,
-            status: status,
-            timeSlotId: timeSlotId,
-            leaveType: leaveType,
-            generatedBy: "ai",
-            isChanged: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
+          try {
+            await db.createShiftDetail({
+              shiftId: newShiftId,
+              employeeId: employeeId,
+              date: dateStr,
+              status: status,
+              timeSlotId: timeSlotId,
+              leaveType: leaveType,
+              generatedBy: "ai",
+              isChanged: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+            savedCount++;
+          } catch (error) {
+            console.error(`[saveStandalone] Failed to save detail for ${entry.employeeName} on ${dateStr}:`, error);
+          }
+        }
+
+        console.log(`[saveStandalone] Saved ${savedCount} shift details`);
+        console.log(`[saveStandalone] Skipped ${skippedEmployeeCount} entries (employee not found)`);
+        if (skippedEmployees.size > 0) {
+          console.log(`[saveStandalone] Skipped employees:`, Array.from(skippedEmployees));
         }
 
         return {
           success: true,
           shiftId: newShiftId,
           message: "保存しました",
+          savedCount,
+          skippedCount: skippedEmployeeCount,
         };
       }),
 
