@@ -30,7 +30,7 @@ export function DecemberShiftSelectionModal({
   const loadDecemberShifts = async () => {
     try {
       setIsLoading(true);
-      const allShifts = await trpcClient.shifts.getAll.query();
+      const allShifts = await trpcClient.shifts.list.query();
       // 12月のシフトのみフィルタリング（降順でソート）
       const decShifts = allShifts
         .filter((s) => s.month === 12)

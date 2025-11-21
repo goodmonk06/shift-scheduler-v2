@@ -1182,10 +1182,10 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           <button
             onClick={openSaveModal}
-            className="flex items-center gap-2 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all shadow-lg hover:shadow-emerald-500/30 text-xs font-bold border border-emerald-500"
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md text-sm font-semibold"
           >
-            <Save size={14} />
-            Save to DB
+            <Save size={16} />
+            保存
           </button>
 
           <button
