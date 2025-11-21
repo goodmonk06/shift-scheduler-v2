@@ -10,6 +10,7 @@ import { ScrollArea } from "./components/ui/scroll-area";
 import { Separator } from "./components/ui/separator";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { ShiftEditor } from "./components/ShiftEditor";
+import { ShiftEditorNew } from "./components/ShiftEditorNew";
 import { VacationManagement } from "./components/VacationManagement";
 import { WorkPreferenceManagement } from "./components/WorkPreferenceManagement";
 import { StaffManagement } from "./components/StaffManagement";
@@ -25,6 +26,7 @@ import { EmergencyNotifications } from "./components/EmergencyNotifications";
 import { ShiftArchive } from "./components/ShiftArchive";
 import { ServerManagement } from "./components/ServerManagement";
 import { FacilityEventManagement } from "./components/FacilityEventManagement";
+import { DecemberShiftGeneration } from "./components/DecemberShiftGeneration";
 import { VacationProvider } from "./contexts/VacationContext";
 
 type AdminView =
@@ -37,6 +39,7 @@ type AdminView =
   | "facility-events"
   | "shifts"
   | "shift-editor"
+  | "december-shift-generation"
   | "leave-requests"
   | "work-preferences"
   | "change-proposals"
@@ -69,6 +72,11 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     setAdminView("shifts");
   };
 
+  // 12月シフト生成画面へ遷移
+  const handleDecemberClick = () => {
+    setAdminView("december-shift-generation");
+  };
+
   // Admin Navigation
   const renderAdminView = () => {
     console.log("Current admin view:", adminView); // デバッグ用
@@ -88,7 +96,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       case "facility-events":
         return <FacilityEventManagement />;
       case "shifts":
-        return <ShiftYearlyView onEditShift={handleEditShift} />;
+        return <ShiftYearlyView onEditShift={handleEditShift} onDecemberClick={handleDecemberClick} />;
       case "shift-editor":
         console.log('[AdminApp] Rendering shift-editor, editingShiftId:', editingShiftId);
         if (!editingShiftId) {
@@ -98,6 +106,8 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           return <AdminDashboard onNavigate={handleViewChange} />;
         }
         return <ShiftEditor shiftId={editingShiftId} onBack={handleBackToShiftList} />;
+      case "december-shift-generation":
+        return <DecemberShiftGeneration />;
       case "leave-requests":
         return <VacationManagement />;
       case "work-preferences":
@@ -216,6 +226,14 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 シフト作成・編集
+              </Button>
+              <Button
+                variant={adminView === "december-shift-generation" ? "default" : "ghost"}
+                className="w-full justify-start rounded-xl"
+                onClick={() => handleViewChange("december-shift-generation")}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                12月シフト生成
               </Button>
               <Button
                 variant={adminView === "leave-requests" ? "default" : "ghost"}
