@@ -128,7 +128,7 @@ router.post('/december/ai-check', async (req, res) => {
 
     // OpenAI APIを呼び出し
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -140,7 +140,7 @@ router.post('/december/ai-check', async (req, res) => {
         }
       ],
       temperature: 0.7,
-      max_tokens: 8192,
+      max_tokens: 16384,
       response_format: { type: "json_object" }
     });
 
