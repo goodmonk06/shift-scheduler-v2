@@ -354,6 +354,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [shifts, setShifts] = useState<any>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
+  const [loadedShiftId, setLoadedShiftId] = useState<number | null>(null);
   const [progress, setProgress] = useState(0);
   const [loadingStage, setLoadingStage] = useState('');
   const [printPreview, setPrintPreview] = useState(false);
@@ -435,35 +436,49 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
   // 初期シフトデータの読み込み
   useEffect(() => {
-    if (!initialShiftId) return;
+    // 既に読み込んだシフトIDと同じ場合はスキップ
+    if (!initialShiftId || initialShiftId === loadedShiftId) return;
 
     const loadInitialShiftData = async () => {
       try {
         setIsLoadingInitialData(true);
-        toast.info("シフトデータを読み込んでいます...");
+        console.log('[DecemberShiftGeneration] Loading shift data for ID:', initialShiftId);
 
         // シフト詳細を取得
         const shiftData = await trpcClient.shifts.getById.query({ id: initialShiftId });
+        console.log('[DecemberShiftGeneration] Shift data loaded:', shiftData);
 
         if (!shiftData || !shiftData.shiftDetails || shiftData.shiftDetails.length === 0) {
+          console.error('[DecemberShiftGeneration] No shift details found');
           toast.error("シフトデータが見つかりませんでした");
+          setLoadedShiftId(initialShiftId); // エラーでも再試行を防ぐ
           return;
         }
 
+        console.log('[DecemberShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
+
         // shiftDetails を shifts オブジェクトに変換
         const newShifts: any = {};
+        let matchedCount = 0;
+        let unmatchedEmployees: string[] = [];
+
         for (const detail of shiftData.shiftDetails) {
           // employeeIdからstaff情報を検索
           const staff = staffList.find(s => {
-            // employeeIdとstaffIdのマッピングが必要
-            // ここでは名前で検索する方法を使用
+            // 名前で検索
             return detail.employee?.name === s.name;
           });
 
-          if (!staff) continue;
+          if (!staff) {
+            if (detail.employee?.name && !unmatchedEmployees.includes(detail.employee.name)) {
+              unmatchedEmployees.push(detail.employee.name);
+            }
+            continue;
+          }
+
+          matchedCount++;
 
           // 日付をパース (YYYY-MM-DD形式)
-          const dateObj = new Date(detail.date);
           const key = `${staff.id}_${detail.date}`;
 
           // statusとtimeSlotから表示テキストを生成
@@ -481,17 +496,21 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           };
         }
 
+        console.log('[DecemberShiftGeneration] Matched:', matchedCount, 'Unmatched employees:', unmatchedEmployees);
         setShifts(newShifts);
+        setLoadedShiftId(initialShiftId); // 読み込み完了をマーク
         toast.success(`シフトデータを読み込みました (${shiftData.name})`);
       } catch (error: any) {
-        console.error("Failed to load initial shift data:", error);
+        console.error("[DecemberShiftGeneration] Failed to load initial shift data:", error);
         toast.error("シフトデータの読み込みに失敗しました", { description: error.message });
+        setLoadedShiftId(initialShiftId); // エラーでも再試行を防ぐ
       } finally {
         setIsLoadingInitialData(false);
       }
     };
 
     loadInitialShiftData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialShiftId]);
 
   useEffect(() => {
