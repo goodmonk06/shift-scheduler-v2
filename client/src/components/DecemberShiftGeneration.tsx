@@ -411,16 +411,29 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         }
       }
 
-      await trpcClient.shifts.saveStandalone.mutate({
+      // シフトデータがない場合は警告
+      if (entries.length === 0) {
+        toast.error("保存するシフトデータがありません", {
+          description: "AI自動生成ボタンを押してシフトを作成するか、手動でシフトを入力してください"
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      console.log(`[DecemberShiftGeneration] Saving ${entries.length} shift entries...`);
+
+      const result = await trpcClient.shifts.saveStandalone.mutate({
         year: 2025,
         month: 12,
         name: saveName,
         entries: entries
       });
 
-      toast.success("シフトを保存しました");
+      console.log(`[DecemberShiftGeneration] Save result:`, result);
+      toast.success(`シフトを保存しました (${entries.length}件)`);
       setIsSaveModalOpen(false);
     } catch (error: any) {
+      console.error('[DecemberShiftGeneration] Save failed:', error);
       toast.error("保存に失敗しました", { description: error.message });
     } finally {
       setIsSaving(false);
