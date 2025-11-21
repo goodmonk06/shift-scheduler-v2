@@ -186,4 +186,69 @@ router.post('/december/ai-check', async (req, res) => {
   }
 });
 
+// バックアップファイル一覧を取得
+router.get('/december/backups', async (req, res) => {
+  try {
+    const { readdir, stat } = await import('fs/promises');
+
+    // バックアップディレクトリが存在しない場合は空配列を返す
+    try {
+      await stat(BACKUP_DIR);
+    } catch (error) {
+      return res.json({ backups: [] });
+    }
+
+    // バックアップファイル一覧を取得
+    const files = await readdir(BACKUP_DIR);
+    const backupFiles = files.filter(f => f.endsWith('.json'));
+
+    // ファイル情報を取得
+    const backups = await Promise.all(
+      backupFiles.map(async (filename) => {
+        const filePath = join(BACKUP_DIR, filename);
+        const fileStat = await stat(filePath);
+
+        return {
+          filename,
+          createdAt: fileStat.mtime.toISOString(),
+          size: fileStat.size,
+        };
+      })
+    );
+
+    // 作成日時の降順でソート
+    backups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.json({ backups });
+  } catch (error) {
+    console.error('Error reading backups:', error);
+    res.status(500).json({ error: 'Failed to read backup files' });
+  }
+});
+
+// 特定のバックアップファイルを読み込む
+router.get('/december/backups/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+
+    // セキュリティ: ファイル名にパストラバーサルが含まれていないかチェック
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+
+    const backupFile = join(BACKUP_DIR, filename);
+    const data = await readFile(backupFile, 'utf-8');
+    const shiftData = JSON.parse(data);
+
+    res.json(shiftData);
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      res.status(404).json({ error: 'Backup file not found' });
+    } else {
+      console.error('Error reading backup file:', error);
+      res.status(500).json({ error: 'Failed to read backup file' });
+    }
+  }
+});
+
 export default router;
