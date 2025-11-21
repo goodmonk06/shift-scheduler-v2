@@ -1102,9 +1102,9 @@ export function DecemberShiftGeneration() {
 
           <button
             onClick={openSaveModal}
-            className="flex items-center gap-2 px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-all shadow-lg hover:shadow-emerald-500/30 text-xs font-bold border border-emerald-500"
+            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg hover:from-cyan-400 hover:to-blue-400 transition-all shadow-xl hover:shadow-2xl hover:shadow-cyan-500/50 text-xs font-extrabold border-2 border-white/30 hover:border-white/50 ring-2 ring-cyan-400/50 hover:ring-cyan-300 hover:scale-105"
           >
-            <Save size={14} />
+            <Save size={14} className="drop-shadow-lg" />
             Save to DB
           </button>
 
