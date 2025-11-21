@@ -28,15 +28,15 @@ async function clearAndRegisterAll() {
 
   await db.delete(leaveRequests).where(
     and(
-      gte(leaveRequests.startDate, '2024-12-01'),
-      lte(leaveRequests.endDate, '2025-01-05')
+      gte(leaveRequests.startDate, '2025-12-01'),
+      lte(leaveRequests.endDate, '2026-01-05')
     )
   );
 
   await db.delete(workPreferences).where(
     and(
-      gte(workPreferences.startDate, '2024-12-01'),
-      lte(workPreferences.endDate, '2025-01-05')
+      gte(workPreferences.startDate, '2025-12-01'),
+      lte(workPreferences.endDate, '2026-01-05')
     )
   );
 

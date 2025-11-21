@@ -62,11 +62,11 @@
       emptyOutDir: true,
     },
     server: {
-      port: 3000,
+      port: 5174,
       open: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target: 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
         },

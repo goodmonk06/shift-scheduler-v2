@@ -9,6 +9,7 @@ import type { Shift as ApiShift, ShiftStatus } from "../types/api";
 
 interface ShiftYearlyViewProps {
   onEditShift?: (shiftId: string) => void;
+  onDecemberClick?: () => void;
 }
 
 interface MonthCardData {
@@ -17,7 +18,7 @@ interface MonthCardData {
   status: ShiftStatus | "uncreated";
 }
 
-export function ShiftYearlyView({ onEditShift }: ShiftYearlyViewProps = {}) {
+export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyViewProps = {}) {
   const toast = useToast();
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
@@ -59,6 +60,16 @@ export function ShiftYearlyView({ onEditShift }: ShiftYearlyViewProps = {}) {
 
   // カードクリック処理
   const handleCardClick = async (card: MonthCardData) => {
+    // 12月の場合は外部システムに遷移
+    if (card.month === 12) {
+      if (onDecemberClick) {
+        onDecemberClick();
+      } else {
+        toast.info("12月シフト生成画面へ遷移します");
+      }
+      return;
+    }
+
     if (card.shift) {
       // 既存のシフトがある場合は編集画面へ
       if (onEditShift) {

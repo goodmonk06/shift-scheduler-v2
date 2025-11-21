@@ -154,11 +154,34 @@ export function convertAssignmentsToCellsMap(
 ): Map<string, ShiftCell> {
   const cellsMap = new Map<string, ShiftCell>();
 
-  for (const assignment of assignments) {
+  console.log('[Mapper] Converting', assignments.length, 'assignments to cells');
+
+  for (let i = 0; i < assignments.length; i++) {
+    const assignment = assignments[i];
     const cell = convertAssignmentToCell(assignment, workTimeSlots);
     const key = `${cell.employeeId}-${cell.date}`;
+
+    if (i < 3) {
+      console.log(`[Mapper] Assignment[${i}] → Cell:`, {
+        assignment: {
+          employeeId: assignment.employeeId,
+          employeeDbId: assignment.employeeDbId,
+          date: assignment.date,
+          timeSlotName: assignment.timeSlotName
+        },
+        cell: {
+          employeeId: cell.employeeId,
+          date: cell.date,
+          shiftType: cell.shiftType
+        },
+        key
+      });
+    }
+
     cellsMap.set(key, cell);
   }
+
+  console.log('[Mapper] Created cellsMap with', cellsMap.size, 'entries');
 
   return cellsMap;
 }

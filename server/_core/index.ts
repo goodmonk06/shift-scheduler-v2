@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { simpleLogin, simpleLogout, getSimpleAuthUser, employeeLoginLimiter } from "../simpleAuth";
 import { adminLogin, adminLogout, getAdminAuthUser, adminLoginLimiter } from "../adminAuth";
 import serverRouter from "../routes/server";
+import externalShiftsRouter from "../routes/externalShifts";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 import mysql from "mysql2/promise";
@@ -141,6 +142,9 @@ async function startServer() {
 
   // Server management routes
   app.use("/api/server", serverRouter);
+
+  // External shifts routes
+  app.use("/api/external-shifts", externalShiftsRouter);
 
   // tRPC API
   app.use(

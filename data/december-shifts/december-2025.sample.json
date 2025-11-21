@@ -1,0 +1,33 @@
+{
+  "year": 2025,
+  "month": 12,
+  "shifts": [
+    {
+      "employeeId": 1,
+      "employeeName": "山田太郎",
+      "date": "2025-12-01",
+      "shiftType": "早番",
+      "startTime": "07:00",
+      "endTime": "16:00",
+      "isHoliday": false
+    },
+    {
+      "employeeId": 1,
+      "employeeName": "山田太郎",
+      "date": "2025-12-02",
+      "shiftType": "休み",
+      "startTime": null,
+      "endTime": null,
+      "isHoliday": false
+    },
+    {
+      "employeeId": 2,
+      "employeeName": "佐藤花子",
+      "date": "2025-12-01",
+      "shiftType": "日勤A",
+      "startTime": "08:00",
+      "endTime": "17:00",
+      "isHoliday": false
+    }
+  ]
+}

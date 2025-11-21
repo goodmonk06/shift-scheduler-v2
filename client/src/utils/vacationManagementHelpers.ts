@@ -1,10 +1,22 @@
 // リクエストタイプの設定を取得
-export const getTypeConfig = (type: "休" | "有休" | "時間指定") => {
-  const configs = {
+export const getTypeConfig = (type: string | null | undefined) => {
+  const configs: Record<string, { emoji: string; color: string; label: string }> = {
     "休": { emoji: "🌸", color: "bg-success/10 text-success border-success/20", label: "休" },
     "有休": { emoji: "💐", color: "bg-secondary/10 text-primary border-secondary/20", label: "有休" },
     "時間指定": { emoji: "⏰", color: "bg-warning/10 text-warning border-warning/20", label: "時間指定" },
+    // 英語キー（データベースから返される可能性のある値）
+    "FULL_DAY": { emoji: "🌸", color: "bg-success/10 text-success border-success/20", label: "休" },
+    "PAID_LEAVE": { emoji: "💐", color: "bg-secondary/10 text-primary border-secondary/20", label: "有休" },
+    "PARTIAL": { emoji: "⏰", color: "bg-warning/10 text-warning border-warning/20", label: "時間指定" },
+    "AM_OFF": { emoji: "🌅", color: "bg-info/10 text-info border-info/20", label: "午前休" },
+    "PM_OFF": { emoji: "🌆", color: "bg-info/10 text-info border-info/20", label: "午後休" },
   };
+
+  // デフォルト値を返す
+  if (!type || !configs[type]) {
+    return { emoji: "📅", color: "bg-gray-100 text-gray-600 border-gray-200", label: type || "不明" };
+  }
+
   return configs[type];
 };
 

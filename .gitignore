@@ -106,6 +106,10 @@ temp/
 *.sqlite
 *.sqlite3
 
+# External shift data (actual data files, keep samples)
+data/december-shifts/december-*.json
+!data/december-shifts/december-*.sample.json
+
 # Security - credentials and secrets
 *.pem
 *.key

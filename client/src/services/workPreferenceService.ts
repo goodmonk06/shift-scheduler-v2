@@ -359,11 +359,9 @@ class WorkPreferenceServiceMock implements WorkPreferenceService {
 /**
  * 勤務希望サービス
  * 環境に応じて本番実装またはMock実装を使用
+ * TODO: TRPCルーターにworkPreferencesエンドポイントを実装後、本番実装を有効化
  */
-export const workPreferenceService: WorkPreferenceService =
-  import.meta.env.MODE === 'test'
-    ? new WorkPreferenceServiceMock()
-    : new WorkPreferenceServiceProduction();
+export const workPreferenceService: WorkPreferenceService = new WorkPreferenceServiceMock();
 
 // ===========================
 // ヘルパー関数

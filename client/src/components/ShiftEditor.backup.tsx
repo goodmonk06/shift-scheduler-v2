@@ -19,9 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-import AIGenerationModal from './AIGenerationModal';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import type { ShiftData, ShiftAssignment, AIGenerationConfig, Employee } from "../types/shiftTypes";
 import type { ShiftStatus } from "../types/api";
 import { ShiftCalendarView } from "./ShiftCalendarView";
@@ -122,7 +119,6 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
 
   // 生成方式の選択
   const [generationMethod, setGenerationMethod] = useState<'phase_based' | 'ai'>('phase_based');
-  const [showAIGenerationModal, setShowAIGenerationModal] = useState(false);
 
   // AI生成設定
   const [aiConfig, setAiConfig] = useState<AIGenerationConfig>({
@@ -550,39 +546,8 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     }
   );
 
-  const handleExportPDF = async () => {
-    toast.show('PDF出力を準備中...', 'info');
-
-    try {
-      const element = document.getElementById('shift-table');
-      if (!element) {
-        toast.show('シフト表が見つかりません', 'error');
-        return;
-      }
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        logging: false,
-        useCORS: true,
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a3',
-      });
-
-      const imgWidth = 420;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`シフト表_${viewYear}年${viewMonth}月.pdf`);
-
-      toast.show('PDFを出力しました', 'success');
-    } catch (error) {
-      console.error('PDF export failed:', error);
-      toast.show('PDF出力に失敗しました', 'error');
-    }
+  const handleExportPDF = () => {
+    setShowPDFDialog(true);
   };
 
   const handlePrintPDF = () => {
@@ -685,13 +650,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                 )}
                 {generationMethod === 'ai' && (
                   <Button
-                    onClick={() => {
-                      setShowAIGenerationModal(true);
-                      setTimeout(() => {
-                        setShowAIGenerationModal(false);
-                        handleGenerateAI();
-                      }, 20000);
-                    }}
+                    onClick={() => setShowAIDialog(true)}
                     disabled={isGeneratingAI || isGeneratingPhaseBased}
                     className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600"
                   >
@@ -1328,12 +1287,6 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
             facilityName="グループホーム"
           />
         </div>
-
-        {/* AI生成モーダル */}
-        <AIGenerationModal
-          isOpen={showAIGenerationModal}
-          onComplete={() => setShowAIGenerationModal(false)}
-        />
       </div>
     </div>
   );

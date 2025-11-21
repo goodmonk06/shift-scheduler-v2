@@ -72,8 +72,7 @@ export function VacationRequestCard({ request, onClick }: VacationRequestCardPro
                 className={`${typeConfig.color} border-2`}
               >
                 <span className="mr-1">{typeConfig.emoji}</span>
-                {monthPart}
-                {req.day}
+                {monthPart}{req.day}日
                 {req.type === "時間指定" && ` ${req.startTime}~`}
               </Badge>
             );

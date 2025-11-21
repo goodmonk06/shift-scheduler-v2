@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Clock, Check, X, Sparkles, Settings, Users, CheckCheck, Briefcase } from "lucide-react";
+import { Clock, Check, X, Sparkles, Settings, Users, CheckCheck, Briefcase, Calendar } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
