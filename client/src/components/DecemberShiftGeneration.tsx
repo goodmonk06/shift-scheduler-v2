@@ -1541,6 +1541,40 @@ export function DecemberShiftGeneration() {
           transform-origin: top center;
         }
       `}</style>
+
+      {/* 保存モーダル */}
+      {isSaveModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
+            <h2 className="text-lg font-bold mb-4">シフトを保存</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">バージョン名</label>
+              <input
+                type="text"
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="例: 12月シフト_20251122_001"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setIsSaveModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSaveToDB}
+                disabled={isSaving}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 disabled:opacity-50"
+              >
+                {isSaving ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
