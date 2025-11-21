@@ -50,7 +50,11 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyVie
   // 選択年の12ヶ月分のカードデータを生成
   const monthCards: MonthCardData[] = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
-    const shift = shifts.find(s => s.year === selectedYear && s.month === month);
+    // 同じ年月に複数のシフトがある場合は、最新のもの（IDが最大）を表示
+    const monthShifts = shifts.filter(s => s.year === selectedYear && s.month === month);
+    const shift = monthShifts.length > 0
+      ? monthShifts.reduce((latest, current) => current.id > latest.id ? current : latest)
+      : null;
     return {
       month,
       shift: shift || null,
@@ -252,9 +256,10 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyVie
                     </Badge>
                   </div>
 
-                  {/* 作成日・更新日 */}
+                  {/* シフト名・作成日・更新日 */}
                   {card.shift && (
                     <div className="space-y-1 text-xs text-muted-foreground">
+                      <div className="font-medium text-gray-700 truncate">{card.shift.name}</div>
                       <div>作成: {new Date(card.shift.createdAt).toLocaleDateString("ja-JP")}</div>
                       <div>更新: {new Date(card.shift.updatedAt).toLocaleDateString("ja-JP")}</div>
                     </div>
