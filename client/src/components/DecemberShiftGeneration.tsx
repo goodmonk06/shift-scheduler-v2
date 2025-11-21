@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle } from 'lucide-react';
+import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle, Download, Upload } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 
 // --- 設定定数 ---
@@ -51,7 +51,7 @@ const STAFF_RAW_DATA = [
     constraints: { defaultShift: '9～18', specialRule: 'SUGIYAMA_FRIDAY' }
   },
   { id: '6', name: '梅田 英津子', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-03': '休', '2025-12-25': '休', '2025-12-28': '有給', '2025-12-29': '冬', '2025-12-30': '夜', '2025-12-31': '明', '2026-01-01': '休', '2026-01-03': '夜', '2026-01-04': '明', '2026-01-05': '休' }, constraints: { defaultShift: '9～18', forbiddenTypes: ['LATE', '11～20'] } },
-  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-06': '休', '2025-12-07': '休', '2025-12-28': '夜', '2025-12-30': '明', '2025-12-31': '休', '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', offDayOfWeek: [5], nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO' } },
+  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-06': '休', '2025-12-07': '休', '2025-12-29': '夜', '2025-12-30': '明', '2025-12-31': '休', '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', offDayOfWeek: [5], nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO' } },
   {
     id: '8', name: '上条 やえ子', role: 'staff', qualification: '介護福祉士',
     schedule: { '2025-12-01': '休', '2025-12-07': '休', '2025-12-14': '休', '2025-12-16': '休', '2025-12-21': '休', '2025-12-27': '休', '2025-12-28': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
@@ -357,6 +357,11 @@ export function DecemberShiftGeneration() {
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
 
+  // Backup state
+  const [backups, setBackups] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingBackups, setIsLoadingBackups] = useState(false);
+
   // Scroll state
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isScrolledLeft, setIsScrolledLeft] = useState(false);
@@ -472,6 +477,127 @@ export function DecemberShiftGeneration() {
 
     await runAICheck(shiftData);
   };
+
+  // シフトデータを保存する関数
+  const handleSaveShifts = async () => {
+    try {
+      setIsSaving(true);
+
+      // シフトデータを変換
+      const shiftsArray = dates.flatMap(date => {
+        return staffList.map(staff => {
+          const key = `${staff.id}_${getIsoDate(date)}`;
+          const cell = shifts[key];
+          if (!cell || !cell.customText) return null;
+
+          return {
+            employeeId: staff.id,
+            employeeName: staff.name,
+            date: getIsoDate(date),
+            shiftType: cell.type,
+            customText: cell.customText,
+            isLocked: cell.isLocked || false
+          };
+        }).filter(Boolean);
+      });
+
+      const shiftData = {
+        year: 2025,
+        month: 12,
+        shifts: shiftsArray
+      };
+
+      const response = await fetch('/api/external-shifts/december', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shiftData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'シフトの保存に失敗しました');
+      }
+
+      const result = await response.json();
+      toast.success('シフトを保存しました', {
+        description: result.backupFile ? `バックアップ: ${result.backupFile}` : undefined
+      });
+
+      // バックアップ一覧を再読み込み
+      await fetchBackups();
+    } catch (error: any) {
+      console.error('Save shifts failed:', error);
+      toast.error('シフトの保存に失敗しました', {
+        description: error.message
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // バックアップ一覧を取得する関数
+  const fetchBackups = async () => {
+    try {
+      setIsLoadingBackups(true);
+      const response = await fetch('/api/external-shifts/december/backups');
+
+      if (!response.ok) {
+        throw new Error('バックアップ一覧の取得に失敗しました');
+      }
+
+      const result = await response.json();
+      setBackups(result.backups || []);
+    } catch (error: any) {
+      console.error('Fetch backups failed:', error);
+      toast.error('バックアップ一覧の取得に失敗しました', {
+        description: error.message
+      });
+    } finally {
+      setIsLoadingBackups(false);
+    }
+  };
+
+  // バックアップを読み込む関数
+  const handleLoadBackup = async (filename: string) => {
+    try {
+      const response = await fetch(`/api/external-shifts/december/backups/${filename}`);
+
+      if (!response.ok) {
+        throw new Error('バックアップの読み込みに失敗しました');
+      }
+
+      const result = await response.json();
+      const loadedShifts = result.shifts || [];
+
+      // シフトデータを現在の形式に変換
+      const newShifts: any = {};
+      loadedShifts.forEach((shift: any) => {
+        const key = `${shift.employeeId}_${shift.date}`;
+        newShifts[key] = {
+          type: shift.shiftType,
+          customText: shift.customText,
+          isLocked: shift.isLocked || false
+        };
+      });
+
+      setShifts(newShifts);
+      toast.success('バックアップを読み込みました', {
+        description: filename
+      });
+    } catch (error: any) {
+      console.error('Load backup failed:', error);
+      toast.error('バックアップの読み込みに失敗しました', {
+        description: error.message
+      });
+    }
+  };
+
+  // 初回マウント時にバックアップ一覧を取得
+  useEffect(() => {
+    fetchBackups();
+  }, []);
 
   const startFakeAIGeneration = () => {
     setIsGenerating(true);
@@ -1060,6 +1186,15 @@ export function DecemberShiftGeneration() {
           </button>
 
           <button
+            onClick={handleSaveShifts}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition-all shadow-lg hover:shadow-green-500/30 text-xs font-bold border border-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Save size={14} />
+            {isSaving ? '保存中...' : 'シフト保存'}
+          </button>
+
+          <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-500/30 text-xs font-bold border border-indigo-500"
           >
@@ -1165,6 +1300,38 @@ export function DecemberShiftGeneration() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* バックアップ読み込みセクション */}
+          {backups.length > 0 && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl border-2 border-slate-200 print:hidden">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <Download className="w-4 h-4 text-slate-600" />
+                  バックアップから復元
+                </h3>
+                <button
+                  onClick={fetchBackups}
+                  disabled={isLoadingBackups}
+                  className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 disabled:opacity-50"
+                >
+                  <RefreshCw size={12} className={isLoadingBackups ? 'animate-spin' : ''} />
+                  更新
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {backups.map((filename) => (
+                  <button
+                    key={filename}
+                    onClick={() => handleLoadBackup(filename)}
+                    className="text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 transition-all font-medium flex items-center gap-2 shadow-sm"
+                  >
+                    <Upload size={12} />
+                    {filename.replace('december_shift_backup_', '').replace('.json', '')}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -1444,6 +1611,13 @@ export function DecemberShiftGeneration() {
             width: 100%;
             height: 100%;
           }
+
+          /* ヘッダーとボタン類を非表示 */
+          header {
+            display: none !important;
+          }
+
+          /* print:hiddenクラスの要素を非表示 */
           .print\\:hidden {
             display: none !important;
           }
@@ -1456,22 +1630,54 @@ export function DecemberShiftGeneration() {
           .print\\:bg-transparent {
             background-color: transparent !important;
           }
+          .print\\:p-0 {
+            padding: 0 !important;
+          }
+          .print\\:mb-2 {
+            margin-bottom: 0.5rem !important;
+          }
 
+          /* テーブルのボーダー設定 */
           table, th, td {
             border: 1px solid #000 !important;
             border-collapse: collapse !important;
           }
 
+          /* メインコンテナ */
           main {
             margin: 0;
             padding: 0;
             width: 100%;
             background: white !important;
-            overflow: visible !important; /* Print fix */
+            overflow: visible !important;
           }
-          /* Print specific fix for sticky headers which might be annoying in print */
+
+          /* シフト表コンテナ */
+          main > div {
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 10px !important;
+          }
+
+          /* スティッキーヘッダーの位置をリセット */
           thead tr th, tbody tr td {
             position: static !important;
+          }
+
+          /* セル内の編集アイコンなどを非表示 */
+          .print\\:cursor-default {
+            cursor: default !important;
+          }
+          .print\\:ring-0 {
+            box-shadow: none !important;
+          }
+
+          /* ズームをリセット */
+          main > div {
+            zoom: 1 !important;
+            transform: none !important;
           }
         }
 
