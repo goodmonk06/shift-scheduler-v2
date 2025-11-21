@@ -51,20 +51,29 @@ router.post('/december', async (req, res) => {
   try {
     const shiftData = req.body;
 
-    // バックアップを作成
-    await createBackup(shiftData);
+    // データディレクトリが存在しない場合は作成
+    await mkdir(DATA_DIR, { recursive: true });
+
+    // バックアップを作成（エラーでも続行）
+    const backupFile = await createBackup(shiftData);
 
     // メインファイルを保存
     await writeFile(DECEMBER_FILE, JSON.stringify(shiftData, null, 2), 'utf-8');
 
+    console.log('[DecemberShift] Saved successfully:', DECEMBER_FILE);
+
     res.json({
       success: true,
       message: 'Shift data saved successfully',
-      backup: true
+      backup: backupFile !== null,
+      backupFile: backupFile ? backupFile.split('/').pop() : null
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error saving december shifts:', error);
-    res.status(500).json({ error: 'Failed to save shift data' });
+    res.status(500).json({
+      error: 'Failed to save shift data',
+      message: error.message || 'Unknown error'
+    });
   }
 });
 

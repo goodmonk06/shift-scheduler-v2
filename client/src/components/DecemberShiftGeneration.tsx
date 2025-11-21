@@ -358,7 +358,7 @@ export function DecemberShiftGeneration() {
   const [checkResult, setCheckResult] = useState<any>(null);
 
   // Backup state
-  const [backups, setBackups] = useState<string[]>([]);
+  const [backups, setBackups] = useState<Array<{filename: string; createdAt: string; size: number}>>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingBackups, setIsLoadingBackups] = useState(false);
 
@@ -1321,14 +1321,14 @@ export function DecemberShiftGeneration() {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {backups.map((filename) => (
+                {backups.map((backup) => (
                   <button
-                    key={filename}
-                    onClick={() => handleLoadBackup(filename)}
+                    key={backup.filename}
+                    onClick={() => handleLoadBackup(backup.filename)}
                     className="text-xs px-3 py-2 bg-white border border-slate-300 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 transition-all font-medium flex items-center gap-2 shadow-sm"
                   >
                     <Upload size={12} />
-                    {filename.replace('december_shift_backup_', '').replace('.json', '')}
+                    {backup.filename.replace('december-2025_', '').replace('.json', '')}
                   </button>
                 ))}
               </div>
