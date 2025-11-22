@@ -487,10 +487,10 @@ export function ShiftTableV2({
 
           {/* 生成ボタン（追加） */}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 text-gray-900">
               ルールベース生成
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="bg-white hover:bg-gray-50 text-gray-900">
               AI生成
             </Button>
           </div>

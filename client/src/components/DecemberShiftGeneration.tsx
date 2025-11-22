@@ -1638,7 +1638,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               <button
                 onClick={handleSaveToDB}
                 disabled={isSaving}
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-base shadow-lg hover:shadow-xl"
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed font-semibold transition-all text-base shadow-lg hover:shadow-xl"
               >
                 {isSaving ? '保存中...' : '保存'}
               </button>

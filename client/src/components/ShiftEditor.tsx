@@ -706,14 +706,14 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
                 )}
               </>
             )}
-            <Button variant="outline" onClick={handleExportPDF} className="rounded-xl bg-white hover:bg-gray-50 text-gray-900">
-              <FileDown className="w-4 h-4 mr-2" />
-              PDF出力
+            <Button variant="outline" onClick={handleExportPDF} className="rounded-xl bg-white hover:bg-gray-50 text-black border-gray-300">
+              <FileDown className="w-4 h-4 mr-2 text-black" />
+              <span className="text-black">PDF出力</span>
             </Button>
             {currentShift.status !== "ai_generated" && (
-              <Button variant="outline" onClick={handleSave} className="rounded-xl bg-white hover:bg-gray-50 text-gray-900">
-                <Save className="w-4 h-4 mr-2" />
-                保存
+              <Button variant="outline" onClick={handleSave} className="rounded-xl bg-white hover:bg-gray-50 text-black border-gray-300">
+                <Save className="w-4 h-4 mr-2 text-black" />
+                <span className="text-black">保存</span>
               </Button>
             )}
           </div>
