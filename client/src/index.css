@@ -6018,14 +6018,15 @@ html {
 }
 
 @media print {
-  /* ページ設定: A3横 */
+  /* ページ設定: A3横、余白を最小に */
   @page {
     size: A3 landscape;
-    margin: 5mm;
+    margin: 3mm;
   }
 
   body {
-    margin: 0;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   /* 画面用要素を非表示 */
@@ -6042,13 +6043,15 @@ html {
     display: block !important;
   }
 
-  /* 印刷ヘッダーのスタイル */
+  /* 印刷ヘッダーのスタイル - 上部に配置、余白最小 */
   .print-header {
-    font-size: 16pt;
+    font-size: 14pt;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 4mm;
+    margin: 0 0 2mm 0 !important;
+    padding: 0 !important;
     font-family: serif;
+    line-height: 1.2;
   }
 
   /* シフト表のルートコンテナ */
@@ -6057,21 +6060,45 @@ html {
     width: 100% !important;
     max-width: 100% !important;
     padding: 0 !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     zoom: 1 !important;
     transform: none !important;
+    overflow: visible !important;
   }
 
-  /* テーブルを幅いっぱいに */
+  /* テーブルを幅いっぱいに、フォントサイズを小さく */
   .shift-print-root table {
     width: 100% !important;
+    max-width: 100% !important;
     table-layout: fixed;
     border-collapse: collapse;
+    font-size: 7pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* セルの余白調整 */
+  /* thead を各ページで繰り返し */
+  .shift-print-root thead {
+    display: table-header-group;
+  }
+
+  /* セルの余白を最小に、フォントサイズを小さく */
   .shift-print-root th,
   .shift-print-root td {
-    padding: 2px !important;
+    padding: 0.5mm !important;
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    border: 0.3pt solid #000 !important;
+  }
+
+  /* 不要な影やエフェクトを削除 */
+  .shift-print-root * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* stickyをリセット */
+  .shift-print-root .sticky {
+    position: static !important;
   }
 }
