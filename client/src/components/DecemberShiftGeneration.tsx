@@ -691,7 +691,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         logging: false,
         backgroundColor: '#ffffff',
         removeContainer: true,
-        foreignObjectRendering: false, // oklchエラー回避のためDOMレンダリングを無効化
         onclone: (clonedDoc) => {
           // 全てのスタイルシート・スタイルタグを完全削除
           const allStyles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
@@ -700,6 +699,22 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           // headにあるスタイルも削除
           const headStyles = clonedDoc.head?.querySelectorAll('style, link[rel="stylesheet"]');
           headStyles?.forEach(el => el.remove());
+
+          // oklch色を含む全ての要素の属性を検査して削除
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el: Element) => {
+            const htmlEl = el as HTMLElement;
+
+            // style属性にoklchが含まれている場合は削除
+            if (htmlEl.getAttribute('style')?.includes('oklch')) {
+              htmlEl.removeAttribute('style');
+            }
+
+            // class属性も一旦削除（Tailwindのoklchクラスを回避）
+            if (htmlEl.getAttribute('class')) {
+              htmlEl.removeAttribute('class');
+            }
+          });
 
           // クローンされた要素に事前収集したスタイルを適用
           const clonedRoot = clonedDoc.querySelector('.overflow-visible') as HTMLElement;
@@ -710,18 +725,17 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
             while (clonedNode && idx < elementsArray.length) {
               const cs = computedStylesMap.get(idx);
-              if (cs) {
-                // 重要な視覚スタイルのみを明示的に適用
-                clonedNode.style.cssText = ''; // 既存のスタイルをクリア
+              if (cs && clonedNode.style) {
+                // 重要な視覚スタイルのみを明示的に適用（oklchを含まないrgb値のみ）
 
                 // 色関連（oklchが残らないよう計算済みのrgb値を使用）
-                if (cs.color && cs.color !== 'rgb(0, 0, 0)') {
+                if (cs.color && cs.color.startsWith('rgb')) {
                   clonedNode.style.color = cs.color;
                 }
-                if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                if (cs.backgroundColor && cs.backgroundColor.startsWith('rgb')) {
                   clonedNode.style.backgroundColor = cs.backgroundColor;
                 }
-                if (cs.borderColor && cs.borderColor !== 'rgb(0, 0, 0)') {
+                if (cs.borderColor && cs.borderColor.startsWith('rgb')) {
                   clonedNode.style.borderColor = cs.borderColor;
                 }
 
