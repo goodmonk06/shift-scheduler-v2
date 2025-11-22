@@ -1047,55 +1047,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       // 遅番未配置の警告を状態に保存
       setLateShiftWarnings(lateShiftFailures);
 
-
-      // 5. 正社員の休日確保（12月のみで必ず9日）
-      staffList.forEach(staff => {
-        if (!FULL_TIME_STAFF_IDS.includes(staff.id)) return;
-
-        // 12月の日付のみを抽出
-        const decemberDates = dates.filter(d => d.getMonth() === 11); // 11 = 12月
-
-        // 12月の休日数をカウント
-        let currentHolidays = 0;
-        decemberDates.forEach(date => {
-          const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
-          if (s && (s.type === 'OFF' || s.customText === '休')) currentHolidays++;
-        });
-
-        // 9日を超えている場合は、12月の休日を減らす
-        if (currentHolidays > REQUIRED_HOLIDAYS_FULLTIME) {
-          let toRemove = currentHolidays - REQUIRED_HOLIDAYS_FULLTIME;
-          const holidayKeys: string[] = [];
-
-          decemberDates.forEach(date => {
-            const key = `${staff.id}_${getIsoDate(date)}`;
-            const s = newShifts[key];
-            if (s && !s.isLocked && (s.type === 'OFF' || s.customText === '休')) {
-              holidayKeys.push(key);
-            }
-          });
-
-          // ランダムに休日を削除
-          const shuffled = holidayKeys.sort(() => 0.5 - Math.random());
-          for (let i = 0; i < toRemove && i < shuffled.length; i++) {
-            newShifts[shuffled[i]] = null;
-          }
-          currentHolidays = REQUIRED_HOLIDAYS_FULLTIME;
-        }
-
-        // 9日未満の場合は、12月に休日を追加
-        let needed = REQUIRED_HOLIDAYS_FULLTIME - currentHolidays;
-        if (needed > 0) {
-          const candidates = decemberDates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
-          const shuffled = candidates.sort(() => 0.5 - Math.random());
-          for (let i = 0; i < needed && i < shuffled.length; i++) {
-            const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
-            newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-          }
-        }
-      });
-
-      // 6. 残りの空欄を埋める
+      // 5. 残りの空欄を埋める
       staffList.forEach(staff => {
         let specialShiftCount = 0;
 
@@ -1188,66 +1140,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             streak = 0;
           }
         });
-      });
-
-      // 最終チェック: 正社員の休日数を絶対に12月で9日にする
-      staffList.forEach(staff => {
-        if (!FULL_TIME_STAFF_IDS.includes(staff.id)) return;
-
-        const decemberDates = dates.filter(d => d.getMonth() === 11);
-
-        // 12月の休日数をカウント
-        let currentHolidays = 0;
-        decemberDates.forEach(date => {
-          const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
-          if (s && (s.type === 'OFF' || s.customText === '休')) currentHolidays++;
-        });
-
-        // 9日を超えている場合は削除
-        if (currentHolidays > REQUIRED_HOLIDAYS_FULLTIME) {
-          let toRemove = currentHolidays - REQUIRED_HOLIDAYS_FULLTIME;
-          const holidayKeys: string[] = [];
-
-          decemberDates.forEach(date => {
-            const key = `${staff.id}_${getIsoDate(date)}`;
-            const s = newShifts[key];
-            if (s && !s.isLocked && (s.type === 'OFF' || s.customText === '休')) {
-              holidayKeys.push(key);
-            }
-          });
-
-          const shuffled = holidayKeys.sort(() => 0.5 - Math.random());
-          for (let i = 0; i < toRemove && i < shuffled.length; i++) {
-            const key = shuffled[i];
-            const dateStr = key.split('_')[1];
-            const dateObj = new Date(dateStr);
-
-            // デフォルトのシフトに戻す
-            const cons = staff.constraints || {};
-            const defaultText = normalizeShiftText(cons.defaultShift || '9～18');
-            newShifts[key] = { type: 'DAY', customText: defaultText, isLocked: false };
-          }
-        }
-
-        // 9日未満の場合は追加
-        if (currentHolidays < REQUIRED_HOLIDAYS_FULLTIME) {
-          let needed = REQUIRED_HOLIDAYS_FULLTIME - currentHolidays;
-          const candidates: Date[] = [];
-
-          decemberDates.forEach(date => {
-            const key = `${staff.id}_${getIsoDate(date)}`;
-            const s = newShifts[key];
-            if (s && !s.isLocked && s.type !== 'OFF' && s.customText !== '休' && s.customText !== '夜' && s.customText !== '明' && s.customText !== '有' && s.customText !== '有給') {
-              candidates.push(date);
-            }
-          });
-
-          const shuffled = candidates.sort(() => 0.5 - Math.random());
-          for (let i = 0; i < needed && i < shuffled.length; i++) {
-            const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
-            newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-          }
-        }
       });
 
       setShifts(newShifts);
@@ -1893,7 +1785,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden">{stats.days}</td>
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.hours}</td>
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.nightCount}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.holidays}</td>
+                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.paidHolidays}</td>
                     </tr>
                   );
