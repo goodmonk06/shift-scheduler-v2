@@ -691,10 +691,15 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         logging: false,
         backgroundColor: '#ffffff',
         removeContainer: true,
+        foreignObjectRendering: false, // oklchエラー回避のためDOMレンダリングを無効化
         onclone: (clonedDoc) => {
-          // 外部CSSスタイルシートを削除（oklchを含むため）
-          const styleSheets = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
-          styleSheets.forEach(sheet => sheet.remove());
+          // 全てのスタイルシート・スタイルタグを完全削除
+          const allStyles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          allStyles.forEach(el => el.remove());
+
+          // headにあるスタイルも削除
+          const headStyles = clonedDoc.head?.querySelectorAll('style, link[rel="stylesheet"]');
+          headStyles?.forEach(el => el.remove());
 
           // クローンされた要素に事前収集したスタイルを適用
           const clonedRoot = clonedDoc.querySelector('.overflow-visible') as HTMLElement;
@@ -706,20 +711,36 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             while (clonedNode && idx < elementsArray.length) {
               const cs = computedStylesMap.get(idx);
               if (cs) {
-                // 計算済みの色とスタイルをクローンに適用
-                if (cs.color) clonedNode.style.color = cs.color;
+                // 重要な視覚スタイルのみを明示的に適用
+                clonedNode.style.cssText = ''; // 既存のスタイルをクリア
+
+                // 色関連（oklchが残らないよう計算済みのrgb値を使用）
+                if (cs.color && cs.color !== 'rgb(0, 0, 0)') {
+                  clonedNode.style.color = cs.color;
+                }
                 if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
                   clonedNode.style.backgroundColor = cs.backgroundColor;
                 }
-                if (cs.borderColor) clonedNode.style.borderColor = cs.borderColor;
+                if (cs.borderColor && cs.borderColor !== 'rgb(0, 0, 0)') {
+                  clonedNode.style.borderColor = cs.borderColor;
+                }
+
+                // ボーダー
                 if (cs.borderWidth) clonedNode.style.borderWidth = cs.borderWidth;
                 if (cs.borderStyle) clonedNode.style.borderStyle = cs.borderStyle;
+
+                // テキストスタイル
                 if (cs.fontSize) clonedNode.style.fontSize = cs.fontSize;
                 if (cs.fontWeight) clonedNode.style.fontWeight = cs.fontWeight;
                 if (cs.fontFamily) clonedNode.style.fontFamily = cs.fontFamily;
                 if (cs.textAlign) clonedNode.style.textAlign = cs.textAlign;
+
+                // レイアウト
                 if (cs.padding) clonedNode.style.padding = cs.padding;
                 if (cs.margin) clonedNode.style.margin = cs.margin;
+                if (cs.width) clonedNode.style.width = cs.width;
+                if (cs.height) clonedNode.style.height = cs.height;
+                if (cs.display) clonedNode.style.display = cs.display;
               }
 
               clonedNode = clonedWalker.nextNode() as HTMLElement | null;
