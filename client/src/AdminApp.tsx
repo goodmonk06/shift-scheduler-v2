@@ -151,9 +151,9 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
 
   return (
     <VacationProvider>
-      <div className="flex" data-user-type="admin">
+      <div className="flex h-[calc(100vh-73px)] overflow-hidden" data-user-type="admin">
         {/* Admin Sidebar Navigation */}
-        <aside className={`${isSidebarOpen ? 'w-64' : 'w-16'} bg-card border-r min-h-[calc(100vh-73px)] print:hidden transition-all duration-300 relative`}>
+        <aside className={`${isSidebarOpen ? 'w-64' : 'w-16'} bg-card border-r h-full print:hidden transition-all duration-300 relative flex-shrink-0`}>
         {/* Toggle Button */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -161,7 +161,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
         >
           <Menu className="w-4 h-4" />
         </button>
-        <ScrollArea className="h-[calc(100vh-73px)]">
+        <ScrollArea className="h-full">
           <nav className={`space-y-1 p-4 ${!isSidebarOpen && 'px-2'}`}>
             {/* メイン */}
             <div className="space-y-1">
@@ -343,7 +343,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 h-full overflow-auto">
         {renderAdminView()}
 
         {/* December Shift Selection Modal */}
