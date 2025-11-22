@@ -1935,16 +1935,16 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
             </h1>
 
-            <div id="grid-wrapper" className={`shift-print-root overflow-visible ${printPreview ? 'm-0 p-0 w-full' : ''}`}>
+            <div id="grid-wrapper" className={`shift-print-root ${printPreview ? 'overflow-visible m-0 p-0 w-full' : 'overflow-auto max-h-[calc(100vh-200px)]'}`}>
             <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative table-fixed">
               <thead>
-                <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
-                  <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-30 min-w-[120px] shadow-md sticky left-0 z-30" colSpan={1}>
+                <tr className="bg-slate-50 print:bg-transparent sticky top-0 z-40" style={{ height: `${eventRowHeight}px` }}>
+                  <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-30 min-w-[120px] shadow-lg sticky left-0 top-0 z-[60] border-r-2 border-b-2 border-r-slate-700 border-b-slate-700" colSpan={1}>
                     行事予定
                   </th>
 
                   {dates.map(date => (
-                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent w-[90px] min-w-[90px]">
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent w-[90px] min-w-[90px]">
                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
                         {getEventName(date)}
                       </div>
@@ -1953,9 +1953,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={4}></th>
                 </tr>
 
-                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-40 shadow-md">
+                <tr className="bg-slate-100 print:bg-transparent h-12 sticky z-50 shadow-md" style={{ top: `${eventRowHeight}px` }}>
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 z-50">氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 z-[60] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700" style={{ top: `${eventRowHeight}px` }}>氏名</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
@@ -1984,7 +1984,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   return (
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
                       {/* 氏名列 */}
-                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-md w-30 min-w-[120px]">
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-lg border-r-2 border-r-slate-700 w-30 min-w-[120px]">
                         {isScrolledLeft ? getSurname(staff.name) : staff.name}
                       </td>
                       {dates.map(date => {
