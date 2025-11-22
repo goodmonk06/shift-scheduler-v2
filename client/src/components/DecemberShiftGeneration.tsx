@@ -627,15 +627,15 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     try {
       toast.info("PDF作成中...");
 
-      // テーブル要素を取得
-      const tableElement = document.querySelector('table');
-      if (!tableElement) {
+      // シフトテーブル全体を含む要素を取得（overflow-visibleのdiv）
+      const tableContainer = document.querySelector('.overflow-visible');
+      if (!tableContainer) {
         toast.error("テーブルが見つかりません");
         return;
       }
 
-      // html2canvasでテーブルを画像化（高解像度）
-      const canvas = await html2canvas(tableElement, {
+      // html2canvasでテーブル全体を画像化（高解像度）
+      const canvas = await html2canvas(tableContainer as HTMLElement, {
         scale: 3, // 高解像度化
         useCORS: true,
         logging: false,
