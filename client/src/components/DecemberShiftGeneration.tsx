@@ -761,7 +761,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       });
 
       // 2. 夜勤自動割り当て
-      for (let i = 0; i < dates.length - 1; i++) {
+      for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
         const keySuffix = getIsoDate(date);
 
@@ -812,7 +812,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       }
 
       // 2.1 夜勤が0の日を強制的に埋めるフォールバック
-      for (let i = 0; i < dates.length - 1; i++) {
+      for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
         const keySuffix = getIsoDate(date);
 
