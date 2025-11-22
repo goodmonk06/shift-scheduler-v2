@@ -1076,6 +1076,66 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         });
       });
 
+      // 最終チェック: 正社員の休日数を絶対に12月で9日にする
+      staffList.forEach(staff => {
+        if (!FULL_TIME_STAFF_IDS.includes(staff.id)) return;
+
+        const decemberDates = dates.filter(d => d.getMonth() === 11);
+
+        // 12月の休日数をカウント
+        let currentHolidays = 0;
+        decemberDates.forEach(date => {
+          const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
+          if (s && (s.type === 'OFF' || s.customText === '休')) currentHolidays++;
+        });
+
+        // 9日を超えている場合は削除
+        if (currentHolidays > REQUIRED_HOLIDAYS_FULLTIME) {
+          let toRemove = currentHolidays - REQUIRED_HOLIDAYS_FULLTIME;
+          const holidayKeys: string[] = [];
+
+          decemberDates.forEach(date => {
+            const key = `${staff.id}_${getIsoDate(date)}`;
+            const s = newShifts[key];
+            if (s && !s.isLocked && (s.type === 'OFF' || s.customText === '休')) {
+              holidayKeys.push(key);
+            }
+          });
+
+          const shuffled = holidayKeys.sort(() => 0.5 - Math.random());
+          for (let i = 0; i < toRemove && i < shuffled.length; i++) {
+            const key = shuffled[i];
+            const dateStr = key.split('_')[1];
+            const dateObj = new Date(dateStr);
+
+            // デフォルトのシフトに戻す
+            const cons = staff.constraints || {};
+            const defaultText = normalizeShiftText(cons.defaultShift || '9～18');
+            newShifts[key] = { type: 'DAY', customText: defaultText, isLocked: false };
+          }
+        }
+
+        // 9日未満の場合は追加
+        if (currentHolidays < REQUIRED_HOLIDAYS_FULLTIME) {
+          let needed = REQUIRED_HOLIDAYS_FULLTIME - currentHolidays;
+          const candidates: Date[] = [];
+
+          decemberDates.forEach(date => {
+            const key = `${staff.id}_${getIsoDate(date)}`;
+            const s = newShifts[key];
+            if (s && !s.isLocked && s.type !== 'OFF' && s.customText !== '休' && s.customText !== '夜' && s.customText !== '明' && s.customText !== '有' && s.customText !== '有給') {
+              candidates.push(date);
+            }
+          });
+
+          const shuffled = candidates.sort(() => 0.5 - Math.random());
+          for (let i = 0; i < needed && i < shuffled.length; i++) {
+            const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
+            newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+          }
+        }
+      });
+
       setShifts(newShifts);
     } catch (e) {
       console.error("Generation Error:", e);
