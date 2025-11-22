@@ -388,11 +388,11 @@ export async function getShiftById(id: number) {
       createdAt: shiftDetails.createdAt,
       updatedAt: shiftDetails.updatedAt,
       employee: employees,
-      timeSlot: timeSlots,
+      timeSlot: workTimeSlots,
     })
     .from(shiftDetails)
     .leftJoin(employees, eq(shiftDetails.employeeId, employees.id))
-    .leftJoin(timeSlots, eq(shiftDetails.timeSlotId, timeSlots.id))
+    .leftJoin(workTimeSlots, eq(shiftDetails.timeSlotId, workTimeSlots.id))
     .where(eq(shiftDetails.shiftId, id));
 
   return {
