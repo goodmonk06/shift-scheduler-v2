@@ -1920,8 +1920,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
             </h1>
 
-            <div id="grid-wrapper" className={`shift-print-root ${printPreview ? 'overflow-visible m-0 p-0 w-full' : ''}`}>
-            <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative table-auto">
+            <div id="grid-wrapper" className={`shift-print-root overflow-x-auto ${printPreview ? 'overflow-visible m-0 p-0 w-full' : ''}`}>
+            <table className="min-w-max text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative table-auto">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
                   <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-30 min-w-[120px]" colSpan={1}>
@@ -1956,11 +1956,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="border border-slate-600 w-[270px] min-w-[270px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3">日数</th>
-                  <th className="border border-slate-600 w-[270px] min-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">時間</th>
-                  <th className="border border-slate-600 w-[270px] min-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">夜勤</th>
-                  <th className="border border-slate-600 w-[270px] min-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">休日</th>
-                  <th className="border border-slate-600 w-[270px] min-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">有給</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3">日数</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">時間</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">夜勤</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">休日</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">有給</th>
                 </tr>
               </thead>
               <tbody>
@@ -2052,7 +2052,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             onClick={(e) => handleCellClick(e, staff, date)}
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
                             className={`
-                            border border-slate-600 p-0 overflow-hidden
+                            border border-slate-600 p-0 overflow-hidden relative z-[1]
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
@@ -2060,7 +2060,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             style={styles}
                             title={isLockedAndActive ? "固定シフト (編集不可)" : "右クリックでクイック選択"}
                           >
-                            <div className="w-full h-full relative">
+                            <div className="w-full h-full">
                               {isLockedAndActive && (
                                 <div className="absolute top-0.5 right-0.5 text-slate-500 print:hidden opacity-70">
                                   <Lock size={8} strokeWidth={3} />
@@ -2076,11 +2076,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           </td>
                         );
                       })}
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-[270px] min-w-[270px] text-center px-3">{stats.days}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[270px] min-w-[270px] text-center px-3">{stats.hours}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[270px] min-w-[270px] text-center px-3">{stats.nightCount}</td>
-                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-[270px] min-w-[270px] text-center px-3 ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[270px] min-w-[270px] text-center px-3">{stats.paidHolidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.days}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.hours}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.nightCount}</td>
+                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3 ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.paidHolidays}</td>
                     </tr>
                   );
                 })}
