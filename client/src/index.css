@@ -6039,11 +6039,12 @@ html {
     visibility: visible;
   }
 
-  /* print-rootを絶対配置にして他の要素の影響を排除 */
+  /* print-rootを中央配置にして他の要素の影響を排除 */
   #print-root {
     position: absolute !important;
     top: 0 !important;
-    left: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -6064,9 +6065,9 @@ html {
     break-before: avoid;
     /* A3横サイズ(420mm) - 左右余白(12mm) */
     width: calc(420mm - 12mm);
-    /* A3横サイズ(297mm) - 上下余白(12mm) - タイトル高さ(約14mm) */
-    height: calc(297mm - 12mm - 14mm);
-    overflow: hidden;
+    /* 高さ制限を外して全体を表示 */
+    max-height: calc(297mm - 12mm - 14mm);
+    overflow: visible;
   }
 
   /* テーブル内で改ページしない */
