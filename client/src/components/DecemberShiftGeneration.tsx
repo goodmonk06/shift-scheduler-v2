@@ -175,11 +175,13 @@ const getNightShiftCandidates = (staffList: any[]): string[] => {
 
   const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
 
-  const primary   = base.filter(s => FULL_TIME_STAFF_IDS.includes(s.id) && s.id !== '2' && s.id !== '1');
+  const ohashi    = base.filter(s => s.id === '7'); // 大橋（最優先）
+  const primary   = base.filter(s => FULL_TIME_STAFF_IDS.includes(s.id) && s.id !== '2' && s.id !== '1' && s.id !== '7');
   const yamaguchi = base.filter(s => s.id === '2'); // 山口
   const takano    = base.filter(s => s.id === '1'); // 高野
 
   return [
+    ...shuffle(ohashi),      // 大橋を最優先
     ...shuffle(primary),
     ...shuffle(yamaguchi),
     ...shuffle(takano),
