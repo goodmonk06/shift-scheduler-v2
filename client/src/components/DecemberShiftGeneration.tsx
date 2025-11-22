@@ -1526,16 +1526,26 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     }
   };
 
+  // ポップアップを閉じる処理（ハイライトもクリア）
+  const closePopover = () => {
+    setPopoverState((prev: any) => ({ ...prev, isOpen: false }));
+    setHoveredCell({ staffId: null, dateStr: null });
+  };
+
   const handleCellClick = (e: React.MouseEvent, staff: any, date: Date) => {
     const key = `${staff.id}_${getIsoDate(date)}`;
     const currentVal = shifts[key] || { type: 'OFF', customText: '', isLocked: false };
     if (editLockEnabled && currentVal.isLocked) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    const dateStr = getIsoDate(date);
+
+    // ポップアップを開いてハイライトを固定
+    setHoveredCell({ staffId: staff.id, dateStr: dateStr });
     setPopoverState({
       isOpen: true,
       staffId: staff.id,
       date: date,
-      dateStr: getIsoDate(date),
+      dateStr: dateStr,
       staffName: staff.name,
       targetRect: rect,
       currentValue: currentVal
@@ -1556,7 +1566,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       staffId: staff.id,
       date: date
     });
-    setPopoverState((prev: any) => ({ ...prev, isOpen: false }));
+    closePopover();
   };
 
   const applyQuickShift = (type: string, customText: string) => {
@@ -1573,13 +1583,13 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     if (!popoverState.staffId) return;
     const key = `${popoverState.staffId}_${getIsoDate(popoverState.date)}`;
     setShifts((prev: any) => ({ ...prev, [key]: { ...prev[key], ...newVal } }));
-    setPopoverState((prev: any) => ({ ...prev, isOpen: false }));
+    closePopover();
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popoverState.isOpen && !(event.target as Element).closest('.shift-popover') && !(event.target as Element).closest('td')) {
-        setPopoverState((prev: any) => ({ ...prev, isOpen: false }));
+        closePopover();
       }
       if (contextMenu && !(event.target as Element).closest('.context-menu')) {
         setContextMenu(null);
@@ -1737,7 +1747,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 <span className="text-sm text-slate-600 font-medium">{popoverState.staffName}</span>
               </div>
             </div>
-            <button onClick={() => setPopoverState((prev: any) => ({ ...prev, isOpen: false }))} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors">
+            <button onClick={closePopover} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors">
               <X size={20} />
             </button>
           </div>
@@ -2183,30 +2193,51 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.backgroundColor = isLockedAndActive ? '#f9a8d4' : '#fce7f3'; // Pink 100
                         }
 
-                        // ハイライトを適用 (色が設定されていない場合のみ)
-                        if (!styles.backgroundColor && (isHoveredRow || isHoveredCol)) {
-                          styles.backgroundColor = '#f8fafc'; // Very light slate
-                        }
-
                         const isNightPrint = cellData.customText === '夜';
 
-                        // 選択中のセルかどうかをチェック
+                        // 現在のセル位置
                         const currentDateStr = getIsoDate(date);
-                        const isSelectedCell = popoverState.isOpen &&
+
+                        // ポップアップで選択中のセルかどうか
+                        const isPopoverCell = popoverState.isOpen &&
                           String(staff.id) === String(popoverState.staffId) &&
                           popoverState.dateStr &&
                           currentDateStr === popoverState.dateStr;
+
+                        // ホバー中 OR ポップアップで選択中のセル = 濃いハイライト
+                        const isCurrentCell = (isHoveredRow && isHoveredCol) || isPopoverCell;
+
+                        // ハイライトを適用
+                        if (isCurrentCell) {
+                          // 現在のセル：濃い青色のハイライトと枠線
+                          if (!styles.backgroundColor) {
+                            styles.backgroundColor = '#dbeafe'; // blue-100
+                          }
+                          styles.boxShadow = 'inset 0 0 0 3px #3b82f6'; // blue-500の太い枠線効果
+                          styles.position = 'relative';
+                          styles.zIndex = 10;
+                        } else if (!styles.backgroundColor && (isHoveredRow || isHoveredCol)) {
+                          // 行または列のホバー：薄いハイライト（色が未設定の場合のみ）
+                          styles.backgroundColor = '#f8fafc'; // Very light slate
+                        }
 
                         return (
                           <td
                             key={key}
                             onClick={(e) => handleCellClick(e, staff, date)}
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
-                            onMouseEnter={() => setHoveredCell({ staffId: staff.id, dateStr: getIsoDate(date) })}
-                            onMouseLeave={() => setHoveredCell({ staffId: null, dateStr: null })}
+                            onMouseEnter={() => {
+                              if (!popoverState.isOpen) {
+                                setHoveredCell({ staffId: staff.id, dateStr: getIsoDate(date) });
+                              }
+                            }}
+                            onMouseLeave={() => {
+                              if (!popoverState.isOpen) {
+                                setHoveredCell({ staffId: null, dateStr: null });
+                              }
+                            }}
                             className={`
                             border border-slate-600 p-0 overflow-hidden relative
-                            ${isSelectedCell ? '!ring-4 !ring-indigo-600 !z-20 !shadow-2xl' : ''}
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:z-10 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
