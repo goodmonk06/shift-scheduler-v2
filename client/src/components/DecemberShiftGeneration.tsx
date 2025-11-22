@@ -1511,8 +1511,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           )}
 
           {/* Legend moved to top as requested */}
-          <div className="mb-4 flex justify-between text-[10px] font-serif items-start">
-            <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap print:hidden">
+          <div className="mb-4 flex justify-between text-[10px] font-serif items-start print:hidden">
+            <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap">
               <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
               <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-100">休: 公休</span>
               <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
@@ -1534,7 +1534,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
           </div>
 
-          <div className="mb-6 border-b-2 border-slate-800 pb-4 print:mb-2">
+          <div className="mb-6 border-b-2 border-slate-800 pb-4 print:mb-2 print:hidden">
             <div className="flex justify-between items-end">
               <div>
                 <h1 className="text-3xl font-serif font-bold text-slate-900 tracking-widest mb-2">
