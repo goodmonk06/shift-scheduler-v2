@@ -1835,7 +1835,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
               <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">早: 早番</span>
               <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200">遅: 遅番</span>
-              <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">有: 有給</span>
+              <span className="px-2 py-0.5 rounded border border-orange-400 font-bold" style={{ color: '#7c2d12', backgroundColor: '#fb923c' }}>有: 有給</span>
               <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100">日A: 8-17</span>
               <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100">日B: 9-18</span>
             </div>
@@ -1957,8 +1957,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.backgroundColor = isLockedAndActive ? '#ffffff' : '#ffffff'; // 白背景
                         }
                         else if (cellData.customText === '有' || cellData.customText === '有給') {
-                          styles.color = '#c2410c';
-                          styles.backgroundColor = isLockedAndActive ? '#ffedd5' : '#fff7ed';
+                          styles.color = '#7c2d12'; // 濃いオレンジ文字（オレンジ900）
+                          styles.backgroundColor = '#fb923c'; // 濃いオレンジ背景（オレンジ400）
+                          styles.fontWeight = 'bold'; // 太字で強調
                         }
                         else if (cellData.customText === '夜') {
                           styles.color = '#ffffff';
