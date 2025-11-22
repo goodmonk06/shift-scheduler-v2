@@ -1790,6 +1790,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               <span className="w-1 h-1 rounded-full bg-slate-600"></span>
               <span>{FACILITY_NAME}</span>
             </p>
+            {loadedShiftName && (
+              <p className="text-xs font-medium mt-1 flex items-center gap-1.5">
+                <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30 font-bold">
+                  編集中
+                </span>
+                <span className="text-white font-semibold">{loadedShiftName}</span>
+              </p>
+            )}
           </div>
         </div>
 
