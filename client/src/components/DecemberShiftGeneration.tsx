@@ -1516,11 +1516,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
               <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-100">休: 公休</span>
               <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
-              <span className="text-slate-900 bg-sky-200 px-2 py-0.5 rounded border border-sky-200">早: 早番</span>
-              <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">遅: 遅番</span>
+              <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">早: 早番</span>
+              <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200">遅: 遅番</span>
               <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">有: 有給</span>
-              <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-200">日A: 8-17</span>
-              <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-200">日B: 9-18</span>
+              <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100">日A: 8-17</span>
+              <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100">日B: 9-18</span>
             </div>
             <div className="flex gap-8 mr-8">
               <div className="flex flex-col items-center group">
@@ -1649,16 +1649,16 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.fontWeight = 'bold';
                         }
                         else if (cellData.customText === '明') {
-                          styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe';
+                          styles.color = '#000000';
+                          styles.backgroundColor = isLockedAndActive ? '#ffffff' : '#ffffff';
                         }
                         else if (cellData.customText === '早') {
                           styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe';
+                          styles.backgroundColor = isLockedAndActive ? '#a7f3d0' : '#bbf7d0'; // Green 200
                         }
                         else if (cellData.customText === '遅' || cellData.customText.startsWith('11')) {
                           styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#86efac' : '#dcfce7';
+                          styles.backgroundColor = isLockedAndActive ? '#fcd34d' : '#fed7aa'; // Orange 200
                         }
                         else if (cellData.customText === '冬') {
                           styles.color = '#1e40af';
@@ -1666,11 +1666,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                         }
                         else if (cellData.customText === '日A') {
                           styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#fce7f3' : '#fce7f3'; // Pink 100
+                          styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe'; // Sky 100 (薄い水色系)
                         }
                         else if (cellData.customText === '日B') {
                           styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#e0f2fe' : '#e0f2fe'; // Sky 100
+                          styles.backgroundColor = isLockedAndActive ? '#f9a8d4' : '#fce7f3'; // Pink 100
                         }
 
                         // ハイライトを適用 (色が設定されていない場合のみ)
