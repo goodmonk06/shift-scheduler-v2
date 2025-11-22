@@ -6034,7 +6034,11 @@ html {
   .no-print,
   header,
   button,
-  .screen-only {
+  .screen-only,
+  [data-sonner-toaster],
+  [data-sonner-toast],
+  .toast,
+  .Toaster {
     display: none !important;
   }
 
