@@ -1973,7 +1973,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#a7f3d0' : '#bbf7d0'; // Green 200
                         }
-                        else if (cellData.customText === '遅' || cellData.customText.startsWith('11')) {
+                        else if (cellData.customText === '遅' || cellData.customText.startsWith('11') || cellData.customText.startsWith('18')) {
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#fcd34d' : '#fed7aa'; // Orange 200
                         }
