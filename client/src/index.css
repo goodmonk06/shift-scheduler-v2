@@ -6039,6 +6039,15 @@ html {
     visibility: visible;
   }
 
+  /* print-rootを絶対配置にして他の要素の影響を排除 */
+  #print-root {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   /* タイトルと表が同じページに収まるように */
   #print-title {
     break-after: avoid;
