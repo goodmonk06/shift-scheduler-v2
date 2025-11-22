@@ -1560,43 +1560,54 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         </div>
       )}
 
-      {popoverState.isOpen && popoverState.targetRect && popoverState.date && (
-        <div
-          className="shift-popover absolute z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-4 w-72 animate-in fade-in zoom-in-95 duration-150 ring-1 ring-slate-900/5"
-          style={{
-            top: popoverState.targetRect.bottom + window.scrollY + 8,
-            left: Math.min(popoverState.targetRect.left + window.scrollX - 20, document.body.scrollWidth - 300),
-          }}
-        >
-          <div className="absolute -top-2 left-8 w-4 h-4 bg-white border-t border-l border-slate-200 transform rotate-45"></div>
-          <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+      {popoverState.isOpen && popoverState.targetRect && popoverState.date && (() => {
+        const POPOVER_HEIGHT = 450; // ポップアップの推定高さ
+        const spaceBelow = window.innerHeight - (popoverState.targetRect.bottom - window.scrollY);
+        const showAbove = spaceBelow < POPOVER_HEIGHT;
+
+        return (
+          <div
+            className="shift-popover absolute z-50 bg-white border-2 border-slate-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-2 ring-slate-900/10"
+            style={{
+              top: showAbove
+                ? popoverState.targetRect.top + window.scrollY - POPOVER_HEIGHT - 8
+                : popoverState.targetRect.bottom + window.scrollY + 8,
+              left: Math.min(popoverState.targetRect.left + window.scrollX - 20, document.body.scrollWidth - 330),
+            }}
+          >
+            <div className={`absolute left-8 w-4 h-4 bg-white border-slate-300 transform rotate-45 ${
+              showAbove
+                ? '-bottom-2 border-b-2 border-r-2'
+                : '-top-2 border-t-2 border-l-2'
+            }`}></div>
+          <div className="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-3">
             <div className="flex items-center gap-2">
-              <div className="bg-indigo-100 p-1.5 rounded-md">
-                <Clock size={16} className="text-indigo-600" />
+              <div className="bg-indigo-100 p-2 rounded-lg">
+                <Clock size={18} className="text-indigo-600" />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-slate-800 text-sm leading-tight">
+                <span className="font-bold text-slate-800 text-base leading-tight">
                   {popoverState.date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', weekday: 'short' })}
                 </span>
-                <span className="text-xs text-slate-500">{popoverState.staffName}</span>
+                <span className="text-sm text-slate-600 font-medium">{popoverState.staffName}</span>
               </div>
             </div>
-            <button onClick={() => setPopoverState((prev: any) => ({ ...prev, isOpen: false }))} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors">
-              <X size={18} />
+            <button onClick={() => setPopoverState((prev: any) => ({ ...prev, isOpen: false }))} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors">
+              <X size={20} />
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2 block">基本シフト</label>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">基本シフト</label>
               <div className="grid grid-cols-4 gap-2">
                 {SHIFT_PRESETS.map(p => (
                   <button
                     key={p.text}
                     onClick={() => saveShiftChange({ type: p.type, customText: p.text })}
-                    className={`text-xs py-2 rounded-lg font-bold transition-all border ${popoverState.currentValue.customText === p.text
+                    className={`text-sm py-2.5 rounded-lg font-bold transition-all border-2 ${popoverState.currentValue.customText === p.text
                       ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50'
+                      : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'
                       }`}
                   >
                     {p.text}
@@ -1606,15 +1617,15 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
 
             <div>
-              <label className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2 block">時間指定</label>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">時間指定</label>
               <div className="grid grid-cols-3 gap-2">
                 {TIME_PRESETS.map(t => (
                   <button
                     key={t}
                     onClick={() => saveShiftChange({ type: 'DAY', customText: t })}
-                    className={`text-[10px] py-1.5 rounded-md font-medium transition-all border ${popoverState.currentValue.customText === t
+                    className={`text-xs py-2 rounded-lg font-bold transition-all border-2 ${popoverState.currentValue.customText === t
                       ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-600 hover:bg-emerald-50'
+                      : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'
                       }`}
                   >
                     {t}
@@ -1624,12 +1635,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
 
             <div>
-              <label className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2 block">カスタム入力</label>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">カスタム入力</label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <input
                     type="text"
-                    className="w-full border border-slate-300 rounded-lg pl-3 pr-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                    className="w-full border-2 border-slate-300 rounded-lg pl-3 pr-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
                     placeholder="入力..."
                     defaultValue={popoverState.currentValue.customText}
                     onKeyDown={(e) => {
@@ -1639,7 +1650,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 </div>
                 <button
                   onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
-                  className="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
+                  className="px-4 py-2.5 border-2 border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 transition-all"
                 >
                   クリア
                 </button>
@@ -1647,7 +1658,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-30 print:hidden shadow-lg flex-none">
         <div className="flex items-center gap-4">
