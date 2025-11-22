@@ -1795,7 +1795,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30 font-bold text-xs">
                   編集中
                 </span>
-                <span className="text-amber-300 font-bold text-base">{loadedShiftName}</span>
+                <span className="text-green-400 font-bold text-base">{loadedShiftName}</span>
               </p>
             )}
           </div>
