@@ -1942,10 +1942,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-20 shadow-md sticky left-0 z-30" colSpan={1}>
                     行事予定
                   </th>
-                  <th className="border border-slate-600 bg-slate-100" colSpan={1}></th>
 
                   {dates.map(date => (
-                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent max-w-[32px]">
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent w-12 min-w-[48px]">
                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
                         {getEventName(date)}
                       </div>
@@ -1958,14 +1957,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   {/* 左上の「氏名」セル */}
                   <th className="border border-slate-600 p-1 w-20 min-w-[80px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 z-50">氏名</th>
 
-                  {/* 「資格」セル */}
-                  <th className="border border-slate-600 p-1 w-24 min-w-[90px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800">資格</th>
-
                   {dates.map(date => {
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 w-8 min-w-[32px]" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 w-12 min-w-[48px]" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -1990,9 +1986,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       {/* 氏名列 */}
                       <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-md w-20 min-w-[80px]">
                         {isScrolledLeft ? getSurname(staff.name) : staff.name}
-                      </td>
-                      <td className="border border-slate-600 px-1 text-center text-[9px] whitespace-nowrap text-slate-600 bg-white font-medium">
-                        {staff.qualification || '介護職員'}
                       </td>
                       {dates.map(date => {
                         const key = `${staff.id}_${getIsoDate(date)}`;
