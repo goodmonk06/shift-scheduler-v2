@@ -1693,21 +1693,34 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         const spaceBelow = window.innerHeight - (popoverState.targetRect.bottom - window.scrollY);
         const showAbove = spaceBelow < POPOVER_HEIGHT;
 
+        // ポップアップの幅
+        const POPOVER_WIDTH = 320; // w-80 = 320px
+
+        // セルの中央にポップアップを配置
+        const cellCenterX = popoverState.targetRect.left + popoverState.targetRect.width / 2;
+        const popoverLeft = cellCenterX - POPOVER_WIDTH / 2;
+
+        // 画面からはみ出さないように調整
+        const adjustedLeft = Math.max(10, Math.min(popoverLeft + window.scrollX, document.body.scrollWidth - POPOVER_WIDTH - 10));
+
+        // 三角形の位置を計算（ポップアップの左端からの距離）
+        const arrowOffset = Math.max(20, Math.min(cellCenterX - (adjustedLeft - window.scrollX), POPOVER_WIDTH - 20));
+
         return (
           <div
-            className="shift-popover absolute z-50 bg-white border-2 border-slate-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-2 ring-slate-900/10"
+            className="shift-popover absolute z-50 bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
             style={{
               top: showAbove
-                ? popoverState.targetRect.top + window.scrollY - POPOVER_HEIGHT - 8
-                : popoverState.targetRect.bottom + window.scrollY + 8,
-              left: Math.min(popoverState.targetRect.left + window.scrollX - 20, document.body.scrollWidth - 330),
+                ? popoverState.targetRect.top + window.scrollY - POPOVER_HEIGHT - 12
+                : popoverState.targetRect.bottom + window.scrollY + 12,
+              left: adjustedLeft,
             }}
           >
-            <div className={`absolute left-8 w-4 h-4 bg-white border-slate-300 transform rotate-45 ${
+            <div className={`absolute w-4 h-4 bg-white border-indigo-300 transform rotate-45 ${
               showAbove
                 ? '-bottom-2 border-b-2 border-r-2'
                 : '-top-2 border-t-2 border-l-2'
-            }`}></div>
+            }`} style={{ left: `${arrowOffset}px` }}></div>
           <div className="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-3">
             <div className="flex items-center gap-2">
               <div className="bg-indigo-100 p-2 rounded-lg">
@@ -2173,6 +2186,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                         const isNightPrint = cellData.customText === '夜';
 
+                        // 選択中のセルかどうかをチェック
+                        const isSelectedCell = popoverState.isOpen &&
+                          staff.id === popoverState.staffId &&
+                          popoverState.date &&
+                          getIsoDate(date) === getIsoDate(popoverState.date);
+
                         return (
                           <td
                             key={key}
@@ -2182,6 +2201,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             onMouseLeave={() => setHoveredCell({ staffId: null, dateStr: null })}
                             className={`
                             border border-slate-600 p-0 overflow-hidden relative
+                            ${isSelectedCell ? 'ring-4 ring-indigo-600 z-20 shadow-2xl' : ''}
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:z-10 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
