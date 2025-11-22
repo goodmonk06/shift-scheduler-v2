@@ -1520,7 +1520,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           <div className="mb-4 flex justify-between text-[10px] font-serif items-start print:hidden">
             <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap">
               <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
-              <span className="text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-100">休: 公休</span>
+              <span className="text-red-600 bg-white px-2 py-0.5 rounded border border-red-600">休: 公休</span>
               <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
               <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">早: 早番</span>
               <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200">遅: 遅番</span>
@@ -1642,8 +1642,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                         const styles: any = {};
 
                         if (cellData.customText === '休' || cellData.customText === '休職') {
-                          styles.color = '#b91c1c';
-                          styles.backgroundColor = isLockedAndActive ? '#fef2f2' : '#fff1f2';
+                          styles.color = '#dc2626'; // 赤色
+                          styles.backgroundColor = isLockedAndActive ? '#ffffff' : '#ffffff'; // 白背景
                         }
                         else if (cellData.customText === '有' || cellData.customText === '有給') {
                           styles.color = '#c2410c';
