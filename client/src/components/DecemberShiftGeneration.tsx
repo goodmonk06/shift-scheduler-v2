@@ -1242,9 +1242,22 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       // 遅番未配置の警告を状態に保存
       setLateShiftWarnings(lateShiftFailures);
 
-      // 5. 残りの空欄を埋める
+      // 5. 残りの空欄を埋める（正社員は休日を9日に調整）
       staffList.forEach(staff => {
         let specialShiftCount = 0;
+
+        // 正社員の場合、12月の現在の休日数をカウント
+        let currentOffDays = 0;
+        if (FULL_TIME_STAFF_IDS.includes(staff.id)) {
+          dates.forEach(date => {
+            if (date.getMonth() !== 11) return; // 12月のみ
+            const key = `${staff.id}_${getIsoDate(date)}`;
+            const cell = newShifts[key];
+            if (cell && (cell.type === 'OFF' || cell.customText === '休')) {
+              currentOffDays++;
+            }
+          });
+        }
 
         dates.forEach((date, idx) => {
           const key = `${staff.id}_${getIsoDate(date)}`;
@@ -1265,51 +1278,78 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
             if (consecutiveWorkDays >= MAX_CONSECUTIVE_WORK_DAYS) {
               newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+              if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+                currentOffDays++;
+              }
             } else {
-              const cons = staff.constraints || {};
-              let text = normalizeShiftText(cons.defaultShift || '9～18');
+              // 正社員の場合、休日数を9日に近づける
+              let shouldBeOff = false;
 
-              if (cons.randomShifts && cons.randomShifts.length > 0) {
-                // その日に既に早番が入っているかチェック
-                const hasEarlyOnThisDay = staffList.some(s => {
-                  const cell = newShifts[`${s.id}_${getIsoDate(date)}`];
-                  return cell && (
-                    cell.customText === '早' ||
-                    cell.customText === '7～16'
-                  );
-                });
-
-                // 早番が既に入っている場合は、'早'を除外したリストから選択
-                let availableShifts = cons.randomShifts;
-                if (hasEarlyOnThisDay) {
-                  availableShifts = cons.randomShifts.filter(s => s !== '早');
-                }
-
-                if (availableShifts.length > 0) {
-                  text = availableShifts[Math.floor(Math.random() * availableShifts.length)];
+              if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+                if (currentOffDays < 9) {
+                  // 休日が9日未満なら、休みを入れる確率を上げる
+                  shouldBeOff = Math.random() > 0.3; // 70%の確率で休み
+                } else if (currentOffDays >= 9) {
+                  // 休日が9日以上なら、勤務にする
+                  shouldBeOff = false;
                 }
               }
-              else if (FULL_TIME_STAFF_IDS.includes(staff.id) && !cons.fixedTimeOnly) {
-                if (text === '日B' || text === '9～18') {
-                  if (Math.random() > 0.5) text = '日A';
-                }
-              }
-              else if (cons.monthlyShiftCounts) {
-                for (const [shiftName, count] of Object.entries(cons.monthlyShiftCounts)) {
-                  if (specialShiftCount < count && Math.random() > 0.8) {
-                    text = shiftName;
-                    specialShiftCount++;
-                    break;
+
+              if (shouldBeOff) {
+                newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+                currentOffDays++;
+              } else {
+                const cons = staff.constraints || {};
+                let text = normalizeShiftText(cons.defaultShift || '9～18');
+
+                if (cons.randomShifts && cons.randomShifts.length > 0) {
+                  // その日に既に早番が入っているかチェック
+                  const hasEarlyOnThisDay = staffList.some(s => {
+                    const cell = newShifts[`${s.id}_${getIsoDate(date)}`];
+                    return cell && (
+                      cell.customText === '早' ||
+                      cell.customText === '7～16'
+                    );
+                  });
+
+                  // 早番が既に入っている場合は、'早'を除外したリストから選択
+                  let availableShifts = cons.randomShifts;
+                  if (hasEarlyOnThisDay) {
+                    availableShifts = cons.randomShifts.filter(s => s !== '早');
+                  }
+
+                  if (availableShifts.length > 0) {
+                    text = availableShifts[Math.floor(Math.random() * availableShifts.length)];
                   }
                 }
-              }
+                else if (FULL_TIME_STAFF_IDS.includes(staff.id) && !cons.fixedTimeOnly) {
+                  if (text === '日B' || text === '9～18') {
+                    if (Math.random() > 0.5) text = '日A';
+                  }
+                }
+                else if (cons.monthlyShiftCounts) {
+                  for (const [shiftName, count] of Object.entries(cons.monthlyShiftCounts)) {
+                    if (specialShiftCount < count && Math.random() > 0.8) {
+                      text = shiftName;
+                      specialShiftCount++;
+                      break;
+                    }
+                  }
+                }
 
-              if (cons.workDaysPerWeek && Math.random() > 0.6) {
-                newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-              } else if (cons.workDaysPerMonth && Math.random() > 0.8) {
-                newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-              } else {
-                newShifts[key] = { type: 'DAY', customText: text, isLocked: false };
+                if (cons.workDaysPerWeek && Math.random() > 0.6) {
+                  newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+                  if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+                    currentOffDays++;
+                  }
+                } else if (cons.workDaysPerMonth && Math.random() > 0.8) {
+                  newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+                  if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+                    currentOffDays++;
+                  }
+                } else {
+                  newShifts[key] = { type: 'DAY', customText: text, isLocked: false };
+                }
               }
             }
           }
