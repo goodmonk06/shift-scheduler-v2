@@ -842,6 +842,166 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     return text;
   };
 
+  // 後処理1: 夜→明→休のサイクルを強制的に再適用（大橋は例外）
+  const enforceNightCycle = (newShifts: Record<string, any>, allDates: Date[]) => {
+    const OHASHI_ID = '7'; // 大橋健一
+
+    staffList.forEach((staff) => {
+      if (staff.id === OHASHI_ID) return; // 大橋は例外
+
+      for (let i = 0; i < allDates.length; i++) {
+        const d0 = allDates[i];
+        const d1 = i + 1 < allDates.length ? allDates[i + 1] : null;
+        const d2 = i + 2 < allDates.length ? allDates[i + 2] : null;
+
+        const key0 = `${staff.id}_${getIsoDate(d0)}`;
+        const key1 = d1 ? `${staff.id}_${getIsoDate(d1)}` : null;
+        const key2 = d2 ? `${staff.id}_${getIsoDate(d2)}` : null;
+
+        const cell0 = newShifts[key0];
+        if (!cell0 || cell0.type !== 'NIGHT') continue;
+
+        // 1日目: 夜勤はそのまま固定
+        newShifts[key0] = {
+          type: 'NIGHT',
+          customText: '夜',
+          isLocked: true,
+        };
+
+        // 2日目: 明け
+        if (key1) {
+          newShifts[key1] = {
+            type: 'EARLY',
+            customText: '明',
+            isLocked: true,
+          };
+        }
+
+        // 3日目: 休
+        if (key2) {
+          newShifts[key2] = {
+            type: 'OFF',
+            customText: '休',
+            isLocked: true,
+          };
+        }
+      }
+    });
+  };
+
+  // 後処理2: 夜勤が0人の日を保険として埋める
+  const ensureAtLeastOneNightPerDay = (newShifts: Record<string, any>, allDates: Date[]) => {
+    allDates.forEach((date) => {
+      const dateStr = getIsoDate(date);
+      const nightCount = staffList.filter((s) => {
+        const cell = newShifts[`${s.id}_${dateStr}`];
+        return cell && cell.type === 'NIGHT';
+      }).length;
+
+      if (nightCount > 0) return; // 既に夜勤がいる
+
+      // 夜勤候補者を探す
+      const candidates = staffList.filter((s: any) => {
+        if (s.note === 'スポット勤務' || s.note === '休職') return false;
+        if (s.constraints?.fixedTimeOnly) return false;
+        if (s.constraints?.forbiddenTypes?.includes('NIGHT')) return false;
+
+        const d0 = date;
+        const d1 = new Date(date);
+        d1.setDate(d1.getDate() + 1);
+
+        const k0 = `${s.id}_${getIsoDate(d0)}`;
+        const k1 = d1 <= END_DATE ? `${s.id}_${getIsoDate(d1)}` : null;
+
+        const c0 = newShifts[k0];
+        const c1 = k1 ? newShifts[k1] : null;
+
+        const ok0 = !c0 || (!c0.isLocked && c0.type !== 'OFF' && c0.type !== 'EARLY' && c0.customText !== '明');
+        const ok1 = !k1 || !c1 || (!c1.isLocked && c1.type !== 'OFF');
+
+        return ok0 && ok1;
+      });
+
+      if (candidates.length === 0) return;
+
+      // ランダムに1人選択して夜勤を配置
+      const selected = candidates[Math.floor(Math.random() * candidates.length)];
+      const d0 = date;
+      const d1 = new Date(date);
+      d1.setDate(d1.getDate() + 1);
+      const d2 = new Date(date);
+      d2.setDate(d2.getDate() + 2);
+
+      const k0 = `${selected.id}_${getIsoDate(d0)}`;
+      const k1 = d1 <= END_DATE ? `${selected.id}_${getIsoDate(d1)}` : null;
+      const k2 = d2 <= END_DATE ? `${selected.id}_${getIsoDate(d2)}` : null;
+
+      newShifts[k0] = { type: 'NIGHT', customText: '夜', isLocked: false };
+      if (k1) newShifts[k1] = { type: 'EARLY', customText: '明', isLocked: false };
+      if (k2) {
+        const c2 = newShifts[k2];
+        if (!c2 || !c2.isLocked) {
+          newShifts[k2] = { type: 'OFF', customText: '休', isLocked: false };
+        }
+      }
+    });
+  };
+
+  // 後処理3: 早番をちょうど1人に正規化
+  const normalizeEarlyShiftPerDay = (newShifts: Record<string, any>, allDates: Date[]) => {
+    allDates.forEach((date) => {
+      const dateStr = getIsoDate(date);
+
+      const staffCells = staffList.map((s) => ({
+        staff: s,
+        key: `${s.id}_${dateStr}`,
+        cell: newShifts[`${s.id}_${dateStr}`],
+      })).filter((x) => x.cell);
+
+      const earlyCells = staffCells.filter((x) =>
+        x.cell.customText === '早' || x.cell.customText === '7～16'
+      );
+      const earlyCount = earlyCells.length;
+
+      // 0人 → 誰か1人入れる
+      if (earlyCount === 0) {
+        const candidates = staffList.filter((s: any) => {
+          if (s.note === 'スポット勤務' || s.note === '休職') return false;
+          if (s.constraints?.fixedTimeOnly) return false;
+          if (s.constraints?.forbiddenTypes?.includes('EARLY')) return false;
+
+          const cell = newShifts[`${s.id}_${dateStr}`];
+          if (!cell) return true;
+          if (!cell.isLocked && cell.type !== 'OFF' && cell.type !== 'NIGHT' && cell.type !== 'HOPE' && cell.type !== 'WINTER' && cell.customText !== '明') return true;
+          return false;
+        });
+
+        if (candidates.length > 0) {
+          const selected = candidates[Math.floor(Math.random() * candidates.length)];
+          const key = `${selected.id}_${dateStr}`;
+          newShifts[key] = { type: 'EARLY', customText: '早', isLocked: false };
+        }
+        return;
+      }
+
+      // 2人以上 → 1人だけ残して他をデフォルトシフトに戻す
+      if (earlyCount > 1) {
+        const keeper = earlyCells[0];
+        const others = earlyCells.slice(1);
+
+        others.forEach(({ staff, key }) => {
+          const defaultShift = staff.constraints?.defaultShift ?? '9～18';
+          const defaultText = normalizeShiftText(defaultShift);
+          newShifts[key] = {
+            type: 'DAY',
+            customText: defaultText,
+            isLocked: false,
+          };
+        });
+      }
+    });
+  };
+
   const completeGeneration = () => {
     const newShifts: any = {};
     const nightCandidates = getNightShiftCandidates(staffList);
@@ -1176,6 +1336,16 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           }
         });
       });
+
+      // ── 後処理 ──────────────────────
+      // 1. 夜→明→休のサイクルを強制適用（大橋除く）
+      enforceNightCycle(newShifts, dates);
+
+      // 2. 夜勤0人日の保険（必要に応じて）
+      ensureAtLeastOneNightPerDay(newShifts, dates);
+
+      // 3. 早番をちょうど1人に正規化
+      normalizeEarlyShiftPerDay(newShifts, dates);
 
       setShifts(newShifts);
     } catch (e) {
