@@ -1842,7 +1842,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           <button
             onClick={handleOverwriteSave}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-blue-700"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-yellow-300 rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-indigo-800"
           >
             <Save size={18} />
             {loadedShiftId ? '上書き保存' : '保存'}
