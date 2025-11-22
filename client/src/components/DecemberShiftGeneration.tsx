@@ -21,7 +21,7 @@ const CLERK_STAFF_ID = '27';
 // 配置基準マトリクス
 const REQUIRED_STAFF_MATRIX = {
   0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1,
-  6: 2, 7: 2, 8: 3,
+  6: 1, 7: 2, 8: 3,
   9: 5, 10: 5, 11: 5, 12: 5, 13: 5, 14: 5, 15: 5, 16: 4,
   17: 3, 18: 2, 19: 2, 20: 1, 21: 1, 22: 1, 23: 1
 };
@@ -135,10 +135,10 @@ const SHIFT_PRESETS = [
 ];
 
 const TIME_PRESETS = [
-  '6～15', '8～17', '9～18', '11～20', '9～16', '10～14', '10～15', '18～20'
+  '7～16', '8～17', '9～18', '11～20', '9～16', '10～14', '10～15', '18～20'
 ];
 
-const WORK_PATTERNS = ['6～15', '8～17', '9～18', '11～20'];
+const WORK_PATTERNS = ['7～16', '8～17', '9～18', '11～20'];
 
 // --- ヘルパー関数 ---
 const generateDateRange = (start: Date, end: Date): Date[] => {
@@ -254,7 +254,7 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   if (text === '日' || type === 'DAY') return { start: 9, end: 18 };
   if (text === '日A') return { start: 8, end: 17 };
   if (text === '日B') return { start: 9, end: 18 };
-  if (text === '早' || type === 'EARLY') return { start: 6, end: 15 };
+  if (text === '早' || type === 'EARLY') return { start: 7, end: 16 };
   if (text === '遅' || type === 'LATE') return { start: 10, end: 19 };
 
   const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
@@ -782,7 +782,10 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
         const hasEarly = staffList.some(s => {
           const cell = newShifts[`${s.id}_${keySuffix}`];
-          return cell && (cell.customText === '早' || cell.customText === '6～15');
+          return cell && (
+            cell.customText === '早' ||
+            cell.customText === '7～16' // 新しい早番
+          );
         });
 
         if (!hasEarly) {
