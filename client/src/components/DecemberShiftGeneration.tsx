@@ -931,46 +931,44 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       }
 
 
-      // 5. 正社員の休日確保（月ごとに計算）
+      // 5. 正社員の休日確保（期間全体で必ず9日）
       staffList.forEach(staff => {
         if (!FULL_TIME_STAFF_IDS.includes(staff.id)) return;
 
-        // 12月の日付だけを抽出
-        const decemberDates = dates.filter(d => d.getMonth() === 11); // 11 = 12月
-        // 1月の日付だけを抽出
-        const januaryDates = dates.filter(d => d.getMonth() === 0); // 0 = 1月
-
-        // 12月の休日をカウント
-        let decemberHolidays = 0;
-        decemberDates.forEach(date => {
+        // 現在の休日数をカウント
+        let currentHolidays = 0;
+        dates.forEach(date => {
           const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
-          if (s && (s.type === 'OFF' || s.customText === '休')) decemberHolidays++;
+          if (s && (s.type === 'OFF' || s.customText === '休')) currentHolidays++;
         });
 
-        // 1月の休日をカウント
-        let januaryHolidays = 0;
-        januaryDates.forEach(date => {
-          const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
-          if (s && (s.type === 'OFF' || s.customText === '休')) januaryHolidays++;
-        });
+        // 9日を超えている場合は、休日を減らす
+        if (currentHolidays > REQUIRED_HOLIDAYS_FULLTIME) {
+          let toRemove = currentHolidays - REQUIRED_HOLIDAYS_FULLTIME;
+          const holidayKeys: string[] = [];
 
-        // 12月は9日の休日が必要
-        let neededDecember = REQUIRED_HOLIDAYS_FULLTIME - decemberHolidays;
-        if (neededDecember > 0) {
-          const candidates = decemberDates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
-          const shuffled = candidates.sort(() => 0.5 - Math.random());
-          for (let i = 0; i < neededDecember && i < shuffled.length; i++) {
-            const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
-            newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+          dates.forEach(date => {
+            const key = `${staff.id}_${getIsoDate(date)}`;
+            const s = newShifts[key];
+            if (s && !s.isLocked && (s.type === 'OFF' || s.customText === '休')) {
+              holidayKeys.push(key);
+            }
+          });
+
+          // ランダムに休日を削除
+          const shuffled = holidayKeys.sort(() => 0.5 - Math.random());
+          for (let i = 0; i < toRemove && i < shuffled.length; i++) {
+            newShifts[shuffled[i]] = null;
           }
+          currentHolidays = REQUIRED_HOLIDAYS_FULLTIME;
         }
 
-        // 1月は日割り計算（5日間なので、9日/31日 × 5日 ≈ 1.5日 → 2日）
-        const neededJanuary = Math.ceil(REQUIRED_HOLIDAYS_FULLTIME * januaryDates.length / 31) - januaryHolidays;
-        if (neededJanuary > 0) {
-          const candidates = januaryDates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
+        // 9日未満の場合は、休日を追加
+        let needed = REQUIRED_HOLIDAYS_FULLTIME - currentHolidays;
+        if (needed > 0) {
+          const candidates = dates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
           const shuffled = candidates.sort(() => 0.5 - Math.random());
-          for (let i = 0; i < neededJanuary && i < shuffled.length; i++) {
+          for (let i = 0; i < needed && i < shuffled.length; i++) {
             const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
             newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
           }
