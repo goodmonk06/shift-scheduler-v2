@@ -1822,19 +1822,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   );
                 })}
 
-                {[...Array(3)].map((_, i) => (
-                  <tr key={`empty-${i}`} className="h-10">
-                    <td className="border border-slate-600 bg-slate-50 sticky left-0 z-10 shadow-md"></td>
-                    <td className="border border-slate-600 bg-slate-50"></td>
-                    {dates.map((d, idx) => <td key={idx} className="border border-slate-600 bg-slate-50"></td>)}
-                    <td className="border border-slate-600 bg-slate-100 border-l-2 border-l-slate-800 print:hidden"></td>
-                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
-                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
-                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
-                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
-                  </tr>
-                ))}
-
               </tbody>
               {/* 不足判定フッター */}
               <tfoot className="print:hidden">
