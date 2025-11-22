@@ -865,7 +865,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         newShifts[key0] = {
           type: 'NIGHT',
           customText: '夜',
-          isLocked: true,
+          isLocked: false,
         };
 
         // 2日目: 明け
@@ -873,7 +873,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           newShifts[key1] = {
             type: 'EARLY',
             customText: '明',
-            isLocked: true,
+            isLocked: false,
           };
         }
 
@@ -882,7 +882,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           newShifts[key2] = {
             type: 'OFF',
             customText: '休',
-            isLocked: true,
+            isLocked: false,
           };
         }
       }
