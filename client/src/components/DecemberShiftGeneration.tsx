@@ -432,6 +432,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [lateShiftWarnings, setLateShiftWarnings] = useState<string[]>([]);
 
   const handleSaveToDB = async () => {
     if (!saveName) {
@@ -903,7 +904,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         }
       }
 
-      // 4.5. 遅番バックアップロジック
+      // 4.5. 遅番バックアップロジック（夜勤サイクルに干渉しない）
+      const lateShiftFailures: string[] = []; // 配置できなかった日を記録
       for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
         const keySuffix = getIsoDate(date);
@@ -918,20 +920,55 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           const backupId = (i % 2 === 0) ? '2' : '4';
           const targetId = backupId;
 
-          const key = `${targetId}_${keySuffix}`;
-          const cell = newShifts[key];
-          if (!cell || (!cell.isLocked && cell.type !== 'OFF')) {
-            newShifts[key] = { type: 'LATE', customText: '11～20', isLocked: false };
-          } else {
-            const altId = (backupId === '2') ? '4' : '2';
-            const altKey = `${altId}_${keySuffix}`;
-            const altCell = newShifts[altKey];
-            if (!altCell || (!altCell.isLocked && altCell.type !== 'OFF')) {
-              newShifts[altKey] = { type: 'LATE', customText: '11～20', isLocked: false };
+          // 夜勤サイクルチェック: 「夜」「明」「有」「有給」の場合は配置しない
+          const canAssignToTarget = (id: string) => {
+            const key = `${id}_${keySuffix}`;
+            const cell = newShifts[key];
+
+            // セルがロックされている、休み、夜勤、明け、有給の場合は配置不可
+            if (cell && (cell.isLocked || cell.type === 'OFF' || cell.customText === '夜' || cell.customText === '明' || cell.customText === '有' || cell.customText === '有給')) {
+              return false;
             }
+
+            // 前日が夜勤の場合は配置不可（明けになる日）
+            if (i > 0) {
+              const prevDate = dates[i - 1];
+              const prevKey = `${id}_${getIsoDate(prevDate)}`;
+              const prevCell = newShifts[prevKey];
+              if (prevCell && prevCell.customText === '夜') {
+                return false;
+              }
+            }
+
+            return true;
+          };
+
+          let assigned = false;
+
+          // まず第一候補に配置を試みる
+          if (canAssignToTarget(targetId)) {
+            const key = `${targetId}_${keySuffix}`;
+            newShifts[key] = { type: 'LATE', customText: '11～20', isLocked: false };
+            assigned = true;
+          } else {
+            // 第一候補が不可なら第二候補を試す
+            const altId = (backupId === '2') ? '4' : '2';
+            if (canAssignToTarget(altId)) {
+              const altKey = `${altId}_${keySuffix}`;
+              newShifts[altKey] = { type: 'LATE', customText: '11～20', isLocked: false };
+              assigned = true;
+            }
+          }
+
+          // どちらも配置できなかった場合は記録
+          if (!assigned) {
+            lateShiftFailures.push(keySuffix);
           }
         }
       }
+
+      // 遅番未配置の警告を状態に保存
+      setLateShiftWarnings(lateShiftFailures);
 
 
       // 5. 正社員の休日確保（12月のみで必ず9日）
@@ -1835,6 +1872,23 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   })}
                   <td colSpan={5} className="border border-slate-600 bg-slate-100"></td>
                 </tr>
+                {lateShiftWarnings.length > 0 && (
+                  <tr className="h-10">
+                    <td className="border border-slate-600 bg-red-100 text-red-800 font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2}>
+                      遅番未配置
+                    </td>
+                    {dates.map(date => {
+                      const dateIso = getIsoDate(date);
+                      const isWarning = lateShiftWarnings.includes(dateIso);
+                      return (
+                        <td key={date.toString()} className={`border border-slate-600 text-center ${isWarning ? 'bg-red-200 text-red-900 font-bold' : 'bg-white'}`}>
+                          {isWarning ? '⚠' : ''}
+                        </td>
+                      );
+                    })}
+                    <td colSpan={5} className="border border-slate-600 bg-slate-100"></td>
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>
