@@ -164,16 +164,26 @@ const isHoliday = (date: Date): boolean => {
 };
 
 const getNightShiftCandidates = (staffList: any[]): string[] => {
-  return staffList.filter(staff => {
-    // fixedTimeOnlyの人には夜勤を割り当てない
+  const base = staffList.filter(staff => {
     if (staff.constraints?.fixedTimeOnly) return false;
     if (!staff.schedule) return false;
-    // constraints.forbiddenTypes もチェック
     if (staff.constraints?.forbiddenTypes?.includes('NIGHT')) return false;
+    return Object.values(staff.schedule || {}).some((val: any) =>
+      val === '夜' || val === '夜勤'
+    ) || FULL_TIME_STAFF_IDS.includes(staff.id);
+  });
 
-    // 既存シフトやルールから夜勤可能か判断
-    return Object.values(staff.schedule || {}).some((val: any) => val === '夜' || val === '夜勤') || FULL_TIME_STAFF_IDS.includes(staff.id);
-  }).map(s => s.id);
+  const shuffle = <T,>(arr: T[]) => [...arr].sort(() => Math.random() - 0.5);
+
+  const primary   = base.filter(s => FULL_TIME_STAFF_IDS.includes(s.id) && s.id !== '2' && s.id !== '1');
+  const yamaguchi = base.filter(s => s.id === '2'); // 山口
+  const takano    = base.filter(s => s.id === '1'); // 高野
+
+  return [
+    ...shuffle(primary),
+    ...shuffle(yamaguchi),
+    ...shuffle(takano),
+  ].map(s => s.id);
 };
 
 const getEventName = (date: Date): string => {
@@ -798,6 +808,53 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               break;
             }
           }
+        }
+      }
+
+      // 2.1 夜勤が0の日を強制的に埋めるフォールバック
+      for (let i = 0; i < dates.length - 1; i++) {
+        const date = dates[i];
+        const keySuffix = getIsoDate(date);
+
+        const hasNight = staffList.some(s => {
+          const cell = newShifts[`${s.id}_${keySuffix}`];
+          return cell && (cell.type === 'NIGHT' || cell.customText === '夜');
+        });
+        if (hasNight) continue;
+
+        // 通常ロジックで誰も入らなかった場合の保険
+        const candidates = FULL_TIME_STAFF_IDS
+          .map(id => staffList.find(s => s.id === id))
+          .filter((s): s is any => !!s)
+          .filter(s => !s.constraints?.fixedTimeOnly && s.note !== 'スポット勤務');
+
+        for (const staff of candidates) {
+          const staffId = staff.id;
+          const d0 = date;
+          const d1 = new Date(date);
+          d1.setDate(d1.getDate() + 1);
+          const d2 = new Date(date);
+          d2.setDate(d2.getDate() + 2);
+
+          const k0 = `${staffId}_${getIsoDate(d0)}`;
+          const k1 = d1 <= END_DATE ? `${staffId}_${getIsoDate(d1)}` : null;
+          const k2 = d2 <= END_DATE ? `${staffId}_${getIsoDate(d2)}` : null;
+
+          const c0 = newShifts[k0];
+          const c1 = k1 ? newShifts[k1] : null;
+          const c2 = k2 ? newShifts[k2] : null;
+
+          const ok0 = !c0 || (!c0.isLocked && c0.type !== 'OFF');
+          const ok1 = !k1 || !c1 || (!c1.isLocked && c1.type !== 'OFF');
+
+          if (!ok0 || !ok1) continue;
+
+          newShifts[k0] = { type: 'NIGHT', customText: '夜', isLocked: false };
+          if (k1) newShifts[k1] = { type: 'EARLY', customText: '明', isLocked: false };
+          if (k2 && (!c2 || !c2.isLocked)) {
+            newShifts[k2] = { type: 'OFF', customText: '休', isLocked: false };
+          }
+          break;
         }
       }
 
