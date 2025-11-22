@@ -20,13 +20,25 @@ const FULL_TIME_STAFF_IDS = ['2', '3', '4', '5', '6', '7'];
 // 事務員ID
 const CLERK_STAFF_ID = '27';
 
-// 配置基準マトリクス
-const REQUIRED_STAFF_MATRIX = {
-  0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1,
-  6: 1, 7: 2, 8: 3,
-  9: 5, 10: 5, 11: 5, 12: 5, 13: 5, 14: 5, 15: 5, 16: 4,
-  17: 3, 18: 2, 19: 2, 20: 1, 21: 1, 22: 1, 23: 1
-};
+// 配置基準マトリクス（曜日別・30分刻み、48分割）
+// インデックス: 0=日曜, 1=月曜, ..., 6=土曜
+// 各スロット: 0=0:00, 1=0:30, 2=1:00, 3=1:30, ..., 47=23:30
+const REQUIRED_STAFF_BY_DAY = [
+  // 日曜日 (0)
+  [1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 2,2, 3,3, 4,4, 4,4, 4,4, 2,2, 3,3, 3,3, 3,3, 3,3, 2,2, 2,2, 2,2, 1,1, 1,1, 1,1, 1,1],
+  // 月曜日 (1)
+  [1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 2,2, 3,3, 7,7, 8,8, 6,6, 2,2, 6,6, 5,5, 4,4, 3,3, 2,2, 2,2, 2,2, 1,1, 1,1, 1,1, 1,1],
+  // 火曜日 (2)
+  [1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 2,2, 3,3, 7,7, 7,7, 8,8, 2,2, 7,7, 6,6, 4,4, 3,3, 2,2, 2,2, 2,2, 1,1, 1,1, 1,1, 1,1],
+  // 水曜日 (3)
+  [1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 2,2, 3,3, 7,7, 8,8, 7,7, 2,2, 6,6, 5,5, 4,4, 3,3, 2,2, 2,2, 2,2, 1,1, 1,1, 1,1, 1,1],
+  // 木曜日 (4)
+  [1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 2,2, 3,3, 7,7, 7,7, 6,6, 2,2, 6,6, 5,5, 4,4, 3,3, 2,2, 2,2, 2,2, 1,1, 1,1, 1,1, 1,1],
+  // 金曜日 (5)
+  [1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 2,2, 3,3, 7,7, 7,7, 7,7, 2,2, 6,6, 5,5, 4,4, 3,3, 2,2, 2,2, 2,2, 1,1, 1,1, 1,1, 1,1],
+  // 土曜日 (6)
+  [1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 1,1, 2,2, 3,3, 6,6, 5,5, 6,6, 2,2, 6,6, 4,4, 4,4, 3,3, 2,2, 2,2, 2,2, 1,1, 1,1, 1,1, 1,1]
+];
 
 // --- 職員データ ---
 // constraints:
@@ -325,23 +337,27 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
   dates.forEach((date, dateIdx) => {
     const dateIso = getIsoDate(date);
 
-    const hourlyCounts = new Array(24).fill(0);
-    const hourlyFullTimeCounts = new Array(24).fill(0);
+    // 30分刻み、48分割（0=0:00, 1=0:30, 2=1:00, ..., 47=23:30）
+    const halfHourCounts = new Array(48).fill(0);
+    const halfHourFullTimeCounts = new Array(48).fill(0);
 
+    // 前日夜勤の翌日0～9時カウント
     if (dateIdx > 0) {
       const prevDate = dates[dateIdx - 1];
       const prevKeySuffix = getIsoDate(prevDate);
       staffList.forEach(staff => {
         const cell = shifts[`${staff.id}_${prevKeySuffix}`];
         if (cell && (cell.type === 'NIGHT' || cell.customText === '夜')) {
-          for (let h = 0; h < 9; h++) {
-            hourlyCounts[h]++;
-            if (FULL_TIME_STAFF_IDS.includes(staff.id)) hourlyFullTimeCounts[h]++;
+          // 0:00～9:00 = slot 0～17 (9時間 × 2)
+          for (let slot = 0; slot < 18; slot++) {
+            halfHourCounts[slot]++;
+            if (FULL_TIME_STAFF_IDS.includes(staff.id)) halfHourFullTimeCounts[slot]++;
           }
         }
       });
     }
 
+    // 当日のシフトカウント
     staffList.forEach(staff => {
       const cell = shifts[`${staff.id}_${dateIso}`];
       if (!cell) return;
@@ -353,11 +369,16 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 
       if (end > 24) end = 24;
 
-      for (let h = Math.floor(start); h < Math.ceil(end); h++) {
-        if (h >= 0 && h < 24) {
-          hourlyCounts[h]++;
-          if (FULL_TIME_STAFF_IDS.includes(staff.id)) hourlyFullTimeCounts[h]++;
-          if (staff.id === CLERK_STAFF_ID && h >= 9 && h < 18) hourlyFullTimeCounts[h]++;
+      // 30分単位でカウント（例: 9.5時間 = 9:30 = slot 19）
+      const startSlot = Math.floor(start * 2);
+      const endSlot = Math.floor(end * 2);
+
+      for (let slot = startSlot; slot < endSlot; slot++) {
+        if (slot >= 0 && slot < 48) {
+          halfHourCounts[slot]++;
+          if (FULL_TIME_STAFF_IDS.includes(staff.id)) halfHourFullTimeCounts[slot]++;
+          // 事務員は9:00～18:00をカウント（slot 18～35）
+          if (staff.id === CLERK_STAFF_ID && slot >= 18 && slot < 36) halfHourFullTimeCounts[slot]++;
         }
       }
     });
@@ -365,20 +386,29 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     const shortageDetails: string[] = [];
     let maxShortage = 0;
 
-    for (let h = 0; h < 24; h++) {
-      let required = REQUIRED_STAFF_MATRIX[h as keyof typeof REQUIRED_STAFF_MATRIX] || 1;
-      let current = hourlyCounts[h];
+    // 48スロットをチェック（曜日別の必要人数を使用）
+    const dayOfWeek = date.getDay(); // 0=日曜, 1=月曜, ..., 6=土曜
+    const requiredForDay = REQUIRED_STAFF_BY_DAY[dayOfWeek];
+
+    for (let slot = 0; slot < 48; slot++) {
+      const hour = Math.floor(slot / 2);
+      const minute = (slot % 2) === 0 ? '00' : '30';
+      const timeLabel = `${hour}:${minute}`;
+
+      let required = requiredForDay[slot] || 1;
+      let current = halfHourCounts[slot];
       let diff = current - required;
 
-      if (h >= 9 && h < 16) {
-        if (hourlyFullTimeCounts[h] < 1) {
-          shortageDetails.push(`${h}時:正社員不足`);
+      // 正社員チェック（9:00～16:00 = slot 18～31）
+      if (slot >= 18 && slot < 32) {
+        if (halfHourFullTimeCounts[slot] < 1) {
+          shortageDetails.push(`${timeLabel}:正社員不足`);
           maxShortage = Math.max(maxShortage, 2);
         }
       }
 
       if (diff < 0) {
-        shortageDetails.push(`${h}時(${diff})`);
+        shortageDetails.push(`${timeLabel}(${diff})`);
         if (diff <= -2) maxShortage = Math.max(maxShortage, 2);
         else maxShortage = Math.max(maxShortage, 1);
       }
