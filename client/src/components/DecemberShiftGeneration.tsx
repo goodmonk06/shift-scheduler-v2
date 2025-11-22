@@ -2046,13 +2046,17 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.boxShadow = 'inset 0 0 0 3px #3b82f6'; // blue-500の太い枠線効果
                         }
 
+                        // シフトセルを確実にスティッキーヘッダーの下に配置
+                        styles.position = 'relative';
+                        styles.zIndex = 1;
+
                         return (
                           <td
                             key={key}
                             onClick={(e) => handleCellClick(e, staff, date)}
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
                             className={`
-                            border border-slate-600 p-0 overflow-hidden relative
+                            border border-slate-600 p-0 overflow-hidden
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
