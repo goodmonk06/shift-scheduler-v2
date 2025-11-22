@@ -1459,7 +1459,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   };
 
   return (
-    <div className={`min-h-screen bg-slate-100 font-sans text-sm ${printPreview ? 'print-preview-mode' : ''} flex flex-col h-screen overflow-hidden`}>
+    <div className={`bg-slate-100 font-sans text-sm ${printPreview ? 'print-preview-mode' : ''} flex flex-col h-full overflow-hidden`}>
 
       {isGenerating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
