@@ -53,7 +53,7 @@ const STAFF_RAW_DATA = [
     constraints: { defaultShift: '9～18', specialRule: 'SUGIYAMA_FRIDAY' }
   },
   { id: '6', name: '梅田 英津子', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-03': '休', '2025-12-25': '休', '2025-12-28': '有給', '2025-12-29': '冬', '2025-12-30': '夜', '2025-12-31': '明', '2026-01-01': '休', '2026-01-03': '夜', '2026-01-04': '明', '2026-01-05': '休' }, constraints: { defaultShift: '9～18', forbiddenTypes: ['LATE', '11～20'] } },
-  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-06': '休', '2025-12-07': '休', '2025-12-28': '夜', '2025-12-30': '明', '2025-12-31': '休', '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', offDayOfWeek: [5], nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO' } },
+  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-06': '休', '2025-12-07': '休', '2025-12-29': '夜', '2025-12-30': '明', '2025-12-31': '休', '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', offDayOfWeek: [5], nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO' } },
   {
     id: '8', name: '上条 やえ子', role: 'staff', qualification: '介護福祉士',
     schedule: { '2025-12-01': '休', '2025-12-07': '休', '2025-12-14': '休', '2025-12-16': '休', '2025-12-21': '休', '2025-12-27': '休', '2025-12-28': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
