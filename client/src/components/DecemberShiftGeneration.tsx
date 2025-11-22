@@ -1557,31 +1557,30 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         const POPOVER_WIDTH = 320; // w-80 = 320px
 
         // セルの右側に配置（12px余白）
-        const popoverLeft = popoverState.targetRect.right + 12;
+        const popoverLeft = popoverState.targetRect.right + window.scrollX + 12;
 
         // 画面からはみ出る場合は左側に表示
         const showOnLeft = (popoverState.targetRect.right + POPOVER_WIDTH + 12) > window.innerWidth;
         const adjustedLeft = showOnLeft
-          ? popoverState.targetRect.left - POPOVER_WIDTH - 12
+          ? popoverState.targetRect.left + window.scrollX - POPOVER_WIDTH - 12
           : popoverLeft;
 
         // セルの垂直中央に合わせる
         const cellCenterY = popoverState.targetRect.top + popoverState.targetRect.height / 2;
-        const popoverTop = cellCenterY - POPOVER_HEIGHT / 2;
+        const popoverTop = cellCenterY + window.scrollY - POPOVER_HEIGHT / 2;
 
         // 画面からはみ出さないように調整
-        const adjustedTop = Math.max(10, Math.min(popoverTop, window.innerHeight - POPOVER_HEIGHT - 10));
+        const adjustedTop = Math.max(10, Math.min(popoverTop, window.scrollY + window.innerHeight - POPOVER_HEIGHT - 10));
 
         // 三角形の位置を計算（ポップアップの上端からの距離）
-        const arrowOffset = Math.max(20, Math.min(cellCenterY - adjustedTop, POPOVER_HEIGHT - 20));
+        const arrowOffset = Math.max(20, Math.min(cellCenterY - (adjustedTop - window.scrollY), POPOVER_HEIGHT - 20));
 
         return (
           <div
-            className="shift-popover fixed z-[9999] bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
+            className="shift-popover absolute z-50 bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
             style={{
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
+              top: adjustedTop,
+              left: adjustedLeft,
             }}
           >
             <div className={`absolute w-4 h-4 bg-white border-indigo-300 transform rotate-45 ${
@@ -1943,9 +1942,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={4}></th>
                 </tr>
 
-                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-50 shadow-md">
+                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-40 shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 top-0 z-[60] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 top-0 z-[45] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">氏名</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
