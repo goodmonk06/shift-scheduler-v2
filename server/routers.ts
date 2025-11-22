@@ -576,6 +576,7 @@ export const appRouter = router({
               leaveType: leaveType,
               startTime: startTime,
               endTime: endTime,
+              displayText: entry.text, // Save original display text as shown in UI
               generatedBy: "ai" as const,
               isChanged: false,
               createdAt: new Date(),

@@ -190,6 +190,7 @@ export const shiftDetails = mysqlTable("shiftDetails", {
   leaveType: mysqlEnum("leaveType", ["休", "有休"]), // 休みの種類（勤務日はnull）
   startTime: varchar("startTime", { length: 5 }), // HH:MM format (時間指定勤務の場合のみ)
   endTime: varchar("endTime", { length: 5 }), // HH:MM format (時間指定勤務の場合のみ)
+  displayText: varchar("displayText", { length: 50 }), // Display text as shown in UI (e.g. "8～14", "8半～13", "休", "有給")
   generatedBy: mysqlEnum("generatedBy", ["manual", "ai", "leave_request", "rule_based"]).default("manual").notNull(), // Track if shift was manually created, AI-generated, from leave request, or rule-based
   isChanged: boolean("isChanged").default(false).notNull(),
   previousTimeSlotId: int("previousTimeSlotId").references(() => workTimeSlots.id, { onDelete: 'set null' }), // FK to workTimeSlots, nullable

@@ -494,9 +494,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           // 日付をパース (YYYY-MM-DD形式)
           const key = `${staff.id}_${detail.date}`;
 
-          // statusとtimeSlotから表示テキストを生成
+          // displayTextを優先、なければフォールバック
           let customText = '';
-          if (detail.status === 'off') {
+          if (detail.displayText) {
+            // displayTextがあればそれを使用（元の表示をそのまま復元）
+            customText = detail.displayText;
+          } else if (detail.status === 'off') {
             customText = detail.leaveType || '休';
           } else if (detail.timeSlot) {
             customText = detail.timeSlot.displayLabel || detail.timeSlot.name || '';
