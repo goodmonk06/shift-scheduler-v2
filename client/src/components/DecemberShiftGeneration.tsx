@@ -1731,17 +1731,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           </button>
 
           <button
-            onClick={() => setPrintPreview(!printPreview)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${printPreview
-              ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
-              : 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700'
-              }`}
-          >
-            <RefreshCw size={14} className={printPreview ? "" : ""} />
-            {printPreview ? '編集に戻る' : 'プレビュー'}
-          </button>
-
-          <button
             onClick={startFakeAIGeneration}
             className="flex items-center gap-2 px-5 py-2 bg-white text-indigo-900 rounded-lg hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl text-xs font-extrabold border border-transparent hover:border-indigo-200"
           >
@@ -1751,7 +1740,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           <button
             onClick={handleOverwriteSave}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-indigo-800"
+            className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-slate-900 rounded-xl hover:bg-yellow-400 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-yellow-600"
           >
             <Save size={18} />
             {loadedShiftId ? '上書き保存' : '保存'}
@@ -1776,7 +1765,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-500/30 text-xs font-bold border border-indigo-500"
+            className="flex items-center gap-2 px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-400 transition-all shadow-lg hover:shadow-orange-500/30 text-xs font-bold border-2 border-orange-600"
           >
             <Printer size={14} />
             PDF出力
@@ -1971,11 +1960,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden">日数</th>
-                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">時間</th>
-                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">夜勤</th>
-                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">休日</th>
-                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">有給</th>
+                  <th className="border border-slate-600 w-32 min-w-[140px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3">日数</th>
+                  <th className="border border-slate-600 w-32 min-w-[140px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">時間</th>
+                  <th className="border border-slate-600 w-32 min-w-[140px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">夜勤</th>
+                  <th className="border border-slate-600 w-32 min-w-[140px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">休日</th>
+                  <th className="border border-slate-600 w-32 min-w-[140px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">有給</th>
                 </tr>
               </thead>
               <tbody>
@@ -2109,11 +2098,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           </td>
                         );
                       })}
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-24 min-w-[100px] text-center">{stats.days}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-24 min-w-[100px] text-center">{stats.hours}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-24 min-w-[100px] text-center">{stats.nightCount}</td>
-                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-24 min-w-[100px] text-center ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-24 min-w-[100px] text-center">{stats.paidHolidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-32 min-w-[140px] text-center px-3">{stats.days}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-32 min-w-[140px] text-center px-3">{stats.hours}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-32 min-w-[140px] text-center px-3">{stats.nightCount}</td>
+                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-32 min-w-[140px] text-center px-3 ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-32 min-w-[140px] text-center px-3">{stats.paidHolidays}</td>
                     </tr>
                   );
                 })}
