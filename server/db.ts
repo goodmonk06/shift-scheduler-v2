@@ -366,8 +366,39 @@ export async function getAllShifts() {
 export async function getShiftById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
+
+  // Get the shift record
   const result = await db.select().from(shifts).where(eq(shifts.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  if (result.length === 0) return undefined;
+
+  const shift = result[0];
+
+  // Get shift details with employee and timeSlot joins
+  const details = await db
+    .select({
+      id: shiftDetails.id,
+      shiftId: shiftDetails.shiftId,
+      employeeId: shiftDetails.employeeId,
+      date: shiftDetails.date,
+      status: shiftDetails.status,
+      timeSlotId: shiftDetails.timeSlotId,
+      leaveType: shiftDetails.leaveType,
+      generatedBy: shiftDetails.generatedBy,
+      isChanged: shiftDetails.isChanged,
+      createdAt: shiftDetails.createdAt,
+      updatedAt: shiftDetails.updatedAt,
+      employee: employees,
+      timeSlot: timeSlots,
+    })
+    .from(shiftDetails)
+    .leftJoin(employees, eq(shiftDetails.employeeId, employees.id))
+    .leftJoin(timeSlots, eq(shiftDetails.timeSlotId, timeSlots.id))
+    .where(eq(shiftDetails.shiftId, id));
+
+  return {
+    ...shift,
+    shiftDetails: details,
+  };
 }
 
 export async function getShiftByYearMonth(year: number, month: number) {
