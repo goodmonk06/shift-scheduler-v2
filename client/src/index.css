@@ -6017,6 +6017,30 @@ html {
   display: none;
 }
 
+/* 編集画面でのセル幅統一 */
+.shift-print-root table {
+  table-layout: fixed;
+}
+
+.shift-print-root th,
+.shift-print-root td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 氏名列の幅（編集画面） */
+.shift-print-root th:first-child,
+.shift-print-root td:first-child {
+  width: 120px;
+}
+
+/* 日付セルの幅（編集画面） */
+.shift-print-root th:not(:first-child),
+.shift-print-root td:not(:first-child) {
+  width: 90px;
+}
+
 @media print {
   /* ページ設定: A3横、余白を6mm */
   @page {
