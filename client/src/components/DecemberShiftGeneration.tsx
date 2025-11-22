@@ -1938,9 +1938,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={4}></th>
                 </tr>
 
-                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-40 shadow-md">
+                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-[100] shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 top-0 z-[45] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 top-0 z-[110] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">氏名</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
@@ -2053,7 +2053,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
                             className={`
                             border border-slate-600 p-0 overflow-hidden relative
-                            ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:z-10 hover:shadow-lg'}
+                            ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
                           `}
