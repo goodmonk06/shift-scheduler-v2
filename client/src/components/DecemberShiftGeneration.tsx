@@ -1831,11 +1831,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           <div className="mb-4 flex justify-between text-[10px] font-serif items-start print:hidden">
             <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap">
               <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
-              <span className="text-red-600 bg-white px-2 py-0.5 rounded border border-red-600">休: 公休</span>
+              <span className="text-red-600 bg-gray-200 px-2 py-0.5 rounded border border-gray-300">休: 公休</span>
               <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
               <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">早: 早番</span>
               <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200">遅: 遅番</span>
-              <span className="px-2 py-0.5 rounded border border-orange-400 font-bold" style={{ color: '#7c2d12', backgroundColor: '#fb923c' }}>有: 有給</span>
+              <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">有: 有給</span>
               <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100">日A: 8-17</span>
               <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100">日B: 9-18</span>
             </div>
@@ -1954,12 +1954,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                         if (cellData.customText === '休' || cellData.customText === '休職') {
                           styles.color = '#dc2626'; // 赤色
-                          styles.backgroundColor = isLockedAndActive ? '#ffffff' : '#ffffff'; // 白背景
+                          styles.backgroundColor = '#e5e7eb'; // 灰色背景（グレー200）
                         }
                         else if (cellData.customText === '有' || cellData.customText === '有給') {
-                          styles.color = '#7c2d12'; // 濃いオレンジ文字（オレンジ900）
-                          styles.backgroundColor = '#fb923c'; // 濃いオレンジ背景（オレンジ400）
-                          styles.fontWeight = 'bold'; // 太字で強調
+                          styles.color = '#c2410c'; // オレンジ文字
+                          styles.backgroundColor = '#ffedd5'; // 薄いオレンジ背景（オレンジ100）
                         }
                         else if (cellData.customText === '夜') {
                           styles.color = '#ffffff';
