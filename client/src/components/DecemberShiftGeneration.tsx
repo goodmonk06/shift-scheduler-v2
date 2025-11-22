@@ -1001,6 +1001,27 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         });
       });
 
+      // 連勤カットの後処理
+      staffList.forEach(staff => {
+        let streak = 0;
+        dates.forEach(date => {
+          const key = `${staff.id}_${getIsoDate(date)}`;
+          const cell = newShifts[key];
+
+          const isWork = cell && !(cell.type === 'OFF' || cell.customText === '休');
+          if (isWork) {
+            streak++;
+            if (streak > MAX_CONSECUTIVE_WORK_DAYS && !cell.isLocked) {
+              // 5日目以降でロックされてないところは強制で休みにする
+              newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
+              streak = 0; // ここから新しいカウント
+            }
+          } else {
+            streak = 0;
+          }
+        });
+      });
+
       setShifts(newShifts);
     } catch (e) {
       console.error("Generation Error:", e);
