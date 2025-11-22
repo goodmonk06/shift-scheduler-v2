@@ -470,7 +470,7 @@ export const appRouter = router({
         name: z.string(),
         entries: z.array(z.object({
           employeeName: z.string(),
-          date: z.number(), // Day of month
+          date: z.string(), // Full date string YYYY-MM-DD (to support dates spanning multiple months)
           type: z.string(), // 'work' | 'holiday'
           text: z.string(), // e.g. "9:00～18:00" or "休"
         })),
@@ -536,7 +536,8 @@ export const appRouter = router({
             continue; // Skip if employee not found
           }
 
-          const dateStr = `${input.year}-${String(input.month).padStart(2, '0')}-${String(entry.date).padStart(2, '0')}`;
+          // entry.date is now a full date string YYYY-MM-DD
+          const dateStr = entry.date;
 
           let status: "working" | "off" = "working";
           let timeSlotId: number | null = null;

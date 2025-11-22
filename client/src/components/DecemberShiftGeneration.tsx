@@ -403,7 +403,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           if (cell) {
             entries.push({
               employeeName: staff.name,
-              date: date.getDate(),
+              date: getIsoDate(date), // Full date string YYYY-MM-DD instead of just day number
               type: cell.type === 'OFF' ? 'holiday' : 'work',
               text: cell.customText
             });
