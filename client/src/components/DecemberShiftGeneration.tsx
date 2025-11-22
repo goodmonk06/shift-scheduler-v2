@@ -1935,7 +1935,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
             </h1>
 
-            <div id="grid-wrapper" className={`shift-print-root ${printPreview ? 'overflow-visible m-0 p-0 w-full' : 'overflow-auto max-h-[calc(100vh-200px)]'}`}>
+            <div id="grid-wrapper" className={`shift-print-root ${printPreview ? 'overflow-visible m-0 p-0 w-full' : ''}`}>
             <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative table-fixed">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent sticky top-0 z-40" style={{ height: `${eventRowHeight}px` }}>
