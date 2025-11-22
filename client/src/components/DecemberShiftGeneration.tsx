@@ -628,45 +628,62 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       toast.info("PDF作成中...");
 
       // シフトテーブル全体を含む要素を取得（overflow-visibleのdiv）
-      const tableContainer = document.querySelector('.overflow-visible');
+      const tableContainer = document.querySelector('.overflow-visible') as HTMLElement;
       if (!tableContainer) {
         toast.error("テーブルが見つかりません");
         return;
       }
 
+      // oklch → rgb への色正規化（html2canvas実行前に行う）
+      // 元の要素のスタイルを保存
+      const originalStyles = new Map<HTMLElement, {
+        color: string;
+        backgroundColor: string;
+        borderColor: string;
+      }>();
+
+      // TreeWalkerで全要素を走査して色を焼き付ける
+      const walker = document.createTreeWalker(tableContainer, NodeFilter.SHOW_ELEMENT);
+      let node = walker.currentNode as HTMLElement | null;
+
+      while (node) {
+        const cs = window.getComputedStyle(node);
+
+        // 元のスタイルを保存
+        originalStyles.set(node, {
+          color: node.style.color,
+          backgroundColor: node.style.backgroundColor,
+          borderColor: node.style.borderColor
+        });
+
+        // 計算済みの色をinline styleに書き込む
+        if (cs.color) {
+          node.style.color = cs.color;
+        }
+        if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+          node.style.backgroundColor = cs.backgroundColor;
+        }
+        if (cs.borderColor) {
+          node.style.borderColor = cs.borderColor;
+        }
+
+        node = walker.nextNode() as HTMLElement | null;
+      }
+
       // html2canvasでテーブル全体を画像化（高解像度）
-      const canvas = await html2canvas(tableContainer as HTMLElement, {
+      const canvas = await html2canvas(tableContainer, {
         scale: 3, // 高解像度化
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        removeContainer: true,
-        onclone: (clonedDoc) => {
-          // oklch → rgb への色正規化
-          // ブラウザが計算したrgb値をinline styleに焼き付ける
-          const root = clonedDoc.querySelector('.overflow-visible') as HTMLElement;
-          if (root) {
-            const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
-            let node = walker.currentNode as HTMLElement | null;
+        removeContainer: true
+      });
 
-            while (node) {
-              const cs = window.getComputedStyle(node);
-
-              // 計算済みの色をinline styleに書き込む
-              if (cs.color) {
-                node.style.color = cs.color;
-              }
-              if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                node.style.backgroundColor = cs.backgroundColor;
-              }
-              if (cs.borderColor) {
-                node.style.borderColor = cs.borderColor;
-              }
-
-              node = walker.nextNode() as HTMLElement | null;
-            }
-          }
-        }
+      // 元のスタイルに戻す
+      originalStyles.forEach((original, element) => {
+        element.style.color = original.color;
+        element.style.backgroundColor = original.backgroundColor;
+        element.style.borderColor = original.borderColor;
       });
 
       // A3横サイズ（mm）
