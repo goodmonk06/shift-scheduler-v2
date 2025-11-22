@@ -797,7 +797,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             const s1 = d1 <= END_DATE ? newShifts[k1] : null;
             const s2 = d2 <= END_DATE ? newShifts[k2] : null;
 
-            const isS0Available = !s0 || (!s0.isLocked && s0.type !== 'OFF');
+            const isS0Available = !s0 || (!s0.isLocked && s0.type !== 'OFF' && s0.type !== 'EARLY' && s0.customText !== '明');
             const isS1Available = !s1 || (!s1.isLocked && s1.type !== 'OFF' && s1.type !== 'HOPE' && s1.type !== 'WINTER');
 
             if (isS0Available && isS1Available) {
@@ -846,7 +846,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           const c1 = k1 ? newShifts[k1] : null;
           const c2 = k2 ? newShifts[k2] : null;
 
-          const ok0 = !c0 || (!c0.isLocked && c0.type !== 'OFF');
+          const ok0 = !c0 || (!c0.isLocked && c0.type !== 'OFF' && c0.type !== 'EARLY' && c0.customText !== '明');
           const ok1 = !k1 || !c1 || (!c1.isLocked && c1.type !== 'OFF');
 
           if (!ok0 || !ok1) continue;
