@@ -359,7 +359,7 @@ export function ShiftCellEditor({
                         key={preset.label}
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs"
+                        className="h-7 text-xs bg-white hover:bg-gray-50"
                         onClick={() => applyTimePreset(preset)}
                       >
                         {preset.label}
@@ -413,6 +413,7 @@ export function ShiftCellEditor({
                 size="sm"
                 onClick={handleClear}
                 disabled={isSaving || isDeleting}
+                className="hover:bg-gray-100"
               >
                 空白に戻す
               </Button>
@@ -422,7 +423,7 @@ export function ShiftCellEditor({
                   size="sm"
                   onClick={handleDelete}
                   disabled={isSaving || isDeleting}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -434,6 +435,7 @@ export function ShiftCellEditor({
                 size="sm"
                 onClick={() => onOpenChange(false)}
                 disabled={isSaving || isDeleting}
+                className="bg-white hover:bg-gray-50"
               >
                 キャンセル
               </Button>
@@ -441,6 +443,7 @@ export function ShiftCellEditor({
                 size="sm"
                 onClick={handleSave}
                 disabled={isSaving || isDeleting}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {isSaving ? (
                   <>保存中...</>
