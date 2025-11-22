@@ -1577,7 +1577,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
         return (
           <div
-            className="shift-popover absolute z-[70] bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
+            className="shift-popover fixed z-[9999] bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
             style={{
               top: adjustedTop,
               left: adjustedLeft,
