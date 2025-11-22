@@ -206,7 +206,10 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
   let holidays = 0;
   let paidHolidays = 0;
 
-  dates.forEach(date => {
+  // 12月のみを集計（1月分は除外）
+  const decemberDates = dates.filter(d => d.getMonth() === 11); // 11 = 12月
+
+  decemberDates.forEach(date => {
     const key = `${staffId}_${getIsoDate(date)}`;
     const cell = shifts[key];
     if (!cell) return;
@@ -931,23 +934,26 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       }
 
 
-      // 5. 正社員の休日確保（期間全体で必ず9日）
+      // 5. 正社員の休日確保（12月のみで必ず9日）
       staffList.forEach(staff => {
         if (!FULL_TIME_STAFF_IDS.includes(staff.id)) return;
 
-        // 現在の休日数をカウント
+        // 12月の日付のみを抽出
+        const decemberDates = dates.filter(d => d.getMonth() === 11); // 11 = 12月
+
+        // 12月の休日数をカウント
         let currentHolidays = 0;
-        dates.forEach(date => {
+        decemberDates.forEach(date => {
           const s = newShifts[`${staff.id}_${getIsoDate(date)}`];
           if (s && (s.type === 'OFF' || s.customText === '休')) currentHolidays++;
         });
 
-        // 9日を超えている場合は、休日を減らす
+        // 9日を超えている場合は、12月の休日を減らす
         if (currentHolidays > REQUIRED_HOLIDAYS_FULLTIME) {
           let toRemove = currentHolidays - REQUIRED_HOLIDAYS_FULLTIME;
           const holidayKeys: string[] = [];
 
-          dates.forEach(date => {
+          decemberDates.forEach(date => {
             const key = `${staff.id}_${getIsoDate(date)}`;
             const s = newShifts[key];
             if (s && !s.isLocked && (s.type === 'OFF' || s.customText === '休')) {
@@ -963,10 +969,10 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           currentHolidays = REQUIRED_HOLIDAYS_FULLTIME;
         }
 
-        // 9日未満の場合は、休日を追加
+        // 9日未満の場合は、12月に休日を追加
         let needed = REQUIRED_HOLIDAYS_FULLTIME - currentHolidays;
         if (needed > 0) {
-          const candidates = dates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
+          const candidates = decemberDates.filter(date => newShifts[`${staff.id}_${getIsoDate(date)}`] === null);
           const shuffled = candidates.sort(() => 0.5 - Math.random());
           for (let i = 0; i < needed && i < shuffled.length; i++) {
             const key = `${staff.id}_${getIsoDate(shuffled[i])}`;
