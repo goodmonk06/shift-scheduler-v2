@@ -325,7 +325,6 @@ html {
   box-shadow: 0 2px 10px rgba(0,0,0,0.3) !important;
   margin: 0 auto 20px auto !important;
   padding: 5mm !important;
-  page-break-after: always;
   border: none !important;
   border-radius: 0 !important;
   overflow: visible !important;
