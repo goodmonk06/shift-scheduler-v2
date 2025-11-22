@@ -1929,7 +1929,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   </th>
 
                   {dates.map(date => (
-                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent w-[90px] min-w-[90px]">
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent !w-[90px] !min-w-[90px] !max-w-[90px]">
                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
                         {getEventName(date)}
                       </div>
@@ -1946,7 +1946,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 w-[90px] min-w-[90px]" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px]" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -2053,6 +2053,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
                             className={`
                             border border-slate-600 p-0 overflow-hidden relative z-[1]
+                            !w-[90px] !min-w-[90px] !max-w-[90px]
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
@@ -2107,7 +2108,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     }
 
                     return (
-                      <td key={date.toString()} className={`border border-slate-600 text-[9px] align-top p-1 ${bgClass}`}>
+                      <td key={date.toString()} className={`border border-slate-600 text-[9px] align-top p-1 !w-[90px] !min-w-[90px] !max-w-[90px] ${bgClass}`}>
                         {result && result.details.length > 0 ? (
                           <div className="flex flex-col gap-0.5">
                             {result.details.map((d: string, i: number) => (
@@ -2131,7 +2132,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       const dateIso = getIsoDate(date);
                       const isWarning = lateShiftWarnings.includes(dateIso);
                       return (
-                        <td key={date.toString()} className={`border border-slate-600 text-center ${isWarning ? 'bg-red-200 text-red-900 font-bold' : 'bg-white'}`}>
+                        <td key={date.toString()} className={`border border-slate-600 text-center !w-[90px] !min-w-[90px] !max-w-[90px] ${isWarning ? 'bg-red-200 text-red-900 font-bold' : 'bg-white'}`}>
                           {isWarning ? '⚠' : ''}
                         </td>
                       );
