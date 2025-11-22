@@ -286,7 +286,7 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   // 夜勤は16時～24時（翌日0時～9時は前日夜勤チェックでカウント）
   if (text === '夜' || type === 'NIGHT') return { start: 16, end: 24 };
   // 「明」は表記のみで時間カウントなし（前日の夜勤でカウント済み）
-  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '明') return null;
+  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '明' || text === '研修') return null;
 
   if (text === '日' || type === 'DAY') return { start: 9, end: 18 };
   if (text === '日A') return { start: 8, end: 17 };
