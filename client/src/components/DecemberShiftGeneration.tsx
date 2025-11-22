@@ -1557,23 +1557,23 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         const POPOVER_WIDTH = 320; // w-80 = 320px
 
         // セルの右側に配置（12px余白）
-        const popoverLeft = popoverState.targetRect.right + window.scrollX + 12;
+        const popoverLeft = popoverState.targetRect.right + 12;
 
         // 画面からはみ出る場合は左側に表示
         const showOnLeft = (popoverState.targetRect.right + POPOVER_WIDTH + 12) > window.innerWidth;
         const adjustedLeft = showOnLeft
-          ? popoverState.targetRect.left + window.scrollX - POPOVER_WIDTH - 12
+          ? popoverState.targetRect.left - POPOVER_WIDTH - 12
           : popoverLeft;
 
         // セルの垂直中央に合わせる
         const cellCenterY = popoverState.targetRect.top + popoverState.targetRect.height / 2;
-        const popoverTop = cellCenterY + window.scrollY - POPOVER_HEIGHT / 2;
+        const popoverTop = cellCenterY - POPOVER_HEIGHT / 2;
 
         // 画面からはみ出さないように調整
-        const adjustedTop = Math.max(10, Math.min(popoverTop, window.scrollY + window.innerHeight - POPOVER_HEIGHT - 10));
+        const adjustedTop = Math.max(10, Math.min(popoverTop, window.innerHeight - POPOVER_HEIGHT - 10));
 
         // 三角形の位置を計算（ポップアップの上端からの距離）
-        const arrowOffset = Math.max(20, Math.min(cellCenterY - (adjustedTop - window.scrollY), POPOVER_HEIGHT - 20));
+        const arrowOffset = Math.max(20, Math.min(cellCenterY - adjustedTop, POPOVER_HEIGHT - 20));
 
         return (
           <div
