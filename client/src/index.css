@@ -6053,10 +6053,10 @@ html {
 
   #grid-wrapper {
     break-before: avoid;
-    /* A3横サイズ(297mm) - 左右余白(12mm) */
-    width: calc(297mm - 12mm);
-    /* A3横サイズ(210mm) - 上下余白(12mm) - タイトル高さ(約14mm) */
-    height: calc(210mm - 12mm - 14mm);
+    /* A3横サイズ(420mm) - 左右余白(12mm) */
+    width: calc(420mm - 12mm);
+    /* A3横サイズ(297mm) - 上下余白(12mm) - タイトル高さ(約14mm) */
+    height: calc(297mm - 12mm - 14mm);
     overflow: hidden;
   }
 
