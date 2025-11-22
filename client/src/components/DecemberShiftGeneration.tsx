@@ -283,6 +283,9 @@ const getSurname = (fullname: string): string => {
 
 
 const parseShiftTime = (text: string, type: string): { start: number; end: number } | null => {
+  // null/undefinedは休みとして扱う
+  if (!text) return null;
+
   // 夜勤は16時～24時（翌日0時～9時は前日夜勤チェックでカウント）
   if (text === '夜' || type === 'NIGHT') return { start: 16, end: 24 };
   // 「明」は表記のみで時間カウントなし（前日の夜勤でカウント済み）
