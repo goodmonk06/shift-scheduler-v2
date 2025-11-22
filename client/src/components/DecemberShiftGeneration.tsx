@@ -1577,7 +1577,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
         return (
           <div
-            className="shift-popover absolute z-50 bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
+            className="shift-popover absolute z-[70] bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
             style={{
               top: adjustedTop,
               left: adjustedLeft,
@@ -1633,7 +1633,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   <button
                     key={t}
                     onClick={() => saveShiftChange({ type: 'DAY', customText: t })}
-                    className={`text-xs py-2 rounded-lg font-bold transition-all border-2 ${popoverState.currentValue.customText === t
+                    className={`text-xs py-2 px-2 rounded-lg font-bold transition-all border-2 whitespace-nowrap ${popoverState.currentValue.customText === t
                       ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
                       : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'
                       }`}
@@ -1734,7 +1734,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             onClick={() => setPrintPreview(!printPreview)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all border ${printPreview
               ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_15px_rgba(79,70,229,0.4)]'
-              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+              : 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700'
               }`}
           >
             <RefreshCw size={14} className={printPreview ? "" : ""} />
@@ -1751,7 +1751,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           <button
             onClick={handleOverwriteSave}
-            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-yellow-300 rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-indigo-800"
+            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-indigo-800"
           >
             <Save size={18} />
             {loadedShiftId ? '上書き保存' : '保存'}
@@ -1887,7 +1887,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap">
               <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
               <span className="text-red-600 bg-gray-200 px-2 py-0.5 rounded border border-gray-300">休: 公休</span>
-              <span className="text-white bg-blue-900 px-2 py-0.5 rounded border border-blue-800 font-bold">夜: 夜勤</span>
+              <span className="text-slate-900 bg-blue-200 px-2 py-0.5 rounded border border-blue-300 font-bold">夜: 夜勤</span>
               <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">早: 早番</span>
               <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200">遅: 遅番</span>
               <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">有: 有給</span>
@@ -1971,11 +1971,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden">日数</th>
-                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">時間</th>
-                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">夜勤</th>
-                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">休日</th>
-                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">有給</th>
+                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden">日数</th>
+                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">時間</th>
+                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">夜勤</th>
+                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">休日</th>
+                  <th className="border border-slate-600 w-24 min-w-[100px] bg-indigo-50 text-indigo-900 font-bold print:hidden">有給</th>
                 </tr>
               </thead>
               <tbody>
@@ -2109,11 +2109,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           </td>
                         );
                       })}
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-20 min-w-[80px] text-center">{stats.days}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-20 min-w-[80px] text-center">{stats.hours}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-20 min-w-[80px] text-center">{stats.nightCount}</td>
-                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-20 min-w-[80px] text-center ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-20 min-w-[80px] text-center">{stats.paidHolidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-24 min-w-[100px] text-center">{stats.days}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-24 min-w-[100px] text-center">{stats.hours}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-24 min-w-[100px] text-center">{stats.nightCount}</td>
+                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-24 min-w-[100px] text-center ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-24 min-w-[100px] text-center">{stats.paidHolidays}</td>
                     </tr>
                   );
                 })}
