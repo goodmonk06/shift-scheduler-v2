@@ -497,7 +497,12 @@ export const appRouter = router({
 
         // Helper to find employee ID by name
         const getEmployeeId = (name: string) => {
-          const emp = employees.find(e => e.name === name);
+          // スペースを正規化して名前を比較
+          const normalizedName = name?.replace(/\s+/g, ' ').trim();
+          const emp = employees.find(e => {
+            const empName = e.name?.replace(/\s+/g, ' ').trim();
+            return empName === normalizedName;
+          });
           return emp?.id;
         };
 

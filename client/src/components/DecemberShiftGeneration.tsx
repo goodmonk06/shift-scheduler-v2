@@ -515,8 +515,10 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         for (const detail of shiftData.shiftDetails) {
           // employeeIdからstaff情報を検索
           const staff = staffList.find(s => {
-            // 名前で検索
-            return detail.employee?.name === s.name;
+            // 名前で検索（スペースを正規化して比較）
+            const detailName = detail.employee?.name?.replace(/\s+/g, ' ').trim();
+            const staffName = s.name?.replace(/\s+/g, ' ').trim();
+            return detailName === staffName;
           });
 
           if (!staff) {
