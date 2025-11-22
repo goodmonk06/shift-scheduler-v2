@@ -308,6 +308,91 @@ html {
   display: none;
 }
 
+/* 印刷プレビューモード用スタイル */
+.print-preview-mode {
+  background: #525659 !important;
+}
+
+.print-preview-mode main {
+  background: #525659 !important;
+  padding: 20px !important;
+}
+
+.print-preview-mode main > div {
+  width: 297mm !important;
+  min-height: auto !important;
+  background: white !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3) !important;
+  margin: 0 auto 20px auto !important;
+  padding: 5mm !important;
+  page-break-after: always;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+.print-preview-mode .print\:hidden {
+  display: none !important;
+}
+
+.print-preview-mode .print\:shadow-none {
+  box-shadow: none !important;
+}
+
+.print-preview-mode .print\:p-0 {
+  padding: 0 !important;
+}
+
+.print-preview-mode .print\:border-none {
+  border: none !important;
+}
+
+.print-preview-mode table {
+  font-size: 6px !important;
+  width: 100% !important;
+}
+
+.print-preview-mode table th,
+.print-preview-mode table td {
+  padding: 0.5px 1px !important;
+  min-width: auto !important;
+  width: auto !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+}
+
+.print-preview-mode .w-8,
+.print-preview-mode .w-10,
+.print-preview-mode .w-20,
+.print-preview-mode .min-w-\\[32px\\],
+.print-preview-mode .min-w-\\[80px\\] {
+  width: auto !important;
+  min-width: auto !important;
+}
+
+.print-preview-mode table .sticky {
+  position: static !important;
+}
+
+.print-preview-mode h1 {
+  font-size: 14px !important;
+  margin-bottom: 2px !important;
+  margin-top: 2px !important;
+}
+
+.print-preview-mode p {
+  font-size: 8px !important;
+  margin: 0 !important;
+}
+
+.print-preview-mode .mb-6 {
+  margin-bottom: 4px !important;
+}
+
+.print-preview-mode .pb-4 {
+  padding-bottom: 2px !important;
+}
+
 /* ShiftPDFView専用スタイル */
 .shift-pdf-container {
   width: 100%;

@@ -1395,7 +1395,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         ref={scrollContainerRef}
         className="flex-1 overflow-auto bg-slate-100 relative"
       >
-        <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%' }} className="bg-white p-10 shadow-2xl shadow-slate-300/50 print:shadow-none print:p-0 mx-auto rounded-xl border border-slate-300 print:border-none mt-8 mb-8">
+        <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%' }} className={`bg-white shadow-2xl shadow-slate-300/50 print:shadow-none mx-auto rounded-xl border border-slate-300 print:border-none ${printPreview ? 'p-0 mt-0 mb-0' : 'p-10 mt-8 mb-8'} print:p-0`}>
 
           {/* AIチェック結果表示 */}
           {checkResult && (
