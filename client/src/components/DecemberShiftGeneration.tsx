@@ -1520,7 +1520,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         ref={scrollContainerRef}
         className="flex-1 overflow-auto bg-slate-100 relative"
       >
-        <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%' }} className={`bg-white shadow-2xl shadow-slate-300/50 print:shadow-none mx-auto rounded-xl border border-slate-300 print:border-none ${printPreview ? 'p-0 mt-0 mb-0' : 'p-10 mt-8 mb-8'} print:p-0`}>
+        <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%', height: '100%', margin: 0, padding: 0 }} className={`bg-white shadow-2xl shadow-slate-300/50 print:shadow-none mx-auto rounded-xl border border-slate-300 print:border-none ${printPreview ? 'p-0 mt-0 mb-0 mx-0' : 'p-10 mt-8 mb-8'} print:p-0 print:m-0`}>
 
           {/* AIチェック結果表示 */}
           {checkResult && (
@@ -1659,7 +1659,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
           </div>
 
-          <div className="overflow-visible">
+          <div className={`overflow-visible ${printPreview ? 'm-0 p-0 w-full' : ''}`}>
             <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
