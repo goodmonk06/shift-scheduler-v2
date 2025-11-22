@@ -1954,8 +1954,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                         if (cellData.customText === '休' || cellData.customText === '休職') {
                           styles.color = '#dc2626'; // 赤色
-                          // ロックありはとても薄いピンク、ロックなしは白
-                          styles.backgroundColor = isLockedAndActive ? '#fdf2f8' : '#ffffff'; // ピンク50 : 白
+                          // ロックありはほぼ白に近い薄いピンク、ロックなしは白
+                          styles.backgroundColor = isLockedAndActive ? '#fef7fb' : '#ffffff'; // ほぼ白のピンク : 白
                         }
                         else if (cellData.customText === '有' || cellData.customText === '有給') {
                           styles.color = '#c2410c'; // オレンジ文字
