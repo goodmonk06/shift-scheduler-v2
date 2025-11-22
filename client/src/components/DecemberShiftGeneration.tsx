@@ -288,8 +288,10 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
 
   // 夜勤は16時～24時（翌日0時～9時は前日夜勤チェックでカウント）
   if (text === '夜' || type === 'NIGHT') return { start: 16, end: 24 };
-  // 「明」は表記のみで時間カウントなし（前日の夜勤でカウント済み）
-  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '明' || text === '研修') return null;
+  // 「明」は0時～9時勤務
+  if (text === '明') return { start: 0, end: 9 };
+  // 休み扱い
+  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修') return null;
 
   if (text === '日' || type === 'DAY') return { start: 9, end: 18 };
   if (text === '日A') return { start: 8, end: 17 };
@@ -353,7 +355,10 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
         if (cell && (cell.type === 'NIGHT' || cell.customText === '夜')) {
           // 0:00～9:00 = slot 0～17 (9時間 × 2)
           for (let slot = 0; slot < 18; slot++) {
-            halfHourCounts[slot]++;
+            // 事務員（淺野さん）は人数カウントから除外
+            if (staff.id !== CLERK_STAFF_ID) {
+              halfHourCounts[slot]++;
+            }
             if (FULL_TIME_STAFF_IDS.includes(staff.id)) halfHourFullTimeCounts[slot]++;
           }
         }
@@ -378,9 +383,12 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 
       for (let slot = startSlot; slot < endSlot; slot++) {
         if (slot >= 0 && slot < 48) {
-          halfHourCounts[slot]++;
+          // 事務員（淺野さん）は人数カウントから除外
+          if (staff.id !== CLERK_STAFF_ID) {
+            halfHourCounts[slot]++;
+          }
           if (FULL_TIME_STAFF_IDS.includes(staff.id)) halfHourFullTimeCounts[slot]++;
-          // 事務員は9:00～18:00をカウント（slot 18～35）
+          // 事務員は9:00～18:00を正社員カウント（slot 18～35）
           if (staff.id === CLERK_STAFF_ID && slot >= 18 && slot < 36) halfHourFullTimeCounts[slot]++;
         }
       }
