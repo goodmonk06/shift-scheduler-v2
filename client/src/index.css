@@ -6084,12 +6084,10 @@ html {
     text-shadow: none !important;
   }
 
-  /* テーブルを幅いっぱいに */
+  /* テーブルレイアウト */
   #grid-wrapper > table {
-    width: 100%;
-    table-layout: fixed;
+    table-layout: auto !important;
     border-collapse: collapse;
-    font-size: 7pt !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -6099,14 +6097,30 @@ html {
     display: table-header-group;
   }
 
+  /* 氏名列の幅を固定 */
+  #grid-wrapper th:first-child,
+  #grid-wrapper td:first-child {
+    width: 30mm !important;
+    min-width: 30mm !important;
+    max-width: 30mm !important;
+  }
+
+  /* 日付セルの幅を固定 */
+  #grid-wrapper th:not(:first-child),
+  #grid-wrapper td:not(:first-child) {
+    width: 10.5mm !important;
+    min-width: 10.5mm !important;
+    max-width: 10.5mm !important;
+  }
+
   /* セルのサイズを調整（横長に） */
   #grid-wrapper th,
   #grid-wrapper td {
-    padding: 0.8mm 1mm !important;
+    padding: 0.8mm 0.5mm !important;
     font-size: 9pt !important;
-    line-height: 1.25 !important;
+    line-height: 1.2 !important;
     border: 0.4pt solid #000 !important;
-    min-height: 10mm !important;
+    min-height: 9mm !important;
   }
 
   /* stickyをリセット */
