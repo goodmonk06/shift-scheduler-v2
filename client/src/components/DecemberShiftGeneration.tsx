@@ -634,40 +634,21 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         return;
       }
 
-      // oklch → rgb への色正規化（html2canvas実行前に行う）
-      // 元の要素のスタイルを保存
-      const originalStyles = new Map<HTMLElement, {
-        color: string;
-        backgroundColor: string;
-        borderColor: string;
-      }>();
+      // 元のドキュメントで全要素の計算済みスタイルを事前収集
+      // この時点でoklchはブラウザによってrgbに変換されている
+      const computedStylesMap = new Map<number, CSSStyleDeclaration>();
+      const elementsArray: HTMLElement[] = [];
 
-      // TreeWalkerで全要素を走査して色を焼き付ける
       const walker = document.createTreeWalker(tableContainer, NodeFilter.SHOW_ELEMENT);
       let node = walker.currentNode as HTMLElement | null;
+      let index = 0;
 
       while (node) {
         const cs = window.getComputedStyle(node);
-
-        // 元のスタイルを保存
-        originalStyles.set(node, {
-          color: node.style.color,
-          backgroundColor: node.style.backgroundColor,
-          borderColor: node.style.borderColor
-        });
-
-        // 計算済みの色をinline styleに書き込む
-        if (cs.color) {
-          node.style.color = cs.color;
-        }
-        if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-          node.style.backgroundColor = cs.backgroundColor;
-        }
-        if (cs.borderColor) {
-          node.style.borderColor = cs.borderColor;
-        }
-
+        computedStylesMap.set(index, cs);
+        elementsArray.push(node);
         node = walker.nextNode() as HTMLElement | null;
+        index++;
       }
 
       // html2canvasでテーブル全体を画像化（高解像度）
@@ -676,14 +657,43 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        removeContainer: true
-      });
+        removeContainer: true,
+        onclone: (clonedDoc) => {
+          // 外部CSSスタイルシートを削除（oklchを含むため）
+          const styleSheets = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          styleSheets.forEach(sheet => sheet.remove());
 
-      // 元のスタイルに戻す
-      originalStyles.forEach((original, element) => {
-        element.style.color = original.color;
-        element.style.backgroundColor = original.backgroundColor;
-        element.style.borderColor = original.borderColor;
+          // クローンされた要素に事前収集したスタイルを適用
+          const clonedRoot = clonedDoc.querySelector('.overflow-visible') as HTMLElement;
+          if (clonedRoot) {
+            const clonedWalker = clonedDoc.createTreeWalker(clonedRoot, NodeFilter.SHOW_ELEMENT);
+            let clonedNode = clonedWalker.currentNode as HTMLElement | null;
+            let idx = 0;
+
+            while (clonedNode && idx < elementsArray.length) {
+              const cs = computedStylesMap.get(idx);
+              if (cs) {
+                // 計算済みの色とスタイルをクローンに適用
+                if (cs.color) clonedNode.style.color = cs.color;
+                if (cs.backgroundColor && cs.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                  clonedNode.style.backgroundColor = cs.backgroundColor;
+                }
+                if (cs.borderColor) clonedNode.style.borderColor = cs.borderColor;
+                if (cs.borderWidth) clonedNode.style.borderWidth = cs.borderWidth;
+                if (cs.borderStyle) clonedNode.style.borderStyle = cs.borderStyle;
+                if (cs.fontSize) clonedNode.style.fontSize = cs.fontSize;
+                if (cs.fontWeight) clonedNode.style.fontWeight = cs.fontWeight;
+                if (cs.fontFamily) clonedNode.style.fontFamily = cs.fontFamily;
+                if (cs.textAlign) clonedNode.style.textAlign = cs.textAlign;
+                if (cs.padding) clonedNode.style.padding = cs.padding;
+                if (cs.margin) clonedNode.style.margin = cs.margin;
+              }
+
+              clonedNode = clonedWalker.nextNode() as HTMLElement | null;
+              idx++;
+            }
+          }
+        }
       });
 
       // A3横サイズ（mm）
