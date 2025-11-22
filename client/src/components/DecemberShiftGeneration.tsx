@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 import { trpcClient } from "../lib/trpc";
 
@@ -621,8 +623,64 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     return calculateSufficiency(dates, shifts, staffList);
   }, [dates, shifts, staffList]);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      toast.info("PDF作成中...");
+
+      // テーブル要素を取得
+      const tableElement = document.querySelector('table');
+      if (!tableElement) {
+        toast.error("テーブルが見つかりません");
+        return;
+      }
+
+      // html2canvasでテーブルを画像化（高解像度）
+      const canvas = await html2canvas(tableElement, {
+        scale: 2, // 高解像度化
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      // A3横サイズ（mm）
+      const pdfWidth = 420; // A3横幅
+      const pdfHeight = 297; // A3縦幅
+
+      // キャンバスのアスペクト比を計算
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = imgWidth / imgHeight;
+
+      // PDFに収まるようにサイズ調整
+      let finalWidth = pdfWidth;
+      let finalHeight = pdfWidth / ratio;
+
+      if (finalHeight > pdfHeight) {
+        finalHeight = pdfHeight;
+        finalWidth = pdfHeight * ratio;
+      }
+
+      // PDF作成
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a3'
+      });
+
+      // 画像をPDFに追加（余白ゼロ）
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight);
+
+      // ファイル名を生成
+      const fileName = `${FACILITY_NAME}_${START_DATE.getFullYear()}年${START_DATE.getMonth() + 1}月_勤務表.pdf`;
+
+      // PDFを保存
+      pdf.save(fileName);
+      toast.success("PDFを作成しました");
+    } catch (error) {
+      console.error('PDF作成エラー:', error);
+      toast.error("PDF作成に失敗しました");
+    }
   };
 
   const zoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5));
