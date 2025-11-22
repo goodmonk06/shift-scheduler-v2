@@ -1944,7 +1944,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   </th>
 
                   {dates.map(date => (
-                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent w-[75px] min-w-[75px]">
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent w-[90px] min-w-[90px]">
                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
                         {getEventName(date)}
                       </div>
@@ -1961,7 +1961,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 w-[75px] min-w-[75px]" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 w-[90px] min-w-[90px]" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
