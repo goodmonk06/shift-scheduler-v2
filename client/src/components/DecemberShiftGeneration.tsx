@@ -2183,6 +2183,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </table>
           </div>
         </div>
+        </div>
       </main>
 
       {/* 保存モーダル */}
