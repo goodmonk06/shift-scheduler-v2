@@ -1946,7 +1946,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px]" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-[100]" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -1956,11 +1956,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3">日数</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">時間</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">夜勤</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">休日</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">有給</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3 sticky top-0 z-[100]">日数</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">時間</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">夜勤</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">休日</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">有給</th>
                 </tr>
               </thead>
               <tbody>
