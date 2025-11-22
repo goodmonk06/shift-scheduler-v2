@@ -1535,6 +1535,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       isOpen: true,
       staffId: staff.id,
       date: date,
+      dateStr: getIsoDate(date),
       staffName: staff.name,
       targetRect: rect,
       currentValue: currentVal
@@ -1690,37 +1691,40 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       {popoverState.isOpen && popoverState.targetRect && popoverState.date && (() => {
         const POPOVER_HEIGHT = 450; // ポップアップの推定高さ
-        const spaceBelow = window.innerHeight - (popoverState.targetRect.bottom - window.scrollY);
-        const showAbove = spaceBelow < POPOVER_HEIGHT;
-
-        // ポップアップの幅
         const POPOVER_WIDTH = 320; // w-80 = 320px
 
-        // セルの中央にポップアップを配置
-        const cellCenterX = popoverState.targetRect.left + popoverState.targetRect.width / 2;
-        const popoverLeft = cellCenterX - POPOVER_WIDTH / 2;
+        // セルの右側に配置（12px余白）
+        const popoverLeft = popoverState.targetRect.right + window.scrollX + 12;
+
+        // 画面からはみ出る場合は左側に表示
+        const showOnLeft = (popoverState.targetRect.right + POPOVER_WIDTH + 12) > window.innerWidth;
+        const adjustedLeft = showOnLeft
+          ? popoverState.targetRect.left + window.scrollX - POPOVER_WIDTH - 12
+          : popoverLeft;
+
+        // セルの垂直中央に合わせる
+        const cellCenterY = popoverState.targetRect.top + popoverState.targetRect.height / 2;
+        const popoverTop = cellCenterY + window.scrollY - POPOVER_HEIGHT / 2;
 
         // 画面からはみ出さないように調整
-        const adjustedLeft = Math.max(10, Math.min(popoverLeft + window.scrollX, document.body.scrollWidth - POPOVER_WIDTH - 10));
+        const adjustedTop = Math.max(10, Math.min(popoverTop, window.scrollY + window.innerHeight - POPOVER_HEIGHT - 10));
 
-        // 三角形の位置を計算（ポップアップの左端からの距離）
-        const arrowOffset = Math.max(20, Math.min(cellCenterX - (adjustedLeft - window.scrollX), POPOVER_WIDTH - 20));
+        // 三角形の位置を計算（ポップアップの上端からの距離）
+        const arrowOffset = Math.max(20, Math.min(cellCenterY - (adjustedTop - window.scrollY), POPOVER_HEIGHT - 20));
 
         return (
           <div
             className="shift-popover absolute z-50 bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
             style={{
-              top: showAbove
-                ? popoverState.targetRect.top + window.scrollY - POPOVER_HEIGHT - 12
-                : popoverState.targetRect.bottom + window.scrollY + 12,
+              top: adjustedTop,
               left: adjustedLeft,
             }}
           >
             <div className={`absolute w-4 h-4 bg-white border-indigo-300 transform rotate-45 ${
-              showAbove
-                ? '-bottom-2 border-b-2 border-r-2'
-                : '-top-2 border-t-2 border-l-2'
-            }`} style={{ left: `${arrowOffset}px` }}></div>
+              showOnLeft
+                ? '-right-2 border-r-2 border-t-2'
+                : '-left-2 border-l-2 border-b-2'
+            }`} style={{ top: `${arrowOffset}px` }}></div>
           <div className="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-3">
             <div className="flex items-center gap-2">
               <div className="bg-indigo-100 p-2 rounded-lg">
@@ -2187,10 +2191,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                         const isNightPrint = cellData.customText === '夜';
 
                         // 選択中のセルかどうかをチェック
+                        const currentDateStr = getIsoDate(date);
                         const isSelectedCell = popoverState.isOpen &&
-                          staff.id === popoverState.staffId &&
-                          popoverState.date &&
-                          getIsoDate(date) === getIsoDate(popoverState.date);
+                          String(staff.id) === String(popoverState.staffId) &&
+                          popoverState.dateStr &&
+                          currentDateStr === popoverState.dateStr;
 
                         return (
                           <td
@@ -2201,7 +2206,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             onMouseLeave={() => setHoveredCell({ staffId: null, dateStr: null })}
                             className={`
                             border border-slate-600 p-0 overflow-hidden relative
-                            ${isSelectedCell ? 'ring-4 ring-indigo-600 z-20 shadow-2xl' : ''}
+                            ${isSelectedCell ? '!ring-4 !ring-indigo-600 !z-20 !shadow-2xl' : ''}
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:z-10 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
