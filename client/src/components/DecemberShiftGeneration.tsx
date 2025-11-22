@@ -972,7 +972,24 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               let text = normalizeShiftText(cons.defaultShift || '9～18');
 
               if (cons.randomShifts && cons.randomShifts.length > 0) {
-                text = cons.randomShifts[Math.floor(Math.random() * cons.randomShifts.length)];
+                // その日に既に早番が入っているかチェック
+                const hasEarlyOnThisDay = staffList.some(s => {
+                  const cell = newShifts[`${s.id}_${getIsoDate(date)}`];
+                  return cell && (
+                    cell.customText === '早' ||
+                    cell.customText === '7～16'
+                  );
+                });
+
+                // 早番が既に入っている場合は、'早'を除外したリストから選択
+                let availableShifts = cons.randomShifts;
+                if (hasEarlyOnThisDay) {
+                  availableShifts = cons.randomShifts.filter(s => s !== '早');
+                }
+
+                if (availableShifts.length > 0) {
+                  text = availableShifts[Math.floor(Math.random() * availableShifts.length)];
+                }
               }
               else if (FULL_TIME_STAFF_IDS.includes(staff.id) && !cons.fixedTimeOnly) {
                 if (text === '日B' || text === '9～18') {
