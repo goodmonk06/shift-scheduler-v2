@@ -125,7 +125,17 @@ export function convertAssignmentToCell(
   if (assignment.isVacationRequest) {
     source = 'HOPE';
   }
-  // TODO: 生成履歴からAI_AUTOやRULE_AUTOを判定できるように拡張
+  // generatedByから適切なsourceを判定
+  if (assignment.generatedBy === 'ai') {
+    source = 'AI_AUTO';
+  } else if (assignment.generatedBy === 'rule_based') {
+    source = 'RULE_AUTO';
+  } else if (assignment.generatedBy === 'leave_request' || assignment.generatedBy === 'work_preference') {
+    source = 'HOPE';
+  }
+
+  // 希望休と希望勤務時間はロック（編集不可）
+  const isLocked = assignment.generatedBy === 'leave_request' || assignment.generatedBy === 'work_preference';
 
   return {
     shiftDetailId: assignment.shiftDetailId,
@@ -134,7 +144,7 @@ export function convertAssignmentToCell(
     shiftType,
     startTime,
     endTime,
-    isLocked: false,
+    isLocked,
     isHope: assignment.isVacationRequest,
     source,
     hasWarning: assignment.hasWarning,

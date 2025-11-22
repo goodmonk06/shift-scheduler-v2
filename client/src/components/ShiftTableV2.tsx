@@ -124,6 +124,9 @@ export function ShiftTableV2({
   // 編集中のセル
   const [editingCell, setEditingCell] = useState<ShiftCell | null>(null);
 
+  // 編集ロック（新規作成時と同じ仕様）
+  const [editLockEnabled, setEditLockEnabled] = useState(true);
+
   // 日付リストを生成
   const dates = useMemo(() => getDateRange(year, month), [year, month]);
 
@@ -256,15 +259,8 @@ export function ShiftTableV2({
     const key = getCellKey(employeeId, date);
     const cell = cells.get(key);
 
-    // 承認済み希望休/シフトのロック確認
-    if (cell?.source === 'HOPE' && cell?.isHope) {
-      const confirmed = confirm(
-        '⚠️ これは承認済みの希望休/シフトです。\n' +
-        'シフト作成段階では基本的に変更しないことが推奨されます。\n\n' +
-        'ロックを解除して編集しますか？'
-      );
-      if (!confirmed) return;
-    }
+    // 編集ロックが有効で、かつセルがロックされている場合は編集不可（新規作成時と同じ仕様）
+    if (editLockEnabled && cell?.isLocked) return;
 
     // 塗りつぶしモードの場合
     if (paintMode.active && paintMode.shiftType) {
@@ -390,6 +386,22 @@ export function ShiftTableV2({
                 </div>
               </RadioGroup>
             </div>
+
+            <Separator orientation="vertical" className="h-6" />
+
+            {/* 編集ロック切替（新規作成時と同じ仕様） */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditLockEnabled(!editLockEnabled)}
+              className={`${editLockEnabled
+                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-300'
+                }`}
+            >
+              {editLockEnabled ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
+              {editLockEnabled ? '保護中' : '編集可'}
+            </Button>
 
             <Separator orientation="vertical" className="h-6" />
 

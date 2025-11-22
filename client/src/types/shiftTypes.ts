@@ -23,6 +23,7 @@ export interface ShiftAssignment {
   warningMessage?: string;
   shiftDetailId?: number; // ID of the shift detail record for editing
   employeeDbId?: number; // Database numeric ID
+  generatedBy?: string; // How this shift was generated (leave_request, work_preference, rule_based, ai, manual)
 }
 
 export interface AIGenerationConfig {

@@ -273,6 +273,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
           isVacationRequest: detail.status === "requested_off",
           shiftDetailId: detail.id, // Include the ID for editing
           employeeDbId: detail.employeeId, // Database numeric ID
+          generatedBy: detail.generatedBy || undefined, // How this shift was generated
         };
       });
 
@@ -319,6 +320,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
               isVacationRequest: true,
               shiftDetailId: undefined,
               employeeDbId: request.employeeId,
+              generatedBy: 'leave_request', // Mark as generated from leave request
             });
           }
         }
