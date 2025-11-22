@@ -1664,11 +1664,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.color = '#1e40af';
                           styles.backgroundColor = isLockedAndActive ? '#bfdbfe' : '#dbeafe';
                         }
-                        else if (cellData.customText === '日A') {
+                        else if (cellData.customText === '日A' || cellData.customText === '8～17' || cellData.customText === '8-17') {
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe'; // Sky 100 (薄い水色系)
                         }
-                        else if (cellData.customText === '日B') {
+                        else if (cellData.customText === '日B' || cellData.customText === '9～18' || cellData.customText === '9-18') {
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#f9a8d4' : '#fce7f3'; // Pink 100
                         }
