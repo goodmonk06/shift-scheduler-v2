@@ -137,7 +137,6 @@ const SHIFT_TYPES = {
 };
 
 const SHIFT_PRESETS = [
-  { text: '日', type: 'DAY' },
   { text: '日A', type: 'DAY' },
   { text: '日B', type: 'DAY' },
   { text: '休', type: 'OFF' },
@@ -145,12 +144,10 @@ const SHIFT_PRESETS = [
   { text: '早', type: 'EARLY' },
   { text: '遅', type: 'LATE' },
   { text: '有', type: 'HOPE' },
-  { text: '冬', type: 'WINTER' },
-  { text: '明', type: 'EARLY' },
 ];
 
 const TIME_PRESETS = [
-  '7～16', '8～17', '9～18', '11～20', '9～16', '10～14', '10～15', '18～20'
+  '8～14', '8～15', '8～16', '9～15', '9～16', '9～17'
 ];
 
 const WORK_PATTERNS = ['7～16', '8～17', '9～18', '11～20'];
@@ -1738,7 +1735,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     onClick={() => saveShiftChange({ type: p.type, customText: p.text })}
                     className={`text-sm py-2.5 rounded-lg font-bold transition-all border-2 ${popoverState.currentValue.customText === p.text
                       ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
-                      : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'
+                      : p.text === '休'
+                        ? 'bg-white border-slate-300 text-red-600 hover:border-red-400 hover:text-red-700 hover:bg-red-50'
+                        : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'
                       }`}
                   >
                     {p.text}
@@ -1767,9 +1766,10 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
             <div>
               <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">カスタム入力</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-3">
                 <div className="relative flex-1">
                   <input
+                    id="custom-shift-input"
                     type="text"
                     className="w-full border-2 border-slate-300 rounded-lg pl-3 pr-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
                     placeholder="入力..."
@@ -1780,8 +1780,21 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   />
                 </div>
                 <button
+                  onClick={() => {
+                    const input = document.getElementById('custom-shift-input') as HTMLInputElement;
+                    if (input && input.value) {
+                      saveShiftChange({ type: 'DAY', customText: input.value });
+                    }
+                  }}
+                  className="px-4 py-2.5 border-2 border-emerald-500 bg-emerald-50 rounded-lg text-sm font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-600 transition-all"
+                >
+                  カスタム保存
+                </button>
+              </div>
+              <div className="flex justify-center">
+                <button
                   onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
-                  className="px-4 py-2.5 border-2 border-slate-300 rounded-lg text-sm font-bold text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 transition-all"
+                  className="px-6 py-2 border-2 border-red-300 bg-red-50 rounded-lg text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-400 transition-all"
                 >
                   クリア
                 </button>
