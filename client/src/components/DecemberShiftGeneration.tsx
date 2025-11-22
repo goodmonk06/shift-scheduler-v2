@@ -463,7 +463,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [isScrolledLeft, setIsScrolledLeft] = useState(false);
 
   const [contextMenu, setContextMenu] = useState<any>(null);
-  const [hoveredCell, setHoveredCell] = useState({ staffId: null as string | null, dateStr: null as string | null });
 
   const [popoverState, setPopoverState] = useState<any>({
     isOpen: false,
@@ -1379,10 +1378,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     }
   };
 
-  // ポップアップを閉じる処理（ハイライトもクリア）
+  // ポップアップを閉じる処理
   const closePopover = () => {
     setPopoverState((prev: any) => ({ ...prev, isOpen: false }));
-    setHoveredCell({ staffId: null, dateStr: null });
   };
 
   const handleCellClick = (e: React.MouseEvent, staff: any, date: Date) => {
@@ -1392,8 +1390,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     const rect = e.currentTarget.getBoundingClientRect();
     const dateStr = getIsoDate(date);
 
-    // ポップアップを開いてハイライトを固定
-    setHoveredCell({ staffId: staff.id, dateStr: dateStr });
     setPopoverState({
       isOpen: true,
       staffId: staff.id,
@@ -1982,17 +1978,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                         const isLocked = cellData.isLocked;
                         const isLockedAndActive = isLocked && editLockEnabled;
-                        const isHoveredRow = hoveredCell.staffId === staff.id;
-                        const isHoveredCol = hoveredCell.dateStr === getIsoDate(date);
 
                         let textColor = 'text-slate-900';
 
                         const lockPatternClass = isLockedAndActive
                           ? 'bg-[repeating-linear-gradient(45deg,#f8fafc,#f8fafc_5px,#f1f5f9_5px,#f1f5f9_10px)]'
                           : '';
-
-                        // クロスハイライトクラス
-                        const highlightClass = (isHoveredRow || isHoveredCol) ? 'bg-slate-50' : '';
 
                         const styles: any = {};
 
@@ -2053,11 +2044,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             styles.backgroundColor = '#dbeafe'; // blue-100
                           }
                           styles.boxShadow = 'inset 0 0 0 3px #3b82f6'; // blue-500の太い枠線効果
-                          styles.position = 'relative';
-                          styles.zIndex = 10;
-                        } else if (!styles.backgroundColor && (isHoveredRow || isHoveredCol)) {
-                          // カーソルホバー時：行または列全体を薄くハイライト
-                          styles.backgroundColor = '#f8fafc'; // Very light slate
                         }
 
                         return (
@@ -2065,16 +2051,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             key={key}
                             onClick={(e) => handleCellClick(e, staff, date)}
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
-                            onMouseEnter={() => {
-                              if (!popoverState.isOpen) {
-                                setHoveredCell({ staffId: staff.id, dateStr: getIsoDate(date) });
-                              }
-                            }}
-                            onMouseLeave={() => {
-                              if (!popoverState.isOpen) {
-                                setHoveredCell({ staffId: null, dateStr: null });
-                              }
-                            }}
                             className={`
                             border border-slate-600 p-0 overflow-hidden relative
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:z-10 hover:shadow-lg'}
