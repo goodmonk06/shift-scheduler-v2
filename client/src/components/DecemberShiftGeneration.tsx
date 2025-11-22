@@ -347,23 +347,7 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     const halfHourFullTimeCounts = new Array(48).fill(0);
 
     // 前日夜勤の翌日0～9時カウント
-    if (dateIdx > 0) {
-      const prevDate = dates[dateIdx - 1];
-      const prevKeySuffix = getIsoDate(prevDate);
-      staffList.forEach(staff => {
-        const cell = shifts[`${staff.id}_${prevKeySuffix}`];
-        if (cell && (cell.type === 'NIGHT' || cell.customText === '夜')) {
-          // 0:00～9:00 = slot 0～17 (9時間 × 2)
-          for (let slot = 0; slot < 18; slot++) {
-            // 事務員（淺野さん）は人数カウントから除外
-            if (staff.id !== CLERK_STAFF_ID) {
-              halfHourCounts[slot]++;
-            }
-            if (FULL_TIME_STAFF_IDS.includes(staff.id)) halfHourFullTimeCounts[slot]++;
-          }
-        }
-      });
-    }
+    // ※「明」で自動的にカウントされるため削除（二重カウント防止）
 
     // 当日のシフトカウント
     staffList.forEach(staff => {
