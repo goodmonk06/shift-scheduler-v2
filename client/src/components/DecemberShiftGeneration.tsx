@@ -2214,8 +2214,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.position = 'relative';
                           styles.zIndex = 10;
                         } else if (!styles.backgroundColor && (isHoveredRow || isHoveredCol)) {
-                          // カーソルホバー時：行または列全体を薄くハイライト
-                          styles.backgroundColor = '#f8fafc'; // Very light slate
+                          // カーソルホバー時：行または列全体をハイライト
+                          styles.backgroundColor = '#e2e8f0'; // slate-200（より濃いグレー）
                         }
 
                         return (
