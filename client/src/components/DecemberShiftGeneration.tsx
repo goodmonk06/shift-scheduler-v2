@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
 import { trpcClient } from "../lib/trpc";
 
@@ -719,153 +717,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     return calculateSufficiency(dates, shifts, staffList);
   }, [dates, shifts, staffList]);
 
-  const handlePrint = async () => {
-    try {
-      toast.info("PDF作成中...");
-
-      // シフトテーブル全体を含む要素を取得（overflow-visibleのdiv）
-      const tableContainer = document.querySelector('.overflow-visible') as HTMLElement;
-      if (!tableContainer) {
-        toast.error("テーブルが見つかりません");
-        return;
-      }
-
-      // 元のドキュメントで全要素の計算済みスタイルを事前収集
-      // この時点でoklchはブラウザによってrgbに変換されている
-      const computedStylesMap = new Map<number, CSSStyleDeclaration>();
-      const elementsArray: HTMLElement[] = [];
-
-      const walker = document.createTreeWalker(tableContainer, NodeFilter.SHOW_ELEMENT);
-      let node = walker.currentNode as HTMLElement | null;
-      let index = 0;
-
-      while (node) {
-        const cs = window.getComputedStyle(node);
-        computedStylesMap.set(index, cs);
-        elementsArray.push(node);
-        node = walker.nextNode() as HTMLElement | null;
-        index++;
-      }
-
-      // html2canvasでテーブル全体を画像化（高解像度）
-      const canvas = await html2canvas(tableContainer, {
-        scale: 3, // 高解像度化
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        removeContainer: true,
-        onclone: (clonedDoc) => {
-          // 全てのスタイルシート・スタイルタグを完全削除
-          const allStyles = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
-          allStyles.forEach(el => el.remove());
-
-          // headにあるスタイルも削除
-          const headStyles = clonedDoc.head?.querySelectorAll('style, link[rel="stylesheet"]');
-          headStyles?.forEach(el => el.remove());
-
-          // oklch色を含む全ての要素の属性を検査して削除
-          const allElements = clonedDoc.querySelectorAll('*');
-          allElements.forEach((el: Element) => {
-            const htmlEl = el as HTMLElement;
-
-            // style属性にoklchが含まれている場合は削除
-            if (htmlEl.getAttribute('style')?.includes('oklch')) {
-              htmlEl.removeAttribute('style');
-            }
-
-            // class属性も一旦削除（Tailwindのoklchクラスを回避）
-            if (htmlEl.getAttribute('class')) {
-              htmlEl.removeAttribute('class');
-            }
-          });
-
-          // クローンされた要素に事前収集したスタイルを適用
-          const clonedRoot = clonedDoc.querySelector('.overflow-visible') as HTMLElement;
-          if (clonedRoot) {
-            const clonedWalker = clonedDoc.createTreeWalker(clonedRoot, NodeFilter.SHOW_ELEMENT);
-            let clonedNode = clonedWalker.currentNode as HTMLElement | null;
-            let idx = 0;
-
-            while (clonedNode && idx < elementsArray.length) {
-              const cs = computedStylesMap.get(idx);
-              if (cs && clonedNode.style) {
-                // 重要な視覚スタイルのみを明示的に適用（oklchを含まないrgb値のみ）
-
-                // 色関連（oklchが残らないよう計算済みのrgb値を使用）
-                if (cs.color && cs.color.startsWith('rgb')) {
-                  clonedNode.style.color = cs.color;
-                }
-                if (cs.backgroundColor && cs.backgroundColor.startsWith('rgb')) {
-                  clonedNode.style.backgroundColor = cs.backgroundColor;
-                }
-                if (cs.borderColor && cs.borderColor.startsWith('rgb')) {
-                  clonedNode.style.borderColor = cs.borderColor;
-                }
-
-                // ボーダー
-                if (cs.borderWidth) clonedNode.style.borderWidth = cs.borderWidth;
-                if (cs.borderStyle) clonedNode.style.borderStyle = cs.borderStyle;
-
-                // テキストスタイル
-                if (cs.fontSize) clonedNode.style.fontSize = cs.fontSize;
-                if (cs.fontWeight) clonedNode.style.fontWeight = cs.fontWeight;
-                if (cs.fontFamily) clonedNode.style.fontFamily = cs.fontFamily;
-                if (cs.textAlign) clonedNode.style.textAlign = cs.textAlign;
-
-                // レイアウト
-                if (cs.padding) clonedNode.style.padding = cs.padding;
-                if (cs.margin) clonedNode.style.margin = cs.margin;
-                if (cs.width) clonedNode.style.width = cs.width;
-                if (cs.height) clonedNode.style.height = cs.height;
-                if (cs.display) clonedNode.style.display = cs.display;
-              }
-
-              clonedNode = clonedWalker.nextNode() as HTMLElement | null;
-              idx++;
-            }
-          }
-        }
-      });
-
-      // A3横サイズ（mm）
-      const pdfWidth = 420; // A3横幅
-      const pdfHeight = 297; // A3縦幅
-
-      // キャンバスのアスペクト比を計算
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = imgWidth / imgHeight;
-
-      // PDFに収まるようにサイズ調整
-      let finalWidth = pdfWidth;
-      let finalHeight = pdfWidth / ratio;
-
-      if (finalHeight > pdfHeight) {
-        finalHeight = pdfHeight;
-        finalWidth = pdfHeight * ratio;
-      }
-
-      // PDF作成
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a3'
-      });
-
-      // 画像をPDFに追加（余白ゼロ）
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, finalWidth, finalHeight);
-
-      // ファイル名を生成
-      const fileName = `${FACILITY_NAME}_${START_DATE.getFullYear()}年${START_DATE.getMonth() + 1}月_勤務表.pdf`;
-
-      // PDFを保存
-      pdf.save(fileName);
-      toast.success("PDFを作成しました");
-    } catch (error) {
-      console.error('PDF作成エラー:', error);
-      toast.error("PDF作成に失敗しました");
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
   const zoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5));
@@ -2075,7 +1928,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
           </div>
 
-          <div className={`overflow-visible ${printPreview ? 'm-0 p-0 w-full' : ''}`}>
+          {/* 印刷専用ヘッダー */}
+          <div className="print-header print-only">
+            {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
+          </div>
+
+          <div id="shift-print-root" className={`shift-print-root overflow-visible ${printPreview ? 'm-0 p-0 w-full' : ''}`}>
             <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
