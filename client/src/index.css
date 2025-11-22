@@ -6065,14 +6065,14 @@ html {
     break-before: avoid;
     /* A3横サイズ(420mm) - 左右余白(12mm) */
     width: calc(420mm - 12mm);
-    /* 高さ制限を外して全体を表示 */
-    max-height: calc(297mm - 12mm - 14mm);
+    /* 高さ制限を完全に削除 */
     overflow: visible;
   }
 
-  /* テーブル内で改ページしない */
-  table, thead, tbody, tr, td, th {
+  /* theadのみ改ページ禁止、tbodyは改ページ可能 */
+  thead {
     page-break-inside: avoid;
+    page-break-after: avoid;
   }
 
   /* 画面用のtransform/zoom/filterをすべてリセット */
@@ -6106,7 +6106,7 @@ html {
     font-size: 9pt !important;
     line-height: 1.3 !important;
     border: 0.4pt solid #000 !important;
-    height: 14mm !important;
+    min-height: 12mm !important;
   }
 
   /* stickyをリセット */
