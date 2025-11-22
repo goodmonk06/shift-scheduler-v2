@@ -2204,12 +2204,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           popoverState.dateStr &&
                           currentDateStr === popoverState.dateStr;
 
-                        // ホバー中 OR ポップアップで選択中のセル = 濃いハイライト
-                        const isCurrentCell = (isHoveredRow && isHoveredCol) || isPopoverCell;
-
                         // ハイライトを適用
-                        if (isCurrentCell) {
-                          // 現在のセル：濃い青色のハイライトと枠線
+                        if (isPopoverCell) {
+                          // ポップアップ表示中のセルのみ：濃い青色のハイライトと枠線
                           if (!styles.backgroundColor) {
                             styles.backgroundColor = '#dbeafe'; // blue-100
                           }
@@ -2217,7 +2214,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.position = 'relative';
                           styles.zIndex = 10;
                         } else if (!styles.backgroundColor && (isHoveredRow || isHoveredCol)) {
-                          // 行または列のホバー：薄いハイライト（色が未設定の場合のみ）
+                          // カーソルホバー時：行または列全体を薄くハイライト
                           styles.backgroundColor = '#f8fafc'; // Very light slate
                         }
 
