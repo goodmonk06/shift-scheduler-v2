@@ -199,10 +199,11 @@ const getEventName = (date: Date): string => {
   return '';
 };
 
-const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days: number; hours: number; nightCount: number; paidHolidays: number } => {
+const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days: number; hours: number; nightCount: number; holidays: number; paidHolidays: number } => {
   let days = 0;
   let hours = 0;
   let nightCount = 0;
+  let holidays = 0;
   let paidHolidays = 0;
 
   dates.forEach(date => {
@@ -217,7 +218,11 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       paidHolidays++;
       return;
     }
-    if (text === '休' || text === '休職' || text === '' || type === 'OFF') {
+    if (text === '休' || text === '休職' || type === 'OFF') {
+      holidays++;
+      return;
+    }
+    if (text === '') {
       return;
     }
 
@@ -250,7 +255,7 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
     }
   });
 
-  return { days, hours, nightCount, paidHolidays };
+  return { days, hours, nightCount, holidays, paidHolidays };
 };
 
 const getSurname = (fullname: string): string => {
@@ -1572,12 +1577,13 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden">日数</th>
                   <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">時間</th>
                   <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">夜勤</th>
+                  <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">休日</th>
                   <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">有給</th>
                 </tr>
               </thead>
               <tbody>
                 {staffList.map((staff, index) => {
-                  const stats = staffStats[staff.id] || { days: 0, hours: 0, nightCount: 0, paidHolidays: 0 };
+                  const stats = staffStats[staff.id] || { days: 0, hours: 0, nightCount: 0, holidays: 0, paidHolidays: 0 };
                   return (
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
                       {/* 氏名列 */}
@@ -1685,6 +1691,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden">{stats.days}</td>
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.hours}</td>
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.nightCount}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.holidays}</td>
                       <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.paidHolidays}</td>
                     </tr>
                   );
@@ -1696,6 +1703,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     <td className="border border-slate-600 bg-slate-50"></td>
                     {dates.map((d, idx) => <td key={idx} className="border border-slate-600 bg-slate-50"></td>)}
                     <td className="border border-slate-600 bg-slate-100 border-l-2 border-l-slate-800 print:hidden"></td>
+                    <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
                     <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
                     <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
                     <td className="border border-slate-600 bg-slate-100 print:hidden"></td>
@@ -1737,7 +1745,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </td>
                     );
                   })}
-                  <td colSpan={4} className="border border-slate-600 bg-slate-100"></td>
+                  <td colSpan={5} className="border border-slate-600 bg-slate-100"></td>
                 </tr>
               </tfoot>
             </table>
