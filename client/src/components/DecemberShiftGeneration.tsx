@@ -1650,14 +1650,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       <style>{`
         @media print {
           @page {
-            size: A4 landscape;
+            size: A3 landscape;
             margin: 5mm;
           }
           body {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
             background-color: white !important;
-            font-size: 9pt;
+            font-size: 7pt;
             width: 100%;
             height: 100%;
           }
@@ -1677,18 +1677,29 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           table, th, td {
             border: 1px solid #000 !important;
             border-collapse: collapse !important;
+            padding: 2px 4px !important;
+            font-size: 7pt !important;
           }
 
           main {
-            margin: 0;
-            padding: 0;
-            width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
             background: white !important;
-            overflow: visible !important; /* Print fix */
+            overflow: visible !important;
+            transform: scale(0.85);
+            transform-origin: top left;
           }
+
           /* Print specific fix for sticky headers which might be annoying in print */
           thead tr th, tbody tr td {
             position: static !important;
+          }
+
+          /* Ensure table fits on one page */
+          table {
+            page-break-inside: avoid;
+            width: 100% !important;
           }
         }
 

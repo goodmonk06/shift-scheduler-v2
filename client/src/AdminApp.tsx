@@ -152,7 +152,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     <VacationProvider>
       <div className="flex" data-user-type="admin">
         {/* Admin Sidebar Navigation */}
-        <aside className="w-64 bg-card border-r min-h-[calc(100vh-73px)]">
+        <aside className="w-64 bg-card border-r min-h-[calc(100vh-73px)] print:hidden">
         <ScrollArea className="h-[calc(100vh-73px)]">
           <nav className="space-y-1 p-4">
             {/* メイン */}
