@@ -1956,11 +1956,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="border border-slate-600 w-[160px] min-w-[160px] max-w-[160px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3">日数</th>
-                  <th className="border border-slate-600 w-[160px] min-w-[160px] max-w-[160px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">時間</th>
-                  <th className="border border-slate-600 w-[160px] min-w-[160px] max-w-[160px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">夜勤</th>
-                  <th className="border border-slate-600 w-[160px] min-w-[160px] max-w-[160px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">休日</th>
-                  <th className="border border-slate-600 w-[160px] min-w-[160px] max-w-[160px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3">有給</th>
+                  <th className="border border-slate-600 w-[90px] min-w-[90px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-2">日数</th>
+                  <th className="border border-slate-600 w-[90px] min-w-[90px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-2">時間</th>
+                  <th className="border border-slate-600 w-[90px] min-w-[90px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-2">夜勤</th>
+                  <th className="border border-slate-600 w-[90px] min-w-[90px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-2">休日</th>
+                  <th className="border border-slate-600 w-[90px] min-w-[90px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-2">有給</th>
                 </tr>
               </thead>
               <tbody>
@@ -2046,10 +2046,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.boxShadow = 'inset 0 0 0 3px #3b82f6'; // blue-500の太い枠線効果
                         }
 
-                        // シフトセルを確実にスティッキーヘッダーの下に配置
-                        styles.position = 'relative';
-                        styles.zIndex = 1;
-
                         return (
                           <td
                             key={key}
@@ -2064,25 +2060,27 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             style={styles}
                             title={isLockedAndActive ? "固定シフト (編集不可)" : "右クリックでクイック選択"}
                           >
-                            {isLockedAndActive && (
-                              <div className="absolute top-0.5 right-0.5 text-slate-500 print:hidden opacity-70">
-                                <Lock size={8} strokeWidth={3} />
-                              </div>
-                            )}
+                            <div className="w-full h-full relative">
+                              {isLockedAndActive && (
+                                <div className="absolute top-0.5 right-0.5 text-slate-500 print:hidden opacity-70">
+                                  <Lock size={8} strokeWidth={3} />
+                                </div>
+                              )}
 
-                            <div className={`w-full h-full flex items-center justify-center ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
-                              <span className={`transform inline-block whitespace-nowrap ${cellData.customText.length > 4 ? 'scale-75' : cellData.customText.length > 2 ? 'scale-90' : 'scale-100'}`}>
-                                {getDisplayText(cellData.customText, cellData.type)}
-                              </span>
+                              <div className={`w-full h-full flex items-center justify-center ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
+                                <span className={`transform inline-block whitespace-nowrap ${cellData.customText.length > 4 ? 'scale-75' : cellData.customText.length > 2 ? 'scale-90' : 'scale-100'}`}>
+                                  {getDisplayText(cellData.customText, cellData.type)}
+                                </span>
+                              </div>
                             </div>
                           </td>
                         );
                       })}
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-[160px] min-w-[160px] max-w-[160px] text-center px-3">{stats.days}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[160px] min-w-[160px] max-w-[160px] text-center px-3">{stats.hours}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[160px] min-w-[160px] max-w-[160px] text-center px-3">{stats.nightCount}</td>
-                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-[160px] min-w-[160px] max-w-[160px] text-center px-3 ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[160px] min-w-[160px] max-w-[160px] text-center px-3">{stats.paidHolidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-[90px] min-w-[90px] text-center px-2">{stats.days}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[90px] min-w-[90px] text-center px-2">{stats.hours}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[90px] min-w-[90px] text-center px-2">{stats.nightCount}</td>
+                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-[90px] min-w-[90px] text-center px-2 ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-[90px] min-w-[90px] text-center px-2">{stats.paidHolidays}</td>
                     </tr>
                   );
                 })}
