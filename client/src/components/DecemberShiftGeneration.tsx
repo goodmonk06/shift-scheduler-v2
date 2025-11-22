@@ -239,7 +239,7 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       return;
     }
 
-    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || type === 'DAY' || type === 'EARLY' || type === 'LATE') {
+    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === '冬' || type === 'DAY' || type === 'EARLY' || type === 'LATE') {
       hours += 8;
     } else {
       const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
