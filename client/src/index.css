@@ -6017,9 +6017,14 @@ html {
   display: none;
 }
 
-/* 編集画面でのセル幅統一 */
+/* 編集画面でのセル幅統一とスティッキー */
+#grid-wrapper {
+  position: relative;
+}
+
 .shift-print-root table {
   table-layout: fixed;
+  position: relative;
 }
 
 .shift-print-root th,
@@ -6033,6 +6038,16 @@ html {
 .shift-print-root th:first-child,
 .shift-print-root td:first-child {
   width: 120px;
+  position: sticky !important;
+  left: 0 !important;
+  background-color: white;
+  z-index: 30;
+}
+
+/* スティッキーヘッダー用（thead内） */
+.shift-print-root thead th:first-child {
+  z-index: 60 !important;
+  background-color: rgb(226, 232, 240) !important;
 }
 
 /* 日付セルの幅（編集画面） */
