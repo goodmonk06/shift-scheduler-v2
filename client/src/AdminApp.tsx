@@ -3,7 +3,7 @@ import {
   Home, Users, Sparkles, Calendar,
   Briefcase, Clock, Settings, UsersRound,
   FileText, Bell, Archive, BarChart3,
-  RefreshCw, LogOut, Server, PartyPopper
+  RefreshCw, LogOut, Server, PartyPopper, Menu
 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import { ScrollArea } from "./components/ui/scroll-area";
@@ -60,6 +60,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
   const [isDecemberSelectionModalOpen, setIsDecemberSelectionModalOpen] = useState(false);
   const [selectedDecemberShiftId, setSelectedDecemberShiftId] = useState<number | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // シフト編集画面へ遷移
   const handleEditShift = (shiftId: string) => {
@@ -152,180 +153,187 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     <VacationProvider>
       <div className="flex" data-user-type="admin">
         {/* Admin Sidebar Navigation */}
-        <aside className="w-64 bg-card border-r min-h-[calc(100vh-73px)] print:hidden">
+        <aside className={`${isSidebarOpen ? 'w-64' : 'w-16'} bg-card border-r min-h-[calc(100vh-73px)] print:hidden transition-all duration-300 relative`}>
+        {/* Toggle Button */}
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="absolute -right-3 top-4 z-50 bg-primary text-primary-foreground rounded-full p-1.5 shadow-lg hover:bg-primary/90 transition-colors"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
         <ScrollArea className="h-[calc(100vh-73px)]">
-          <nav className="space-y-1 p-4">
+          <nav className={`space-y-1 p-4 ${!isSidebarOpen && 'px-2'}`}>
             {/* メイン */}
             <div className="space-y-1">
               <Button
                 variant={adminView === "dashboard" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("dashboard")}
               >
-                <Home className="w-4 h-4 mr-2" />
-                ダッシュボード
+                <Home className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "ダッシュボード"}
               </Button>
             </div>
 
-            <Separator className="my-3" />
+            {isSidebarOpen && <Separator className="my-3" />}
 
             {/* マスタ管理 */}
             <div className="space-y-1">
-              <p className="px-3 py-2 text-xs text-muted-foreground">マスタ管理</p>
+              {isSidebarOpen && <p className="px-3 py-2 text-xs text-muted-foreground">マスタ管理</p>}
               <Button
                 variant={adminView === "employees" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("employees")}
               >
-                <Users className="w-4 h-4 mr-2" />
-                職員管理
+                <Users className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "職員管理"}
               </Button>
               <Button
                 variant={adminView === "position-groups" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("position-groups")}
               >
-                <Briefcase className="w-4 h-4 mr-2" />
-                役職グループ
+                <Briefcase className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "役職グループ"}
               </Button>
               <Button
                 variant={adminView === "work-time-slots" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("work-time-slots")}
               >
-                <Clock className="w-4 h-4 mr-2" />
-                勤務時間枠
+                <Clock className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "勤務時間枠"}
               </Button>
             </div>
 
-            <Separator className="my-3" />
+            {isSidebarOpen && <Separator className="my-3" />}
 
             {/* 設定 */}
             <div className="space-y-1">
-              <p className="px-3 py-2 text-xs text-muted-foreground">設定</p>
+              {isSidebarOpen && <p className="px-3 py-2 text-xs text-muted-foreground">設定</p>}
               <Button
                 variant={adminView === "workplace-rules" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("workplace-rules")}
               >
-                <Settings className="w-4 h-4 mr-2" />
-                職場ルール
+                <Settings className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "職場ルール"}
               </Button>
               <Button
                 variant={adminView === "required-staffing" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("required-staffing")}
               >
-                <UsersRound className="w-4 h-4 mr-2" />
-                必要人数設定
+                <UsersRound className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "必要人数設定"}
               </Button>
               <Button
                 variant={adminView === "facility-events" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("facility-events")}
               >
-                <PartyPopper className="w-4 h-4 mr-2" />
-                施設イベント
+                <PartyPopper className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "施設イベント"}
               </Button>
             </div>
 
-            <Separator className="my-3" />
+            {isSidebarOpen && <Separator className="my-3" />}
 
             {/* シフト管理 */}
             <div className="space-y-1">
-              <p className="px-3 py-2 text-xs text-muted-foreground">シフト管理</p>
+              {isSidebarOpen && <p className="px-3 py-2 text-xs text-muted-foreground">シフト管理</p>}
               <Button
                 variant={adminView === "shifts" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("shifts")}
               >
-                <Sparkles className="w-4 h-4 mr-2" />
-                シフト作成・編集
+                <Sparkles className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "シフト作成・編集"}
               </Button>
               <Button
                 variant={adminView === "december-shift-generation" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => setIsDecemberSelectionModalOpen(true)}
               >
-                <Calendar className="w-4 h-4 mr-2" />
-                12月シフト生成
+                <Calendar className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "12月シフト生成"}
               </Button>
               <Button
                 variant={adminView === "leave-requests" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("leave-requests")}
               >
-                <Calendar className="w-4 h-4 mr-2" />
-                希望休管理
+                <Calendar className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "希望休管理"}
               </Button>
               <Button
                 variant={adminView === "work-preferences" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("work-preferences")}
               >
-                <Clock className="w-4 h-4 mr-2" />
-                時間指定勤務希望
+                <Clock className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "時間指定勤務希望"}
               </Button>
               <Button
                 variant={adminView === "change-proposals" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("change-proposals")}
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                変更提案管理
+                <RefreshCw className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "変更提案管理"}
               </Button>
             </div>
 
-            <Separator className="my-3" />
+            {isSidebarOpen && <Separator className="my-3" />}
 
             {/* その他 */}
             <div className="space-y-1">
-              <p className="px-3 py-2 text-xs text-muted-foreground">その他</p>
+              {isSidebarOpen && <p className="px-3 py-2 text-xs text-muted-foreground">その他</p>}
               <Button
                 variant={adminView === "statistics" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("statistics")}
               >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                統計・レポート
+                <BarChart3 className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "統計・レポート"}
               </Button>
               <Button
                 variant={adminView === "emergency-notifications" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("emergency-notifications")}
               >
-                <Bell className="w-4 h-4 mr-2" />
-                緊急通知
+                <Bell className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "緊急通知"}
               </Button>
               <Button
                 variant={adminView === "archive" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("archive")}
               >
-                <Archive className="w-4 h-4 mr-2" />
-                アーカイブ
+                <Archive className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "アーカイブ"}
               </Button>
               <Button
                 variant={adminView === "server-management" ? "default" : "ghost"}
-                className="w-full justify-start rounded-xl"
+                className={`w-full ${isSidebarOpen ? 'justify-start' : 'justify-center px-2'} rounded-xl`}
                 onClick={() => handleViewChange("server-management")}
               >
-                <Server className="w-4 h-4 mr-2" />
-                サーバー管理
+                <Server className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+                {isSidebarOpen && "サーバー管理"}
               </Button>
             </div>
 
             {onLogout && (
               <>
-                <Separator className="my-3" />
+            {isSidebarOpen && <Separator className="my-3" />}
                 <div className="space-y-1">
                   <Button
                     variant="ghost"
                     className="w-full justify-start rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={onLogout}
                   >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    ログアウト
+                    <LogOut className={`w-4 h-4 ${isSidebarOpen && 'mr-2'}`} />
+              {isSidebarOpen && "ログアウト"}
                   </Button>
                 </div>
               </>
