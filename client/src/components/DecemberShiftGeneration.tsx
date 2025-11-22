@@ -1928,12 +1928,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
           </div>
 
-          {/* 印刷専用ヘッダー */}
-          <div className="print-header print-only">
-            {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
-          </div>
+          {/* 印刷専用コンテナ */}
+          <div id="print-root">
+            {/* 印刷専用ヘッダー */}
+            <h1 id="print-title" className="print-header print-only">
+              {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
+            </h1>
 
-          <div id="shift-print-root" className={`shift-print-root overflow-visible ${printPreview ? 'm-0 p-0 w-full' : ''}`}>
+            <div id="grid-wrapper" className={`shift-print-root overflow-visible ${printPreview ? 'm-0 p-0 w-full' : ''}`}>
             <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>

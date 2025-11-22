@@ -6018,37 +6018,30 @@ html {
 }
 
 @media print {
-  /* ページ設定: A3横、余白を最小に */
+  /* ページ設定: A3横、余白を6mm */
   @page {
     size: A3 landscape;
-    margin: 3mm;
+    margin: 6mm;
   }
 
-  body {
+  html, body {
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* 画面用要素を非表示 */
-  .print\:hidden,
-  .no-print,
-  header,
-  button,
-  .screen-only,
-  [data-sonner-toaster],
-  [data-sonner-toast],
-  .toast,
-  .Toaster {
-    display: none !important;
+  /* 全要素を非表示にして、print-root配下のみ表示（visibility分離） */
+  body * {
+    visibility: hidden;
   }
 
-  /* 印刷専用要素を表示 */
-  .print-only {
-    display: block !important;
+  #print-root,
+  #print-root * {
+    visibility: visible;
   }
 
-  /* 印刷ヘッダーのスタイル - 上部に配置、余白最小 */
-  .print-header {
+  /* タイトルと表が同じページに収まるように */
+  #print-title {
+    break-after: avoid;
     font-size: 14pt;
     font-weight: bold;
     text-align: center;
@@ -6058,22 +6051,32 @@ html {
     line-height: 1.2;
   }
 
-  /* シフト表のルートコンテナ */
-  #shift-print-root,
-  .shift-print-root {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    zoom: 1 !important;
-    transform: none !important;
-    overflow: visible !important;
+  #grid-wrapper {
+    break-before: avoid;
+    /* A3横サイズ(297mm) - 左右余白(12mm) */
+    width: calc(297mm - 12mm);
+    /* A3横サイズ(210mm) - 上下余白(12mm) - タイトル高さ(約14mm) */
+    height: calc(210mm - 12mm - 14mm);
+    overflow: hidden;
   }
 
-  /* テーブルを幅いっぱいに、フォントサイズを小さく */
-  .shift-print-root table {
-    width: 100% !important;
-    max-width: 100% !important;
+  /* テーブル内で改ページしない */
+  table, thead, tbody, tr, td, th {
+    page-break-inside: avoid;
+  }
+
+  /* 画面用のtransform/zoom/filterをすべてリセット */
+  #print-root * {
+    transform: none !important;
+    zoom: 1 !important;
+    filter: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* テーブルを幅いっぱいに */
+  #grid-wrapper > table {
+    width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 7pt !important;
@@ -6082,27 +6085,26 @@ html {
   }
 
   /* thead を各ページで繰り返し */
-  .shift-print-root thead {
+  #grid-wrapper thead {
     display: table-header-group;
   }
 
-  /* セルの余白を最小に、フォントサイズを小さく */
-  .shift-print-root th,
-  .shift-print-root td {
+  /* セルの余白を最小に */
+  #grid-wrapper th,
+  #grid-wrapper td {
     padding: 0.5mm !important;
     font-size: 7pt !important;
     line-height: 1.1 !important;
     border: 0.3pt solid #000 !important;
   }
 
-  /* 不要な影やエフェクトを削除 */
-  .shift-print-root * {
-    box-shadow: none !important;
-    text-shadow: none !important;
+  /* stickyをリセット */
+  #grid-wrapper .sticky {
+    position: static !important;
   }
 
-  /* stickyをリセット */
-  .shift-print-root .sticky {
-    position: static !important;
+  /* 印刷専用要素を表示 */
+  .print-only {
+    display: block !important;
   }
 }
