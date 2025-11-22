@@ -1,0 +1,185 @@
+{
+  "description": "2025年12月シフト修正データ（～2026/1/5まで含む）",
+  "targetShift": {
+    "year": 2025,
+    "month": 12
+  },
+  "fixes": [
+    {
+      "employeeName": "山口 夕香里",
+      "date": "2025-12-04",
+      "displayText": "研修",
+      "status": "working",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": null,
+      "isLocked": true,
+      "note": "研修追加"
+    },
+    {
+      "employeeName": "松嵜 愛梨",
+      "date": "2025-12-31",
+      "displayText": "夜",
+      "status": "working",
+      "startTime": "16:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "夜勤に修正"
+    },
+    {
+      "employeeName": "松嵜 愛梨",
+      "date": "2026-01-01",
+      "displayText": "明",
+      "status": "working",
+      "startTime": "00:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "明けに修正"
+    },
+    {
+      "employeeName": "松嵜 愛梨",
+      "date": "2026-01-02",
+      "displayText": "休",
+      "status": "off",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": "off",
+      "isLocked": true,
+      "note": "休みに修正"
+    },
+    {
+      "employeeName": "杉山 美佳子",
+      "date": "2025-12-05",
+      "displayText": "休",
+      "status": "off",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": "off",
+      "isLocked": true,
+      "note": "希望休として固定"
+    },
+    {
+      "employeeName": "杉山 美佳子",
+      "date": "2026-01-01",
+      "displayText": "夜",
+      "status": "working",
+      "startTime": "16:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "夜勤追加"
+    },
+    {
+      "employeeName": "杉山 美佳子",
+      "date": "2026-01-02",
+      "displayText": "明",
+      "status": "working",
+      "startTime": "00:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "明け追加"
+    },
+    {
+      "employeeName": "杉山 美佳子",
+      "date": "2026-01-03",
+      "displayText": "休",
+      "status": "off",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": "off",
+      "isLocked": true,
+      "note": "休み追加"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2025-12-03",
+      "displayText": "休",
+      "status": "off",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": "off",
+      "isLocked": true,
+      "note": "希望休追加"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2025-12-28",
+      "displayText": "有休",
+      "status": "off",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": "yukyu",
+      "isLocked": true,
+      "note": "有給追加"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2025-12-30",
+      "displayText": "夜",
+      "status": "working",
+      "startTime": "16:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "夜勤に修正"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2025-12-31",
+      "displayText": "明",
+      "status": "working",
+      "startTime": "00:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "明けに修正"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2026-01-01",
+      "displayText": "休",
+      "status": "off",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": "off",
+      "isLocked": true,
+      "note": "休みに修正"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2026-01-03",
+      "displayText": "夜",
+      "status": "working",
+      "startTime": "16:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "夜勤に修正"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2026-01-04",
+      "displayText": "明",
+      "status": "working",
+      "startTime": "00:00",
+      "endTime": "10:00",
+      "leaveType": null,
+      "isLocked": true,
+      "note": "明けに修正"
+    },
+    {
+      "employeeName": "梅田 英津子",
+      "date": "2026-01-05",
+      "displayText": "休",
+      "status": "off",
+      "startTime": null,
+      "endTime": null,
+      "leaveType": "off",
+      "isLocked": true,
+      "note": "休みに修正"
+    }
+  ]
+}
