@@ -6162,11 +6162,6 @@ html {
     min-height: 9mm !important;
   }
 
-  /* stickyをリセット */
-  #grid-wrapper .sticky {
-    position: static !important;
-  }
-
   /* 印刷専用要素を表示 */
   .print-only {
     display: block !important;
