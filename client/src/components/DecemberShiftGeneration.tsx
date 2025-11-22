@@ -636,10 +636,29 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       // html2canvasでテーブルを画像化（高解像度）
       const canvas = await html2canvas(tableElement, {
-        scale: 2, // 高解像度化
+        scale: 3, // 高解像度化
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: null, // 透明背景でoklchエラーを回避
+        removeContainer: true,
+        foreignObjectRendering: false, // oklchサポート問題を回避
+        onclone: (clonedDoc) => {
+          // クローンされたドキュメント内のすべての要素のスタイルを確認
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el: any) => {
+            const styles = window.getComputedStyle(el);
+            // oklchを含むスタイルを標準的な色に変換
+            if (styles.backgroundColor && styles.backgroundColor.includes('oklch')) {
+              el.style.backgroundColor = '#ffffff';
+            }
+            if (styles.color && styles.color.includes('oklch')) {
+              el.style.color = '#000000';
+            }
+            if (styles.borderColor && styles.borderColor.includes('oklch')) {
+              el.style.borderColor = '#000000';
+            }
+          });
+        }
       });
 
       // A3横サイズ（mm）
