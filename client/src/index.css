@@ -6117,4 +6117,14 @@ html {
   .print-only {
     display: block !important;
   }
+
+  /* print:hiddenクラスで画面表示用要素を非表示 */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* tfootを完全に非表示 */
+  tfoot {
+    display: none !important;
+  }
 }
