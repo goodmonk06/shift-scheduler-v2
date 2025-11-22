@@ -268,6 +268,32 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   return { start: 9, end: 18 };
 };
 
+const getDisplayText = (text: string, type: string) => {
+  if (!text) return '';
+
+  // 優先される記号系
+  if (text === '日A') return '日A';
+  if (text === '日B') return '日B';
+  if (text === '冬')  return '冬';
+  if (text === '明')  return '明';
+  if (text === '有' || text === '有給') return '有';
+  if (text === '休' || text === '休職') return text;
+
+  // 遅番
+  if (text === '遅' || (text.includes('11') && text.includes('20')) || type === 'LATE') {
+    return '遅';
+  }
+
+  // 日勤A/B
+  if (text.includes('8') && text.includes('17')) return '日A';
+  if (text.includes('9') && text.includes('18')) return '日B';
+
+  // 早番（時間だけ入ってるケース）
+  if ((text.includes('7') && text.includes('16')) && type === 'DAY') return '早';
+
+  return text;
+};
+
 const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any => {
   const results: any = {};
 
@@ -1551,7 +1577,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                             <div className={`w-full h-full flex items-center justify-center ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
                               <span className={`transform inline-block whitespace-nowrap ${cellData.customText.length > 4 ? 'scale-75' : cellData.customText.length > 2 ? 'scale-90' : 'scale-100'}`}>
-                                {cellData.customText}
+                                {getDisplayText(cellData.customText, cellData.type)}
                               </span>
                             </div>
                           </td>
