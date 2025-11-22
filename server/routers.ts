@@ -542,6 +542,8 @@ export const appRouter = router({
           let status: "working" | "off" = "working";
           let timeSlotId: number | null = null;
           let leaveType: "休" | "有休" | null = null;
+          let startTime: string | undefined = undefined;
+          let endTime: string | undefined = undefined;
 
           if (entry.type === 'holiday') {
             status = "off";
@@ -549,6 +551,19 @@ export const appRouter = router({
           } else {
             status = "working";
             timeSlotId = getTimeSlotId(entry.text);
+
+            // If timeSlotId not found, try to extract time from text and save as startTime/endTime
+            if (!timeSlotId && entry.text) {
+              // Match patterns like "8～14", "8半～13", "09:00～18:00"
+              const timeMatch = entry.text.match(/(\d{1,2})半?[～~:](\d{1,2})/);
+              if (timeMatch) {
+                const start = timeMatch[1];
+                const end = timeMatch[2];
+                const startHalf = entry.text.includes('半');
+                startTime = `${start.padStart(2, '0')}:${startHalf ? '30' : '00'}`;
+                endTime = `${end.padStart(2, '0')}:00`;
+              }
+            }
           }
 
           try {
@@ -559,6 +574,8 @@ export const appRouter = router({
               status: status,
               timeSlotId: timeSlotId,
               leaveType: leaveType,
+              startTime: startTime,
+              endTime: endTime,
               generatedBy: "ai" as const,
               isChanged: false,
               createdAt: new Date(),

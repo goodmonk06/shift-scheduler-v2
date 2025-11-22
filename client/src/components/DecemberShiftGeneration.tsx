@@ -500,6 +500,16 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             customText = detail.leaveType || '休';
           } else if (detail.timeSlot) {
             customText = detail.timeSlot.displayLabel || detail.timeSlot.name || '';
+          } else if (detail.startTime && detail.endTime) {
+            // timeSlotがnullでもstartTime/endTimeから復元
+            const start = detail.startTime.substring(0, 5); // "HH:MM"
+            const end = detail.endTime.substring(0, 5);
+            // "08:30～13:00" → "8半～13" のような形式に変換
+            const startHour = parseInt(start.split(':')[0]);
+            const startMin = start.split(':')[1];
+            const endHour = parseInt(end.split(':')[0]);
+            const startStr = startMin === '30' ? `${startHour}半` : `${startHour}`;
+            customText = `${startStr}～${endHour}`;
           }
 
           newShifts[key] = {
