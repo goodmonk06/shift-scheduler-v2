@@ -436,6 +436,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
   const [loadedShiftId, setLoadedShiftId] = useState<number | null>(null);
+  const [loadedShiftName, setLoadedShiftName] = useState<string>("");
   const [progress, setProgress] = useState(0);
   const [loadingStage, setLoadingStage] = useState('');
   const [printPreview, setPrintPreview] = useState(false);
@@ -467,6 +468,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMode, setSaveMode] = useState<'overwrite' | 'new'>('new');
   const [lateShiftWarnings, setLateShiftWarnings] = useState<string[]>([]);
 
   const handleSaveToDB = async () => {
@@ -505,15 +507,44 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       console.log(`[DecemberShiftGeneration] Saving ${entries.length} shift entries...`);
 
-      const result = await trpcClient.shifts.saveStandalone.mutate({
-        year: 2025,
-        month: 12,
-        name: saveName,
-        entries: entries
-      });
+      let result;
+      if (saveMode === 'overwrite' && loadedShiftId) {
+        // 上書き保存: 既存のシフト詳細を削除してから新規保存（同じID）
+        console.log(`[DecemberShiftGeneration] Overwriting shift ID: ${loadedShiftId}`);
 
-      console.log(`[DecemberShiftGeneration] Save result:`, result);
-      toast.success(`シフトを保存しました (${entries.length}件)`);
+        // まず既存のシフト詳細を削除（deleteByShiftIdが必要、またはサーバー側で対応）
+        // 今回は簡易的に、shiftIdを指定してsaveStandaloneで上書き保存
+        // サーバー側でshiftIdパラメータを受け取れるように修正が必要
+
+        // 暫定: 新規保存として処理し、loadedShiftIdとloadedShiftNameを更新
+        result = await trpcClient.shifts.saveStandalone.mutate({
+          year: 2025,
+          month: 12,
+          name: saveName,
+          entries: entries,
+          overwriteShiftId: loadedShiftId  // サーバー側で対応が必要
+        });
+
+        toast.success(`シフトを上書き保存しました (${entries.length}件)`);
+      } else {
+        // 新規保存
+        result = await trpcClient.shifts.saveStandalone.mutate({
+          year: 2025,
+          month: 12,
+          name: saveName,
+          entries: entries
+        });
+
+        console.log(`[DecemberShiftGeneration] Save result:`, result);
+        toast.success(`シフトを保存しました (${entries.length}件)`);
+
+        // 新規保存の場合、loadedShiftIdを更新
+        if (result && result.shiftId) {
+          setLoadedShiftId(result.shiftId);
+          setLoadedShiftName(saveName);
+        }
+      }
+
       setIsSaveModalOpen(false);
     } catch (error: any) {
       console.error('[DecemberShiftGeneration] Save failed:', error);
@@ -523,9 +554,25 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     }
   };
 
-  const openSaveModal = () => {
-    // Generate default name: "12月シフト_v{count}" (we don't know count, so just timestamp or random)
+  const handleOverwriteSave = () => {
+    if (loadedShiftId && loadedShiftName) {
+      // 既存シフトがある場合は直接上書き保存
+      setSaveMode('overwrite');
+      setSaveName(loadedShiftName);
+      setIsSaveModalOpen(true);
+    } else {
+      // 新規の場合は名前入力モーダル
+      const defaultName = `12月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
+      setSaveMode('overwrite');
+      setSaveName(defaultName);
+      setIsSaveModalOpen(true);
+    }
+  };
+
+  const handleNewSave = () => {
+    // 常に新しい名前で保存
     const defaultName = `12月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
+    setSaveMode('new');
     setSaveName(defaultName);
     setIsSaveModalOpen(true);
   };
@@ -550,6 +597,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           setLoadedShiftId(initialShiftId); // エラーでも再試行を防ぐ
           return;
         }
+
+        // シフト名を保存
+        setLoadedShiftName(shiftData.name || "");
 
         console.log('[DecemberShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
 
@@ -1783,11 +1833,19 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           </button>
 
           <button
-            onClick={openSaveModal}
-            className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-green-700"
+            onClick={handleOverwriteSave}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-blue-700"
           >
             <Save size={18} />
-            保存
+            {loadedShiftId ? '上書き保存' : '保存'}
+          </button>
+
+          <button
+            onClick={handleNewSave}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl text-base font-bold border-2 border-green-700"
+          >
+            <Save size={18} />
+            新しく保存
           </button>
 
           <button
@@ -2181,16 +2239,33 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       {isSaveModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
-            <h2 className="text-2xl font-bold mb-6 text-gray-900">シフトを保存</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">
+              {saveMode === 'overwrite' && loadedShiftId ? '上書き保存' : 'シフトを保存'}
+            </h2>
+
+            {saveMode === 'overwrite' && loadedShiftId && (
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  「{loadedShiftName}」を上書き保存します。<br />
+                  元のデータは復元できません。
+                </p>
+              </div>
+            )}
+
             <div className="mb-6">
               <label className="block text-sm font-semibold mb-3 text-gray-700">バージョン名</label>
               <input
                 type="text"
                 value={saveName}
                 onChange={(e) => setSaveName(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                disabled={saveMode === 'overwrite' && loadedShiftId}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg ${
+                  saveMode === 'overwrite' && loadedShiftId
+                    ? 'bg-gray-100 text-gray-600 cursor-not-allowed border-gray-200'
+                    : 'border-gray-300'
+                }`}
                 placeholder="例: 12月シフト_20251122_001"
-                autoFocus
+                autoFocus={!loadedShiftId}
               />
             </div>
             <div className="flex gap-3 justify-end">
@@ -2203,9 +2278,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               <button
                 onClick={handleSaveToDB}
                 disabled={isSaving}
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed font-semibold transition-all text-base shadow-lg hover:shadow-xl"
+                className={`px-6 py-3 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-base shadow-lg hover:shadow-xl ${
+                  saveMode === 'overwrite' ? 'bg-blue-600' : 'bg-green-600'
+                }`}
               >
-                {isSaving ? '保存中...' : '保存'}
+                {isSaving ? '保存中...' : saveMode === 'overwrite' && loadedShiftId ? '上書き保存' : '保存'}
               </button>
             </div>
           </div>

@@ -475,21 +475,38 @@ export const appRouter = router({
           text: z.string(), // e.g. "9:00～18:00" or "休"
           isLocked: z.boolean().optional(), // ロック状態（希望休・希望勤務時間）
         })),
+        overwriteShiftId: z.number().optional(), // 上書き保存用のシフトID
       }))
       .mutation(async ({ input, ctx }) => {
-        // 1. Create Shift Record using db helper
-        const newShift = await db.createShift({
-          year: input.year,
-          month: input.month,
-          name: input.name,
-          status: "ai_generated", // Treat as AI generated so it can be edited
-          generatedBy: "ai",
-          userId: ctx.user?.id || null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        let newShiftId: number;
 
-        const newShiftId = newShift.id;
+        if (input.overwriteShiftId) {
+          // 上書き保存: 既存のshiftDetailsを削除
+          console.log(`[saveStandalone] Overwriting shift ID: ${input.overwriteShiftId}`);
+          await db.deleteShiftDetailsByShiftId(input.overwriteShiftId);
+
+          // シフト名を更新
+          await db.updateShift(input.overwriteShiftId, {
+            name: input.name,
+            updatedAt: new Date(),
+          });
+
+          newShiftId = input.overwriteShiftId;
+        } else {
+          // 1. Create Shift Record using db helper
+          const newShift = await db.createShift({
+            year: input.year,
+            month: input.month,
+            name: input.name,
+            status: "ai_generated", // Treat as AI generated so it can be edited
+            generatedBy: "ai",
+            userId: ctx.user?.id || null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+
+          newShiftId = newShift.id;
+        }
 
         // 2. Prepare Data for Details
         const employees = await db.getAllEmployees();
