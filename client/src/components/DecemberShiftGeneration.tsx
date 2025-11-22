@@ -158,15 +158,6 @@ const getIsoDate = (date: Date): string => {
   return `${y}-${m}-${d}`;
 };
 
-const YAMAGUCHI_ID = '2';  // 山口
-const OHASHI_ID = '7';     // 大橋
-
-const NIGHT_SOFT_CAP: Record<string, number> = {
-  [YAMAGUCHI_ID]: 1, // 山口だけ抑制
-};
-
-const NIGHT_COOLDOWN_DAYS = 2;
-
 const isHoliday = (date: Date): boolean => {
   const day = date.getDay();
   return day === 0 || day === 6;
@@ -194,152 +185,6 @@ const getNightShiftCandidates = (staffList: any[]): string[] => {
     ...shuffle(takano),
   ].map(s => s.id);
 };
-
-// ヘルパー関数
-const isNight = (c?: any) => c && (c.type === 'NIGHT' || c.customText === '夜');
-const isLate = (c?: any) => c && (c.customText === '遅' || (c.customText?.includes('11') && c.customText?.includes('20')));
-const isLocked = (c?: any) => !!c?.isLocked;
-const isAke = (c?: any) => c && c.customText === '明';
-const isOff = (c?: any) => c && (c.type === 'OFF' || c.customText === '休');
-
-function countNightsPerStaff(newShifts: any, staffList: any[], dates: Date[]) {
-  const map: Record<string, number> = {};
-  staffList.forEach(s => { map[s.id] = 0; });
-  staffList.forEach(s => {
-    dates.forEach(d => {
-      const k = `${s.id}_${getIsoDate(d)}`;
-      if (isNight(newShifts[k])) map[s.id]++;
-    });
-  });
-  return map;
-}
-
-function lastNightGap(staffId: string, dayIdx: number, newShifts: any, dates: Date[]) {
-  let gap = 999;
-  for (let i = dayIdx - 1, g = 1; i >= 0; i--, g++) {
-    const k = `${staffId}_${getIsoDate(dates[i])}`;
-    if (isNight(newShifts[k])) { gap = g; break; }
-  }
-  return gap;
-}
-
-function ensureNightPerDay(newShifts: any, staffList: any[], dates: Date[]) {
-  const nightsCount = countNightsPerStaff(newShifts, staffList, dates);
-
-  for (let i = 0; i < dates.length; i++) {
-    const date = dates[i];
-    const suffix = getIsoDate(date);
-
-    const alreadyHasNight = staffList.some(s => isNight(newShifts[`${s.id}_${suffix}`]));
-    if (alreadyHasNight) continue;
-
-    // 候補抽出（当日ロックされていない人）
-    const candidates = staffList.filter(s => {
-      const key = `${s.id}_${suffix}`;
-      const cell = newShifts[key];
-      if (isLocked(cell)) return false;
-      // すでに何か勤務が入っている人は一旦除外
-      if (cell && !isNight(cell)) return false;
-      return true;
-    });
-
-    const scored = candidates.map(s => {
-      const softCap = NIGHT_SOFT_CAP[s.id] ?? Infinity;
-      const capReached = nightsCount[s.id] >= softCap;
-      const gap = lastNightGap(s.id, i, newShifts, dates);
-      const recentPenalty = (gap <= NIGHT_COOLDOWN_DAYS) ? 1 : 0;
-      return {
-        s,
-        capReached,
-        gap,
-        scoreTuple: [
-          capReached ? 1 : 0,     // ソフト上限越えは後ろに
-          nightsCount[s.id],      // 夜勤少ない人を優先
-          recentPenalty           // 直近に夜勤してない人を優先
-        ]
-      };
-    }).sort((a, b) => {
-      if (a.scoreTuple[0] !== b.scoreTuple[0]) return a.scoreTuple[0] - b.scoreTuple[0];
-      if (a.scoreTuple[1] !== b.scoreTuple[1]) return a.scoreTuple[1] - b.scoreTuple[1];
-      if (a.scoreTuple[2] !== b.scoreTuple[2]) return a.scoreTuple[2] - b.scoreTuple[2];
-      return b.gap - a.gap;
-    });
-
-    let assigned = false;
-
-    // ① 純粋候補から割り当て
-    for (const c of scored) {
-      const s = c.s;
-      const key = `${s.id}_${suffix}`;
-      newShifts[key] = { type: 'NIGHT', customText: '夜', isLocked: false };
-      nightsCount[s.id]++;
-      assigned = true;
-      break;
-    }
-    if (assigned) continue;
-
-    // ② 遅番スワップ
-    const lateSwap = staffList.find(s => {
-      const key = `${s.id}_${suffix}`;
-      const cell = newShifts[key];
-      return isLate(cell) && !isLocked(cell);
-    });
-    if (lateSwap) {
-      const s = lateSwap;
-      const key = `${s.id}_${suffix}`;
-      newShifts[key] = { type: 'NIGHT', customText: '夜', isLocked: false };
-      nightsCount[s.id]++;
-      continue;
-    }
-
-    // ③ 最終手段：ロックでない誰かを夜勤に差し替え
-    const desperate = staffList.find(s => {
-      const key = `${s.id}_${suffix}`;
-      const cell = newShifts[key];
-      return !isLocked(cell);
-    });
-    if (desperate) {
-      const s = desperate;
-      const key = `${s.id}_${suffix}`;
-      newShifts[key] = { type: 'NIGHT', customText: '夜', isLocked: false };
-      nightsCount[s.id]++;
-    }
-  }
-}
-
-function applyNightAkeRestPattern(newShifts: any, staffList: any[], dates: Date[]) {
-  staffList.forEach(staff => {
-    // 大橋だけ除外
-    if (staff.id === OHASHI_ID) return;
-
-    for (let i = 0; i < dates.length; i++) {
-      const d0 = dates[i];
-      const k0 = `${staff.id}_${getIsoDate(d0)}`;
-      const c0 = newShifts[k0];
-      if (!isNight(c0)) continue;
-
-      // i+1 → 明
-      if (i + 1 < dates.length) {
-        const d1 = dates[i + 1];
-        const k1 = `${staff.id}_${getIsoDate(d1)}`;
-        const c1 = newShifts[k1];
-        if (!isLocked(c1)) {
-          newShifts[k1] = { type: 'AKE', customText: '明', isLocked: false };
-        }
-      }
-
-      // i+2 → 休
-      if (i + 2 < dates.length) {
-        const d2 = dates[i + 2];
-        const k2 = `${staff.id}_${getIsoDate(d2)}`;
-        const c2 = newShifts[k2];
-        if (!isLocked(c2)) {
-          newShifts[k2] = { type: 'OFF', customText: '休', isLocked: false };
-        }
-      }
-    }
-  });
-}
 
 const getEventName = (date: Date): string => {
   const m = date.getMonth() + 1;
@@ -874,6 +719,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
   const completeGeneration = () => {
     const newShifts: any = {};
+    const nightCandidates = getNightShiftCandidates(staffList);
 
     try {
       // 1. 固定スケジュール
@@ -914,7 +760,105 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         });
       });
 
-      // 2. 早番自動割り当て
+      // 2. 夜勤自動割り当て
+      for (let i = 0; i < dates.length - 1; i++) {
+        const date = dates[i];
+        const keySuffix = getIsoDate(date);
+
+        const hasNight = staffList.some(s => {
+          const cell = newShifts[`${s.id}_${keySuffix}`];
+          return cell && (cell.type === 'NIGHT' || cell.customText === '夜');
+        });
+
+        if (!hasNight) {
+          const candidates = [...nightCandidates].sort(() => 0.5 - Math.random());
+
+          let assigned = false;
+          for (const staffId of candidates) {
+            const staff = staffList.find(s => s.id === staffId);
+            if (!staff) continue;
+            if (staff.note === 'スポット勤務') continue;
+            if (staff.constraints?.fixedTimeOnly) continue;
+            if (staff.constraints?.forbiddenTypes?.includes('NIGHT')) continue;
+
+            if (date.getDay() === 5 && staff.constraints?.specialRule === 'OHASHI_NIGHT_COMBO') continue;
+
+            const d0 = date;
+            const d1 = new Date(date); d1.setDate(d1.getDate() + 1);
+            const d2 = new Date(date); d2.setDate(d2.getDate() + 2);
+
+            const k0 = `${staffId}_${getIsoDate(d0)}`;
+            const k1 = `${staffId}_${getIsoDate(d1)}`;
+            const k2 = `${staffId}_${getIsoDate(d2)}`;
+
+            const s0 = newShifts[k0];
+            const s1 = d1 <= END_DATE ? newShifts[k1] : null;
+            const s2 = d2 <= END_DATE ? newShifts[k2] : null;
+
+            const isS0Available = !s0 || (!s0.isLocked && s0.type !== 'OFF');
+            const isS1Available = !s1 || (!s1.isLocked && s1.type !== 'OFF' && s1.type !== 'HOPE' && s1.type !== 'WINTER');
+
+            if (isS0Available && isS1Available) {
+              newShifts[k0] = { type: 'NIGHT', customText: '夜', isLocked: false };
+              if (s1 !== undefined) newShifts[k1] = { type: 'EARLY', customText: '明', isLocked: false };
+              if (s2 !== undefined && (!s2 || !s2.isLocked)) {
+                newShifts[k2] = { type: 'OFF', customText: '休', isLocked: false };
+              }
+              assigned = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // 2.1 夜勤が0の日を強制的に埋めるフォールバック
+      for (let i = 0; i < dates.length - 1; i++) {
+        const date = dates[i];
+        const keySuffix = getIsoDate(date);
+
+        const hasNight = staffList.some(s => {
+          const cell = newShifts[`${s.id}_${keySuffix}`];
+          return cell && (cell.type === 'NIGHT' || cell.customText === '夜');
+        });
+        if (hasNight) continue;
+
+        // 通常ロジックで誰も入らなかった場合の保険
+        const candidates = FULL_TIME_STAFF_IDS
+          .map(id => staffList.find(s => s.id === id))
+          .filter((s): s is any => !!s)
+          .filter(s => !s.constraints?.fixedTimeOnly && s.note !== 'スポット勤務');
+
+        for (const staff of candidates) {
+          const staffId = staff.id;
+          const d0 = date;
+          const d1 = new Date(date);
+          d1.setDate(d1.getDate() + 1);
+          const d2 = new Date(date);
+          d2.setDate(d2.getDate() + 2);
+
+          const k0 = `${staffId}_${getIsoDate(d0)}`;
+          const k1 = d1 <= END_DATE ? `${staffId}_${getIsoDate(d1)}` : null;
+          const k2 = d2 <= END_DATE ? `${staffId}_${getIsoDate(d2)}` : null;
+
+          const c0 = newShifts[k0];
+          const c1 = k1 ? newShifts[k1] : null;
+          const c2 = k2 ? newShifts[k2] : null;
+
+          const ok0 = !c0 || (!c0.isLocked && c0.type !== 'OFF');
+          const ok1 = !k1 || !c1 || (!c1.isLocked && c1.type !== 'OFF');
+
+          if (!ok0 || !ok1) continue;
+
+          newShifts[k0] = { type: 'NIGHT', customText: '夜', isLocked: false };
+          if (k1) newShifts[k1] = { type: 'EARLY', customText: '明', isLocked: false };
+          if (k2 && (!c2 || !c2.isLocked)) {
+            newShifts[k2] = { type: 'OFF', customText: '休', isLocked: false };
+          }
+          break;
+        }
+      }
+
+      // 2.5 早番自動割り当て
       for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
         const keySuffix = getIsoDate(date);
@@ -1057,10 +1001,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         });
       });
 
-      // 5. 夜勤が0の日を保証（夜だけを割り当て）
-      ensureNightPerDay(newShifts, staffList, dates);
-
-      // 6. 連勤カットの後処理
+      // 連勤カットの後処理
       staffList.forEach(staff => {
         let streak = 0;
         dates.forEach(date => {
@@ -1080,9 +1021,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           }
         });
       });
-
-      // 7. 夜→明→休パターンを強制適用（大橋を除く）
-      applyNightAkeRestPattern(newShifts, staffList, dates);
 
       setShifts(newShifts);
     } catch (e) {
