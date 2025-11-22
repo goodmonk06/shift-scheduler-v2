@@ -1939,12 +1939,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             <table className="w-full text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
-                  <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-20 shadow-md sticky left-0 z-30" colSpan={1}>
+                  <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-25 min-w-[100px] shadow-md sticky left-0 z-30" colSpan={1}>
                     行事予定
                   </th>
 
                   {dates.map(date => (
-                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent w-12 min-w-[48px]">
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-white print:bg-transparent w-15 min-w-[60px]">
                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
                         {getEventName(date)}
                       </div>
@@ -1955,13 +1955,13 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                 <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-40 shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-20 min-w-[80px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 z-50">氏名</th>
+                  <th className="border border-slate-600 p-1 w-25 min-w-[100px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 z-50">氏名</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 w-12 min-w-[48px]" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 w-15 min-w-[60px]" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -1984,7 +1984,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   return (
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
                       {/* 氏名列 */}
-                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-md w-20 min-w-[80px]">
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-md w-25 min-w-[100px]">
                         {isScrolledLeft ? getSurname(staff.name) : staff.name}
                       </td>
                       {dates.map(date => {
