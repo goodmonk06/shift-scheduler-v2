@@ -353,20 +353,6 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           onSelectNew={handleDecemberNew}
           onSelectExisting={handleDecemberExisting}
         />
-
-        {/* デモ用：通知を切り替えるボタン */}
-        {onNotificationsToggle && (
-          <div className="fixed bottom-4 right-4">
-            <Button
-              onClick={onNotificationsToggle}
-              variant="outline"
-              size="sm"
-              className="rounded-xl"
-            >
-              {hasNotifications ? "通知をクリア" : "通知を作成"}
-            </Button>
-          </div>
-        )}
       </main>
       </div>
     </VacationProvider>
