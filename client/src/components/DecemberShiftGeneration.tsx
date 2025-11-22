@@ -1971,11 +1971,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden">日数</th>
-                  <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">時間</th>
-                  <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">夜勤</th>
-                  <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">休日</th>
-                  <th className="border border-slate-600 w-10 bg-indigo-50 text-indigo-900 font-bold print:hidden">有給</th>
+                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden">日数</th>
+                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">時間</th>
+                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">夜勤</th>
+                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">休日</th>
+                  <th className="border border-slate-600 w-20 min-w-[80px] bg-indigo-50 text-indigo-900 font-bold print:hidden">有給</th>
                 </tr>
               </thead>
               <tbody>
@@ -2109,11 +2109,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           </td>
                         );
                       })}
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden">{stats.days}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.hours}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.nightCount}</td>
-                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
-                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden">{stats.paidHolidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden w-20 min-w-[80px] text-center">{stats.days}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-20 min-w-[80px] text-center">{stats.hours}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-20 min-w-[80px] text-center">{stats.nightCount}</td>
+                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden w-20 min-w-[80px] text-center ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden w-20 min-w-[80px] text-center">{stats.paidHolidays}</td>
                     </tr>
                   );
                 })}
