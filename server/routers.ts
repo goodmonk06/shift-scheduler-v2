@@ -473,6 +473,7 @@ export const appRouter = router({
           date: z.string(), // Full date string YYYY-MM-DD (to support dates spanning multiple months)
           type: z.string(), // 'work' | 'holiday'
           text: z.string(), // e.g. "9:00～18:00" or "休"
+          isLocked: z.boolean().optional(), // ロック状態（希望休・希望勤務時間）
         })),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -567,6 +568,9 @@ export const appRouter = router({
           }
 
           try {
+            // isLockedがtrueの場合、希望休・希望勤務時間として保存
+            const generatedBy = entry.isLocked ? "leave_request" as const : "ai" as const;
+
             const detailData = {
               shiftId: newShiftId,
               employeeId: employeeId,
@@ -577,7 +581,7 @@ export const appRouter = router({
               startTime: startTime,
               endTime: endTime,
               displayText: entry.text, // Save original display text as shown in UI
-              generatedBy: "ai" as const,
+              generatedBy: generatedBy,
               isChanged: false,
               createdAt: new Date(),
               updatedAt: new Date(),

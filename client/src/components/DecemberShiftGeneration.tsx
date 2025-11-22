@@ -405,7 +405,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               employeeName: staff.name,
               date: getIsoDate(date), // Full date string YYYY-MM-DD instead of just day number
               type: cell.type === 'OFF' ? 'holiday' : 'work',
-              text: cell.customText
+              text: cell.customText,
+              isLocked: cell.isLocked || false, // ロック状態を送信
             });
           }
         }
@@ -515,10 +516,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             customText = `${startStr}～${endHour}`;
           }
 
+          // 希望休・希望勤務時間の場合はロック
+          const isLocked = detail.generatedBy === 'leave_request' || detail.generatedBy === 'work_preference';
+
           newShifts[key] = {
             type: detail.status === 'off' ? 'OFF' : 'WORK',
             customText: customText,
             backgroundColor: undefined, // デフォルトの色を使用
+            isLocked: isLocked, // ロック状態を設定
           };
         }
 
