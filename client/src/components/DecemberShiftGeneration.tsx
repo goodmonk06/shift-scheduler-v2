@@ -2005,16 +2005,16 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
             </h1>
 
-            <div id="grid-wrapper" className={`shift-print-root overflow-auto max-h-[calc(100vh-300px)] ${printPreview ? 'overflow-visible m-0 p-0 w-full max-h-none' : ''}`}>
-            <table className="min-w-max text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative table-auto">
+            <div id="grid-wrapper" className={`shift-print-root overflow-auto max-h-[calc(100vh-300px)] ${printPreview ? 'overflow-visible m-0 p-0 w-full max-h-none flex justify-center' : ''}`}>
+            <table className="min-w-max text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative table-auto mx-auto">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
-                  <th className="border border-slate-600 font-bold bg-white text-slate-700 w-30 min-w-[120px]" colSpan={2}>
+                  <th className="border border-slate-600 font-bold bg-white text-slate-700 w-30 min-w-[280px]" colSpan={2}>
                     行事予定
                   </th>
 
                   {dates.map(date => (
-                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent !w-[90px] !min-w-[90px] !max-w-[90px]">
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px]">
                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
                         {getEventName(date)}
                       </div>
@@ -2025,9 +2025,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                 <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-[100] shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-[110] shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[150px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-[110] shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
                   {/* 資格列 */}
-                  <th className="border border-slate-600 p-1 w-24 min-w-[96px] bg-white print:bg-white font-bold text-slate-800 sticky left-[120px] top-0 z-[110] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
+                  <th className="border border-slate-600 p-1 w-24 min-w-[130px] bg-white print:bg-white font-bold text-slate-800 sticky left-[150px] top-0 z-[110] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
@@ -2056,11 +2056,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   return (
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
                       {/* 氏名列 */}
-                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-lg border-r border-r-slate-600 w-30 min-w-[120px]">
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px]">
                         {staff.name}
                       </td>
                       {/* 資格列 */}
-                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white sticky left-[120px] z-30 shadow-lg border-r-2 border-r-slate-700 w-24 min-w-[96px]">
+                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white sticky left-[150px] z-30 shadow-lg border-r-2 border-r-slate-700 w-24 min-w-[130px]">
                         {staff.qualification}
                       </td>
                       {dates.map(date => {
@@ -2144,7 +2144,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
                             className={`
                             border border-slate-600 p-0 overflow-hidden relative z-[1]
-                            !w-[90px] !min-w-[90px] !max-w-[90px]
+                            !w-[105px] !min-w-[105px] !max-w-[105px]
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
