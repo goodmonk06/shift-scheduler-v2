@@ -2343,18 +2343,18 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         </div>
       </main>
 
-      {/* Legend - displayed only when editing */}
+      {/* Legend - fixed at bottom left, displayed only when editing */}
       {popoverState.isOpen && (
-        <div className="bg-slate-50 border-t border-slate-200 p-4 flex justify-start text-[10px] font-serif items-start print:hidden">
-          <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap">
-            <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
-            <span className="text-red-600 bg-gray-200 px-2 py-0.5 rounded border border-gray-300">休: 公休</span>
-            <span className="text-slate-900 bg-blue-200 px-2 py-0.5 rounded border border-blue-300 font-bold">夜: 夜勤</span>
-            <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200 font-bold">早: 早番</span>
-            <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200 font-bold">遅: 遅番</span>
-            <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200 font-bold">有: 有給</span>
-            <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100 font-bold">日A: 8-17</span>
-            <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100 font-bold">日B: 9-18</span>
+        <div className="fixed bottom-4 left-4 z-40 print:hidden">
+          <div className="border border-slate-600 p-3 inline-flex gap-2 bg-white shadow-lg rounded-lg flex-wrap text-[9px] font-serif">
+            <span className="font-bold border-r border-slate-300 pr-2 mr-1 text-slate-600">凡例</span>
+            <span className="text-red-600 bg-gray-200 px-1.5 py-0.5 rounded border border-gray-300">休</span>
+            <span className="text-slate-900 bg-blue-200 px-1.5 py-0.5 rounded border border-blue-300 font-bold">夜</span>
+            <span className="text-slate-900 bg-green-200 px-1.5 py-0.5 rounded border border-green-200 font-bold">早</span>
+            <span className="text-slate-900 bg-orange-200 px-1.5 py-0.5 rounded border border-orange-200 font-bold">遅</span>
+            <span className="text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded border border-orange-200 font-bold">有</span>
+            <span className="text-slate-900 bg-sky-100 px-1.5 py-0.5 rounded border border-sky-100 font-bold">日A</span>
+            <span className="text-slate-900 bg-pink-100 px-1.5 py-0.5 rounded border border-pink-100 font-bold">日B</span>
           </div>
         </div>
       )}
