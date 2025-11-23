@@ -311,10 +311,34 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   return { start: 9, end: 18 };
 };
 
+/**
+ * 長い時間範囲テキストを2段組みに変換する関数
+ * 例: "8半-17半" -> "8半\n~17半"
+ */
+const formatLabel = (text: string): string => {
+  if (!text) return '';
+
+  // 既に改行がある場合はそのまま
+  if (text.includes('\n')) return text;
+
+  // 「数字+半」や「数字:数字」がハイフン/チルダで繋がっているパターンを検出
+  // 例: "8半-17半" -> "8半\n~17半"
+  // 例: "8~17" -> "8\n~17"
+  // 例: "11:00-20:00" -> "11:00\n~20:00"
+  const timeRangePattern = /([0-9]+(?:半|:[0-9]{2})?)\s*[-~～]\s*([0-9]+(?:半|:[0-9]{2})?)/;
+  const match = text.match(timeRangePattern);
+
+  if (match) {
+    return `${match[1]}\n~${match[2]}`;
+  }
+
+  return text;
+};
+
 const getDisplayText = (text: string, type: string) => {
   if (!text) return '';
 
-  // 優先される記号系
+  // 優先される記号系（改行処理を適用）
   if (text === '日A') return '日A';
   if (text === '日B') return '日B';
   if (text === '冬')  return '冬';
@@ -334,7 +358,8 @@ const getDisplayText = (text: string, type: string) => {
   // 早番（時間だけ入ってるケース）
   if ((text.includes('7') && text.includes('16')) && type === 'DAY') return '早';
 
-  return text;
+  // その他のテキスト: 長い時間範囲を改行対応
+  return formatLabel(text);
 };
 
 const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any => {
@@ -2435,17 +2460,39 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           max-width: none !important;
         }
 
-        /* 4. ノイズ（灰色の枠）を除去 */
+        /* 全要素のノイズ（灰色の枠・影）を除去 */
         .pdf-export-mode * {
           box-shadow: none !important;
         }
 
+        /* セル自体は罫線を保持（これがテーブルの区切り線） */
         .pdf-export-mode th,
         .pdf-export-mode td {
           position: static !important;
+          border: 1px solid #94a3b8 !important; /* slate-400 */
         }
 
-        /* 3. 氏名列（1列目）を広げて全表示 */
+        /* セル内部の要素（div, span等）の装飾を完全除去 */
+        .pdf-export-mode td > *,
+        .pdf-export-mode th > * {
+          border: none !important;
+          box-shadow: none !important;
+          outline: none !important;
+          ring: 0 !important;
+          background-color: transparent !important; /* 背景色は親セルに任せる */
+        }
+
+        /* セル内部の更に深い要素も装飾除去 */
+        .pdf-export-mode td > * > *,
+        .pdf-export-mode th > * > * {
+          border: none !important;
+          box-shadow: none !important;
+          outline: none !important;
+          ring: 0 !important;
+          background-color: transparent !important;
+        }
+
+        /* 氏名列（1列目）を広げて全表示 */
         .pdf-export-mode th:nth-child(1),
         .pdf-export-mode td:nth-child(1) {
           min-width: 150px !important;
@@ -2453,18 +2500,22 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           white-space: nowrap !important;
         }
 
-        /* 2. 資格列（2列目）を削除 */
+        /* 資格列（2列目）の表示設定 */
         .pdf-export-mode th:nth-child(2),
         .pdf-export-mode td:nth-child(2) {
-          display: none !important;
+          min-width: 100px !important;
+          width: 100px !important;
+          white-space: nowrap !important;
         }
 
-        /* 日付列のサイズ調整 */
+        /* 日付列のサイズ調整と改行対応 */
         .pdf-export-mode th:nth-child(n+3):not(.print\\:hidden),
         .pdf-export-mode td:nth-child(n+3):not(.print\\:hidden) {
           min-width: 70px !important;
           max-width: 70px !important;
           width: 70px !important;
+          white-space: pre-wrap !important; /* 改行を反映 */
+          line-height: 1.2 !important;
         }
 
         /* PDF Print Styles v3.0 - Updated */
