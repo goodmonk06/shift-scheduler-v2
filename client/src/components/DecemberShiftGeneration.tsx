@@ -2103,34 +2103,34 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </h1>
 
             <div id="grid-wrapper" className={`shift-print-root overflow-auto max-h-[calc(100vh-300px)] print:overflow-visible print:max-h-none ${printPreview ? 'overflow-visible m-0 p-0 w-full max-h-none flex justify-center' : ''}`}>
-            <table className="min-w-max text-center border-collapse text-[10px] print:text-[6.5px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed" style={{ border: '1px solid #0f172a' }}>
+            <table className="min-w-max text-center border-collapse border border-slate-900 text-[10px] print:text-[6.5px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
               <thead>
-                <tr className="print:bg-transparent" style={{ height: `${eventRowHeight}px`, backgroundColor: '#f8fafc' }}>
-                  <th className="font-bold w-30 min-w-[280px]" colSpan={2} style={{ border: '1px solid #475569', backgroundColor: '#ffffff', color: '#334155' }}>
+                <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
+                  <th className="border border-slate-600 font-bold bg-white text-slate-700 w-30 min-w-[280px]" colSpan={2}>
                     行事予定
                   </th>
 
                   {dates.map(date => (
-                    <td key={date.toString()} className="text-[9px] font-medium align-bottom pb-2 px-0.5 h-full print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px]" style={{ border: '1px solid #475569', backgroundColor: '#f8fafc', color: '#334155' }}>
+                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px]">
                       <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
                         {getEventName(date)}
                       </div>
                     </td>
                   ))}
-                  <th className="print:hidden" colSpan={5} style={{ border: '1px solid #475569', backgroundColor: '#f1f5f9' }}></th>
+                  <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={5}></th>
                 </tr>
 
-                <tr className="print:bg-transparent h-12 sticky top-0 z-[100] shadow-md" style={{ backgroundColor: '#f1f5f9' }}>
+                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-[100] shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="p-1 w-30 min-w-[150px] print:bg-white font-bold sticky left-0 top-0 z-[110] shadow-lg border-r border-b-2" style={{ border: '1px solid #475569', borderRight: '1px solid #475569', borderBottom: '2px solid #334155', backgroundColor: '#ffffff', color: '#1e293b' }}>氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[150px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-[110] shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
                   {/* 資格列 */}
-                  <th className="p-1 w-24 min-w-[130px] print:bg-white font-bold sticky top-0 z-[110] shadow-lg border-r-2 border-b-2" style={{ border: '1px solid #475569', borderRight: '2px solid #334155', borderBottom: '2px solid #334155', backgroundColor: '#ffffff', color: '#1e293b', left: '150px' }}>資格</th>
+                  <th className="border border-slate-600 p-1 w-24 min-w-[130px] bg-white print:bg-white font-bold text-slate-800 sticky left-[150px] top-0 z-[110] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="!w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-[100]" style={{ ...style, border: '1px solid #475569', borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-[100]" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -2140,24 +2140,24 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="!w-[270px] !min-w-[270px] !max-w-[270px] font-bold border-l-2 print:hidden px-3 sticky top-0 z-[100]" style={{ border: '1px solid #475569', borderLeft: '2px solid #1e293b', backgroundColor: '#eef2ff', color: '#312e81' }}>日数</th>
-                  <th className="!w-[270px] !min-w-[270px] !max-w-[270px] font-bold print:hidden px-3 sticky top-0 z-[100]" style={{ border: '1px solid #475569', backgroundColor: '#eef2ff', color: '#312e81' }}>時間</th>
-                  <th className="!w-[270px] !min-w-[270px] !max-w-[270px] font-bold print:hidden px-3 sticky top-0 z-[100]" style={{ border: '1px solid #475569', backgroundColor: '#eef2ff', color: '#312e81' }}>夜勤</th>
-                  <th className="!w-[270px] !min-w-[270px] !max-w-[270px] font-bold print:hidden px-3 sticky top-0 z-[100]" style={{ border: '1px solid #475569', backgroundColor: '#eef2ff', color: '#312e81' }}>休日</th>
-                  <th className="!w-[270px] !min-w-[270px] !max-w-[270px] font-bold print:hidden px-3 sticky top-0 z-[100]" style={{ border: '1px solid #475569', backgroundColor: '#eef2ff', color: '#312e81' }}>有給</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3 sticky top-0 z-[100]">日数</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">時間</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">夜勤</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">休日</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">有給</th>
                 </tr>
               </thead>
               <tbody>
                 {staffList.map((staff, index) => {
                   const stats = staffStats[staff.id] || { days: 0, hours: 0, nightCount: 0, holidays: 0, paidHolidays: 0 };
                   return (
-                    <tr key={staff.id} className="print:hover:bg-transparent h-10 transition-colors" style={{ backgroundColor: 'transparent' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fefce8'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
                       {/* 氏名列 */}
-                      <td className="px-2 text-left whitespace-nowrap font-bold sticky left-0 z-30 shadow-lg border-r w-30 min-w-[150px]" style={{ border: '1px solid #475569', borderRight: '1px solid #475569', color: '#1e293b', backgroundColor: '#ffffff' }}>
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px]">
                         {staff.name}
                       </td>
                       {/* 資格列 */}
-                      <td className="px-2 text-left text-xs whitespace-nowrap sticky z-30 shadow-lg border-r-2 w-24 min-w-[130px]" style={{ border: '1px solid #475569', borderRight: '2px solid #334155', color: '#334155', backgroundColor: '#ffffff', left: '150px' }}>
+                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white sticky left-[150px] z-30 shadow-lg border-r-2 border-r-slate-700 w-24 min-w-[130px]">
                         {staff.qualification}
                       </td>
                       {dates.map(date => {
@@ -2240,18 +2240,18 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             onClick={(e) => handleCellClick(e, staff, date)}
                             onContextMenu={(e) => handleContextMenu(e, staff, date)}
                             className={`
-                            p-0 overflow-hidden relative z-[1]
+                            border border-slate-600 p-0 overflow-hidden relative z-[1]
                             !w-[105px] !min-w-[105px] !max-w-[105px]
                             ${isLockedAndActive ? 'cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:shadow-lg'}
                             ${isLockedAndActive && !styles.backgroundColor ? lockPatternClass : ''}
                             print:cursor-default print:ring-0
                           `}
-                            style={{ ...styles, border: '1px solid #475569' }}
+                            style={styles}
                             title={isLockedAndActive ? "固定シフト (編集不可)" : "右クリックでクイック選択"}
                           >
                             <div className="w-full h-full">
                               {isLockedAndActive && (
-                                <div className="absolute top-0.5 right-0.5 print:hidden opacity-70" style={{ color: '#64748b' }}>
+                                <div className="absolute top-0.5 right-0.5 text-slate-500 print:hidden opacity-70">
                                   <Lock size={8} strokeWidth={3} />
                                 </div>
                               )}
@@ -2265,11 +2265,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           </td>
                         );
                       })}
-                      <td className="font-mono border-l-2 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3" style={{ border: '1px solid #475569', borderLeft: '2px solid #1e293b', color: '#334155', backgroundColor: '#f8fafc' }}>{stats.days}</td>
-                      <td className="font-mono print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3" style={{ border: '1px solid #475569', color: '#334155', backgroundColor: '#f8fafc' }}>{stats.hours}</td>
-                      <td className="font-mono print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3" style={{ border: '1px solid #475569', color: '#334155', backgroundColor: '#f8fafc' }}>{stats.nightCount}</td>
-                      <td className={`font-mono print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3 ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'font-bold' : ''}`} style={{ border: '1px solid #475569', color: FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? '#dc2626' : '#334155', backgroundColor: '#f8fafc' }}>{stats.holidays}</td>
-                      <td className="font-mono print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3" style={{ border: '1px solid #475569', color: '#334155', backgroundColor: '#f8fafc' }}>{stats.paidHolidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 border-l-2 border-l-slate-800 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.days}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.hours}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.nightCount}</td>
+                      <td className={`border border-slate-600 font-mono bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3 ${FULL_TIME_STAFF_IDS.includes(staff.id) && stats.holidays < 9 ? 'text-red-600 font-bold' : 'text-slate-700'}`}>{stats.holidays}</td>
+                      <td className="border border-slate-600 font-mono text-slate-700 bg-slate-50 print:hidden !w-[270px] !min-w-[270px] !max-w-[270px] text-center px-3">{stats.paidHolidays}</td>
                     </tr>
                   );
                 })}
@@ -2277,57 +2277,55 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               </tbody>
               {/* 不足判定フッター */}
               <tfoot className="print:hidden">
-                <tr className="h-12 border-t-4" style={{ borderTop: '4px solid #1e293b' }}>
-                  <td className="font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2} style={{ border: '1px solid #475569', backgroundColor: '#1e293b', color: '#ffffff' }}>
+                <tr className="h-12 border-t-4 border-slate-800">
+                  <td className="border border-slate-600 bg-slate-800 text-white font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2}>
                     配置判定
                   </td>
                   {dates.map(date => {
                     const dateIso = getIsoDate(date);
                     const result = sufficiencyData[dateIso];
-                    let bgColor = "#ecfdf5"; // emerald-50
-                    let textColor = "#047857"; // emerald-700
-                    let fontWeight = "normal";
+                    let bgClass = "bg-emerald-50";
+                    let textClass = "text-emerald-700";
 
                     if (result && result.maxShortage >= 2) {
-                      bgColor = "#fef08a"; // yellow-200
-                      textColor = "#713f12"; // yellow-900
-                      fontWeight = "bold";
+                      bgClass = "bg-yellow-200"; // 濃い黄色
+                      textClass = "text-yellow-900 font-bold";
                     } else if (result && result.maxShortage >= 1) {
-                      bgColor = "#fefce8"; // yellow-50
-                      textColor = "#854d0e"; // yellow-800
+                      bgClass = "bg-yellow-50"; // 薄い黄色
+                      textClass = "text-yellow-800";
                     }
 
                     return (
-                      <td key={date.toString()} className={`text-[9px] align-top p-1 !w-[90px] !min-w-[90px] !max-w-[90px]`} style={{ border: '1px solid #475569', backgroundColor: bgColor, color: textColor, fontWeight }}>
+                      <td key={date.toString()} className={`border border-slate-600 text-[9px] align-top p-1 !w-[90px] !min-w-[90px] !max-w-[90px] ${bgClass}`}>
                         {result && result.details.length > 0 ? (
                           <div className="flex flex-col gap-0.5">
                             {result.details.map((d: string, i: number) => (
-                              <span key={i} className="font-bold leading-tight block" style={{ color: '#dc2626' }}>{d}</span>
+                              <span key={i} className="text-red-600 font-bold leading-tight block">{d}</span>
                             ))}
                           </div>
                         ) : (
-                          <span className="flex justify-center pt-1" style={{ color: '#059669' }}>OK</span>
+                          <span className="text-emerald-600 flex justify-center pt-1">OK</span>
                         )}
                       </td>
                     );
                   })}
-                  <td colSpan={5} style={{ border: '1px solid #475569', backgroundColor: '#f1f5f9' }}></td>
+                  <td colSpan={5} className="border border-slate-600 bg-slate-100"></td>
                 </tr>
                 {lateShiftWarnings.length > 0 && (
                   <tr className="h-10">
-                    <td className="font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2} style={{ border: '1px solid #475569', backgroundColor: '#fee2e2', color: '#991b1b' }}>
+                    <td className="border border-slate-600 bg-red-100 text-red-800 font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2}>
                       遅番未配置
                     </td>
                     {dates.map(date => {
                       const dateIso = getIsoDate(date);
                       const isWarning = lateShiftWarnings.includes(dateIso);
                       return (
-                        <td key={date.toString()} className={`text-center !w-[90px] !min-w-[90px] !max-w-[90px] ${isWarning ? 'font-bold' : ''}`} style={{ border: '1px solid #475569', backgroundColor: isWarning ? '#fecaca' : '#ffffff', color: isWarning ? '#7f1d1d' : '#000000' }}>
+                        <td key={date.toString()} className={`border border-slate-600 text-center !w-[90px] !min-w-[90px] !max-w-[90px] ${isWarning ? 'bg-red-200 text-red-900 font-bold' : 'bg-white'}`}>
                           {isWarning ? '⚠' : ''}
                         </td>
                       );
                     })}
-                    <td colSpan={5} style={{ border: '1px solid #475569', backgroundColor: '#f1f5f9' }}></td>
+                    <td colSpan={5} className="border border-slate-600 bg-slate-100"></td>
                   </tr>
                 )}
               </tfoot>
