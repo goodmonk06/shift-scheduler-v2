@@ -1430,10 +1430,29 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const applyQuickShift = (type: string, customText: string) => {
     if (!contextMenu) return;
     const key = `${contextMenu.staffId}_${getIsoDate(contextMenu.date)}`;
-    setShifts((prev: any) => ({
-      ...prev,
-      [key]: { ...prev[key], type, customText, isLocked: false }
-    }));
+
+    setShifts((prev: any) => {
+      const updated = {
+        ...prev,
+        [key]: { ...prev[key], type, customText, isLocked: false }
+      };
+
+      // 夜勤を入力した場合、翌日に自動的に「明け」を設定
+      if (customText === '夜' || type === 'NIGHT') {
+        const nextDay = new Date(contextMenu.date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayKey = `${contextMenu.staffId}_${getIsoDate(nextDay)}`;
+
+        // 翌日がまだ設定されていない、または休みの場合のみ「明け」を設定
+        const nextDayCell = prev[nextDayKey];
+        if (!nextDayCell || nextDayCell.type === 'OFF' || !nextDayCell.customText || nextDayCell.customText === '休') {
+          updated[nextDayKey] = { type: 'DAY', customText: '明', isLocked: false };
+        }
+      }
+
+      return updated;
+    });
+
     setContextMenu(null);
   };
 
@@ -1452,7 +1471,26 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const saveShiftChange = (newVal: any) => {
     if (!popoverState.staffId) return;
     const key = `${popoverState.staffId}_${getIsoDate(popoverState.date)}`;
-    setShifts((prev: any) => ({ ...prev, [key]: { ...prev[key], ...newVal } }));
+
+    setShifts((prev: any) => {
+      const updated = { ...prev, [key]: { ...prev[key], ...newVal } };
+
+      // 夜勤を入力した場合、翌日に自動的に「明け」を設定
+      if (newVal.customText === '夜' || newVal.type === 'NIGHT') {
+        const nextDay = new Date(popoverState.date);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const nextDayKey = `${popoverState.staffId}_${getIsoDate(nextDay)}`;
+
+        // 翌日がまだ設定されていない、または休みの場合のみ「明け」を設定
+        const nextDayCell = prev[nextDayKey];
+        if (!nextDayCell || nextDayCell.type === 'OFF' || !nextDayCell.customText || nextDayCell.customText === '休') {
+          updated[nextDayKey] = { type: 'DAY', customText: '明', isLocked: false };
+        }
+      }
+
+      return updated;
+    });
+
     closePopover();
   };
 
