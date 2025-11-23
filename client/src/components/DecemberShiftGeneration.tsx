@@ -17,6 +17,8 @@ const MAX_CONSECUTIVE_WORK_DAYS = 4;  // 最大連勤数
 const FULL_TIME_STAFF_IDS = ['2', '3', '4', '5', '6', '7'];
 // 事務員ID
 const CLERK_STAFF_ID = '27';
+// 管理者ID（9:00-16:00は人数カウント除外）
+const ADMIN_STAFF_IDS = ['2', '3']; // 山口 夕香里、馬渕 尊至
 
 // 配置基準マトリクス（曜日別・30分刻み、48分割）
 // インデックス: 0=日曜, 1=月曜, ..., 6=土曜
@@ -288,12 +290,7 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   // 休み扱い
   if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修') return null;
 
-  if (text === '日' || type === 'DAY') return { start: 9, end: 18 };
-  if (text === '日A') return { start: 8, end: 17 };
-  if (text === '日B') return { start: 9, end: 18 };
-  if (text === '早' || type === 'EARLY') return { start: 7, end: 16 };
-  if (text === '遅' || type === 'LATE') return { start: 10, end: 19 };
-
+  // 時間パターンマッチを優先（例: 9～15、8半～13半など）
   const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
   if (match) {
     let start = parseInt(match[1]);
@@ -302,6 +299,14 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
     if (text.includes(match[2] + '半')) end += 0.5;
     return { start, end };
   }
+
+  // タイプ別のデフォルト（時間パターンがない場合のみ）
+  if (text === '日' || type === 'DAY') return { start: 9, end: 18 };
+  if (text === '日A') return { start: 8, end: 17 };
+  if (text === '日B') return { start: 9, end: 18 };
+  if (text === '早' || type === 'EARLY') return { start: 7, end: 16 };
+  if (text === '遅' || type === 'LATE') return { start: 11, end: 20 };
+
   return { start: 9, end: 18 };
 };
 
@@ -385,7 +390,11 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
         if (slot >= 0 && slot < 48) {
           // 事務員（淺野さん）は人数カウントから除外
           if (staff.id !== CLERK_STAFF_ID) {
-            halfHourCounts[slot]++;
+            // 管理者（馬渕・山口）は9:00-16:00（slot 18-31）では人数カウント除外
+            const isAdminInOfficeHours = ADMIN_STAFF_IDS.includes(staff.id) && slot >= 18 && slot < 32;
+            if (!isAdminInOfficeHours) {
+              halfHourCounts[slot]++;
+            }
           }
           if (FULL_TIME_STAFF_IDS.includes(staff.id)) halfHourFullTimeCounts[slot]++;
           // 事務員は9:00～18:00を正社員カウント（slot 18～35）
