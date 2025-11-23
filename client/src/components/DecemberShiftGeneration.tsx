@@ -489,6 +489,33 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [isSaving, setIsSaving] = useState(false);
   const [saveMode, setSaveMode] = useState<'overwrite' | 'new'>('new');
   const [lateShiftWarnings, setLateShiftWarnings] = useState<string[]>([]);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+
+  // ロックされていないセルを一括クリア
+  const handleClearUnlockedCells = () => {
+    setShifts((prevShifts: any) => {
+      const newShifts = { ...prevShifts };
+      let clearedCount = 0;
+
+      for (const key in newShifts) {
+        const cell = newShifts[key];
+        // ロックされていないセルのみクリア
+        if (!cell.isLocked) {
+          newShifts[key] = {
+            type: 'OFF',
+            customText: '',
+            backgroundColor: undefined,
+            isLocked: false,
+          };
+          clearedCount++;
+        }
+      }
+
+      toast.success(`${clearedCount}件のセルをクリアしました`);
+      return newShifts;
+    });
+    setIsClearModalOpen(false);
+  };
 
   const handleSaveToDB = async () => {
     if (!saveName) {
@@ -1801,6 +1828,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           <div className="h-8 w-px bg-slate-800 mx-1"></div>
 
           <button
+            onClick={() => setIsClearModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border bg-slate-800 text-slate-300 border-slate-700 hover:bg-red-900 hover:text-white hover:border-red-700"
+          >
+            <X size={14} />
+            クリア
+          </button>
+
+          <button
             onClick={() => setEditLockEnabled(!editLockEnabled)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${editLockEnabled
               ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
@@ -2239,6 +2274,41 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       </main>
 
       {/* 保存モーダル */}
+      {isClearModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900 flex items-center gap-3">
+              <AlertTriangle className="w-8 h-8 text-red-600" />
+              ロック解除セルのクリア確認
+            </h2>
+
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800 mb-2">
+                <strong>⚠️ 注意:</strong> この操作を実行すると、ロックがかかっていないすべてのセルが空白になります。
+              </p>
+              <p className="text-sm text-red-800">
+                ロック（🔒）されているセルは保護され、変更されません。
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setIsClearModalOpen(false)}
+                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 font-semibold transition-all text-base"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleClearUnlockedCells}
+                className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-semibold transition-all text-base shadow-lg hover:shadow-xl"
+              >
+                クリアする
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isSaveModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
