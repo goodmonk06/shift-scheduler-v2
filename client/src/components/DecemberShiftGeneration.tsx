@@ -756,50 +756,59 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   }, [dates, shifts, staffList]);
 
   // ====================================================================
-  // PDF出力（新実装 - jsPDF使用）
-  // 元に戻す場合は下記のコメントを外してください
+  // PDF出力（HTML to Canvas to PDF 方式）
+  // 日本語とスタイルを完璧に保持
   // ====================================================================
-  const handlePrint = () => {
+  const handlePrint = async () => {
     try {
-      // スタッフデータを変換
-      const scheduleData = staffList.map(staff => {
-        const shiftsMap: Record<string, string> = {};
+      const gridWrapper = document.getElementById('grid-wrapper');
+      if (!gridWrapper) {
+        toast.error('テーブルが見つかりません');
+        return;
+      }
 
-        dates.forEach(date => {
-          const dateIso = getIsoDate(date);
-          const key = `${staff.id}_${dateIso}`;
-          const cell = shifts[key];
+      // PDF出力用のスタイルを一時的に適用
+      gridWrapper.classList.add('pdf-export-mode');
 
-          // セルのデータを取得
-          if (cell && cell.customText) {
-            shiftsMap[dateIso] = cell.customText;
-          } else {
-            shiftsMap[dateIso] = ''; // 空欄
-          }
-        });
-
-        return {
-          name: staff.name,
-          qualification: staff.qualification || '',
-          shifts: shiftsMap
-        };
+      // 統計列を一時的に非表示
+      const statsColumns = document.querySelectorAll('.print\\:hidden');
+      statsColumns.forEach(col => {
+        (col as HTMLElement).style.display = 'none';
       });
 
-      // メタデータを作成
+      // 少し待ってからキャプチャ（スタイル適用を待つ）
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // PDF生成
       const metaData = {
         startDate: START_DATE,
         endDate: END_DATE,
         title: `${FACILITY_NAME} 勤務表`,
         periodString: '2025年12月 〜 2026年1月5日',
-        events: {} // 必要に応じて行事情報を追加
       };
 
-      // PDF生成
-      generateShiftPDF(scheduleData, metaData);
+      await generateShiftPDF([], metaData);
+
+      // 元に戻す
+      gridWrapper.classList.remove('pdf-export-mode');
+      statsColumns.forEach(col => {
+        (col as HTMLElement).style.display = '';
+      });
+
       toast.success('PDFを出力しました');
     } catch (error) {
       console.error('PDF generation failed:', error);
       toast.error('PDF出力に失敗しました');
+
+      // エラー時も元に戻す
+      const gridWrapper = document.getElementById('grid-wrapper');
+      if (gridWrapper) {
+        gridWrapper.classList.remove('pdf-export-mode');
+        const statsColumns = document.querySelectorAll('.print\\:hidden');
+        statsColumns.forEach(col => {
+          (col as HTMLElement).style.display = '';
+        });
+      }
     }
   };
 
@@ -2416,6 +2425,41 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       )}
 
       <style>{`
+        /* PDF Export Mode - HTML to Canvas to PDF用の一時スタイル */
+        .pdf-export-mode {
+          /* スティッキーを解除してhtml2canvasが正しくキャプチャできるように */
+        }
+
+        .pdf-export-mode th,
+        .pdf-export-mode td {
+          position: static !important;
+          box-shadow: none !important;
+        }
+
+        /* 名前列を狭く（150px → 90px） */
+        .pdf-export-mode th:nth-child(1),
+        .pdf-export-mode td:nth-child(1) {
+          min-width: 90px !important;
+          max-width: 90px !important;
+          width: 90px !important;
+        }
+
+        /* 資格列を狭く（130px → 60px） */
+        .pdf-export-mode th:nth-child(2),
+        .pdf-export-mode td:nth-child(2) {
+          min-width: 60px !important;
+          max-width: 60px !important;
+          width: 60px !important;
+        }
+
+        /* 日付列を少し狭く（90px → 75px） */
+        .pdf-export-mode th:nth-child(n+3):not(.print\\:hidden),
+        .pdf-export-mode td:nth-child(n+3):not(.print\\:hidden) {
+          min-width: 75px !important;
+          max-width: 75px !important;
+          width: 75px !important;
+        }
+
         /* PDF Print Styles v3.0 - Updated */
         @media print {
           @page {
