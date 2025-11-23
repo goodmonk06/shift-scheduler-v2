@@ -2127,7 +2127,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
             </h1>
 
-            <div id="grid-wrapper" className={`shift-print-root overflow-auto max-h-[calc(100vh-300px)] print:overflow-visible print:max-h-none ${printPreview ? 'overflow-visible m-0 p-0 w-full max-h-none flex justify-center' : ''}`}>
+            <div id="grid-wrapper" className={`shift-print-root overflow-auto h-[calc(100vh-300px)] print:overflow-visible print:h-auto ${printPreview ? 'overflow-visible m-0 p-0 w-full h-auto flex justify-center' : ''}`}>
               {/* PDF専用タイトル - 通常時は非表示、PDF出力時のみ表示 */}
               <div className="hidden pdf-title-header">
                 <h1 className="text-2xl font-bold text-center py-4 text-slate-900">
