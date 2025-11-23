@@ -2074,30 +2074,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </div>
           )}
 
-          {/* Legend moved to top as requested */}
-          <div className="mb-4 flex justify-between text-[10px] font-serif items-start print:hidden">
-            <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap">
-              <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
-              <span className="text-red-600 bg-gray-200 px-2 py-0.5 rounded border border-gray-300">休: 公休</span>
-              <span className="text-slate-900 bg-blue-200 px-2 py-0.5 rounded border border-blue-300 font-bold">夜: 夜勤</span>
-              <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200 font-bold">早: 早番</span>
-              <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200 font-bold">遅: 遅番</span>
-              <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200 font-bold">有: 有給</span>
-              <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100 font-bold">日A: 8-17</span>
-              <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100 font-bold">日B: 9-18</span>
-            </div>
-            <div className="flex gap-8 mr-8">
-              <div className="flex flex-col items-center group">
-                <div className="border border-slate-400 w-24 h-20 mb-1 bg-white group-hover:border-slate-600 transition-colors"></div>
-                <span className="text-slate-600 font-medium">施設長</span>
-              </div>
-              <div className="flex flex-col items-center group">
-                <div className="border border-slate-400 w-24 h-20 mb-1 bg-white group-hover:border-slate-600 transition-colors"></div>
-                <span className="text-slate-600 font-medium">管理者</span>
-              </div>
-            </div>
-          </div>
-
           <div className="mb-6 border-b-2 border-slate-800 pb-4 print:mb-2 print:hidden">
             <div className="flex justify-between items-end">
               <div>
@@ -2364,6 +2340,22 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </table>
           </div>
         </div>
+
+        {/* Legend - displayed only when editing popup is open */}
+        {popoverState.isOpen && (
+          <div className="mt-4 p-4 flex justify-start text-[10px] font-serif items-start print:hidden bg-slate-50 border-t border-slate-200">
+            <div className="border border-slate-600 p-3 inline-flex gap-4 bg-white shadow-sm rounded-sm flex-wrap">
+              <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
+              <span className="text-red-600 bg-gray-200 px-2 py-0.5 rounded border border-gray-300">休: 公休</span>
+              <span className="text-slate-900 bg-blue-200 px-2 py-0.5 rounded border border-blue-300 font-bold">夜: 夜勤</span>
+              <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200 font-bold">早: 早番</span>
+              <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200 font-bold">遅: 遅番</span>
+              <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200 font-bold">有: 有給</span>
+              <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100 font-bold">日A: 8-17</span>
+              <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100 font-bold">日B: 9-18</span>
+            </div>
+          </div>
+        )}
         </div>
       </main>
 
