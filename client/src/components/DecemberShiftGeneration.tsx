@@ -1646,7 +1646,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   };
 
   return (
-    <div className={`bg-slate-100 font-sans text-sm ${printPreview ? 'print-preview-mode' : ''} flex flex-col h-full overflow-hidden`}>
+    <div className={`bg-slate-100 font-sans text-sm ${printPreview ? 'print-preview-mode' : ''} flex flex-col h-full`}>
 
       {isGenerating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
@@ -1979,7 +1979,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       <main
         ref={scrollContainerRef}
-        className="flex-1 bg-slate-100 relative overflow-auto h-[calc(100%-80px)]"
+        className="flex-1 bg-slate-100 relative overflow-auto"
       >
         <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%', height: '100%', margin: 0, padding: 0 }} className={`bg-white shadow-2xl shadow-slate-300/50 print:shadow-none mx-auto rounded-xl border border-slate-300 print:border-none ${printPreview ? 'p-0 mt-0 mb-0 mx-0' : 'p-10 mt-8 mb-8'} print:p-0 print:m-0`}>
 
