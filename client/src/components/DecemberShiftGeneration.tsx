@@ -1956,11 +1956,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               <span className="font-bold border-r border-slate-300 pr-3 mr-1 text-slate-600">凡例</span>
               <span className="text-red-600 bg-gray-200 px-2 py-0.5 rounded border border-gray-300">休: 公休</span>
               <span className="text-slate-900 bg-blue-200 px-2 py-0.5 rounded border border-blue-300 font-bold">夜: 夜勤</span>
-              <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200">早: 早番</span>
-              <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200">遅: 遅番</span>
-              <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200">有: 有給</span>
-              <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100">日A: 8-17</span>
-              <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100">日B: 9-18</span>
+              <span className="text-slate-900 bg-green-200 px-2 py-0.5 rounded border border-green-200 font-bold">早: 早番</span>
+              <span className="text-slate-900 bg-orange-200 px-2 py-0.5 rounded border border-orange-200 font-bold">遅: 遅番</span>
+              <span className="text-orange-700 bg-orange-100 px-2 py-0.5 rounded border border-orange-200 font-bold">有: 有給</span>
+              <span className="text-slate-900 bg-sky-100 px-2 py-0.5 rounded border border-sky-100 font-bold">日A: 8-17</span>
+              <span className="text-slate-900 bg-pink-100 px-2 py-0.5 rounded border border-pink-100 font-bold">日B: 9-18</span>
             </div>
             <div className="flex gap-8 mr-8">
               <div className="flex flex-col items-center group">
