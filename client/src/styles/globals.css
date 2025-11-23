@@ -349,6 +349,38 @@ html {
     page-break-inside: avoid !important;
   }
 
+  /* セル幅を印刷時に縮小 */
+  table th[class*="!w-[105px]"],
+  table td[class*="!w-[105px]"] {
+    width: 85px !important;
+    min-width: 85px !important;
+    max-width: 85px !important;
+  }
+
+  table th[class*="!w-[90px]"],
+  table td[class*="!w-[90px]"] {
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px !important;
+  }
+
+  table th[class*="min-w-[150px]"],
+  table td[class*="min-w-[150px]"] {
+    width: 120px !important;
+    min-width: 120px !important;
+  }
+
+  table th[class*="min-w-[130px]"],
+  table td[class*="min-w-[130px]"] {
+    width: 110px !important;
+    min-width: 110px !important;
+  }
+
+  table th[class*="min-w-[280px]"] {
+    width: 230px !important;
+    min-width: 230px !important;
+  }
+
   table thead {
     display: table-header-group !important;
   }
