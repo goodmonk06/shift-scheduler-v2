@@ -503,7 +503,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         for (const date of dates) {
           const key = `${staff.id}_${getIsoDate(date)}`;
           const cell = shifts[key];
-          if (cell) {
+          // 空欄（customTextが空でtype === 'OFF'）の場合はスキップ
+          if (cell && !(cell.type === 'OFF' && !cell.customText)) {
             entries.push({
               employeeName: staff.name,
               date: getIsoDate(date), // Full date string YYYY-MM-DD instead of just day number
@@ -654,7 +655,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             // displayTextがあればそれを使用（元の表示をそのまま復元）
             customText = detail.displayText;
           } else if (detail.status === 'off') {
-            customText = detail.leaveType || '休';
+            // leaveTypeがない場合は空文字列（空欄として扱う）
+            customText = detail.leaveType || '';
           } else if (detail.timeSlot) {
             customText = detail.timeSlot.displayLabel || detail.timeSlot.name || '';
           } else if (detail.startTime && detail.endTime) {
