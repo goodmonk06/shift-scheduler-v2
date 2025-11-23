@@ -316,7 +316,7 @@ html {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
-    padding: 5mm !important;
+    padding: 2mm 0 !important;
     margin: 0 !important;
   }
 
@@ -332,53 +332,59 @@ html {
 
   @page {
     size: A4 landscape;
-    margin: 8mm;
+    margin: 5mm;
   }
 
   table {
-    font-size: 7px !important;
-    width: auto !important;
-    margin: 0 auto !important;
+    font-size: 6.5px !important;
+    width: 100% !important;
+    margin: 0 !important;
     page-break-inside: auto !important;
+    table-layout: fixed !important;
   }
 
   table th,
   table td {
-    padding: 1px 2px !important;
+    padding: 1px 1px !important;
     line-height: 1.1 !important;
     page-break-inside: avoid !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
   }
 
-  /* セル幅を印刷時に縮小 */
+  /* A4横向きに収めるためセル幅を大幅に縮小 */
+  /* 使える幅: 約270mm - 10mm(margin) = 260mm ≈ 980px */
+  /* 氏名90 + 資格70 = 160px, 日付36個 × 22px = 792px, 合計952px */
+
   table th[class*="!w-[105px]"],
   table td[class*="!w-[105px]"] {
-    width: 85px !important;
-    min-width: 85px !important;
-    max-width: 85px !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    max-width: 22px !important;
   }
 
   table th[class*="!w-[90px]"],
   table td[class*="!w-[90px]"] {
-    width: 70px !important;
-    min-width: 70px !important;
-    max-width: 70px !important;
+    width: 22px !important;
+    min-width: 22px !important;
+    max-width: 22px !important;
   }
 
   table th[class*="min-w-[150px]"],
   table td[class*="min-w-[150px]"] {
-    width: 120px !important;
-    min-width: 120px !important;
+    width: 90px !important;
+    min-width: 90px !important;
   }
 
   table th[class*="min-w-[130px]"],
   table td[class*="min-w-[130px]"] {
-    width: 110px !important;
-    min-width: 110px !important;
+    width: 70px !important;
+    min-width: 70px !important;
   }
 
   table th[class*="min-w-[280px]"] {
-    width: 230px !important;
-    min-width: 230px !important;
+    width: 160px !important;
+    min-width: 160px !important;
   }
 
   table thead {
