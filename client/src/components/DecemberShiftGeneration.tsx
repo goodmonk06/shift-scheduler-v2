@@ -1979,9 +1979,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       <main
         ref={scrollContainerRef}
-        className="flex-1 flex flex-col bg-slate-100 relative overflow-hidden"
+        className="flex-1 bg-slate-100 relative"
       >
-        <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%', height: '100%', margin: 0, padding: 0 }} className={`flex flex-col flex-1 overflow-hidden bg-white shadow-2xl shadow-slate-300/50 print:shadow-none mx-auto rounded-xl border border-slate-300 print:border-none ${printPreview ? 'p-0 mt-0 mb-0 mx-0' : 'p-10 mt-8 mb-8'} print:p-0 print:m-0`}>
+        <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%', height: '100%', margin: 0, padding: 0 }} className={`bg-white shadow-2xl shadow-slate-300/50 print:shadow-none mx-auto rounded-xl border border-slate-300 print:border-none ${printPreview ? 'p-0 mt-0 mb-0 mx-0' : 'p-10 mt-8 mb-8'} print:p-0 print:m-0`}>
 
           {/* AIチェック結果表示 */}
           {checkResult && (
@@ -2121,13 +2121,13 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           </div>
 
           {/* 印刷専用コンテナ */}
-          <div id="print-root" className="flex flex-col flex-1 overflow-hidden">
+          <div id="print-root">
             {/* 印刷専用ヘッダー */}
             <h1 id="print-title" className="print-header print-only">
               {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
             </h1>
 
-            <div id="grid-wrapper" className={`shift-print-root flex-1 overflow-auto print:overflow-visible print:h-auto ${printPreview ? 'overflow-visible m-0 p-0 w-full h-auto flex justify-center' : ''}`}>
+            <div id="grid-wrapper" className={`shift-print-root overflow-auto h-[calc(100vh-300px)] print:overflow-visible print:h-auto ${printPreview ? 'overflow-visible m-0 p-0 w-full h-auto flex justify-center' : ''}`}>
               {/* PDF専用タイトル - 通常時は非表示、PDF出力時のみ表示 */}
               <div className="hidden pdf-title-header">
                 <h1 className="text-2xl font-bold text-center py-4 text-slate-900">
