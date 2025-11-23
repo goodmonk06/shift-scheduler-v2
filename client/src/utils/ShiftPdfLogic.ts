@@ -105,8 +105,8 @@ export const generatePDFFromHTML = async (
     `;
     document.head.appendChild(pdfStyle);
 
-    // 2. セル内のテキストを改行処理
-    const cells = element.querySelectorAll('td > div');
+    // 2. セル内のテキストを改行処理（tbodyのみ対象、tfootは除外）
+    const cells = element.querySelectorAll('tbody td > div');
     cells.forEach((div) => {
       const htmlDiv = div as HTMLElement;
       const originalText = htmlDiv.innerText;
