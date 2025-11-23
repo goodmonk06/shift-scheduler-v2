@@ -1991,7 +1991,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             <table className="min-w-max text-center border-collapse border border-slate-900 text-[10px] font-serif leading-tight relative table-auto">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
-                  <th className="border border-slate-600 font-bold bg-slate-200 text-slate-700 w-30 min-w-[120px]" colSpan={2}>
+                  <th className="border border-slate-600 font-bold bg-white text-slate-700 w-30 min-w-[120px]" colSpan={2}>
                     行事予定
                   </th>
 
@@ -2007,9 +2007,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                 <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-[100] shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-0 top-0 z-[110] shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[120px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-[110] shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
                   {/* 資格列 */}
-                  <th className="border border-slate-600 p-1 w-24 min-w-[96px] bg-slate-200 print:bg-slate-200 font-bold text-slate-800 sticky left-[120px] top-0 z-[110] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
+                  <th className="border border-slate-600 p-1 w-24 min-w-[96px] bg-white print:bg-white font-bold text-slate-800 sticky left-[120px] top-0 z-[110] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
