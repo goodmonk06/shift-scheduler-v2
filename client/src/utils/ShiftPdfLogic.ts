@@ -41,11 +41,20 @@ export const generatePDFFromHTML = async (
     // 一時的にPDF用スタイルを適用
     element.classList.add('pdf-export-mode');
 
+    // スタイルが適用されるまで少し待つ（レイアウト再計算のため）
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // 展開後の実際のサイズを取得
+    const captureWidth = element.scrollWidth;
+    const captureHeight = element.scrollHeight;
+
+    console.log(`[PDF Generation] Capture size: ${captureWidth}x${captureHeight}px`);
+
     // dom-to-image-more で画像化
     // ブラウザの描画エンジンを直接利用するため、oklchも完璧に処理される
     const dataUrl = await domtoimage.toPng(element, {
-      width: element.scrollWidth,
-      height: element.scrollHeight,
+      width: captureWidth,
+      height: captureHeight,
       scale: scale,
       style: {
         transform: 'scale(1)', // バグ回避のおまじない

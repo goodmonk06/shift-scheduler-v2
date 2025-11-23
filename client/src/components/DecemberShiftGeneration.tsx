@@ -2425,39 +2425,46 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       )}
 
       <style>{`
-        /* PDF Export Mode - HTML to Canvas to PDF用の一時スタイル */
+        /* PDF Export Mode - dom-to-image-more用の一時スタイル */
         .pdf-export-mode {
-          /* スティッキーを解除してhtml2canvasが正しくキャプチャできるように */
+          /* 1. スクロールバーを削除（コンテナを展開） */
+          overflow: visible !important;
+          height: auto !important;
+          max-height: none !important;
+          width: auto !important;
+          max-width: none !important;
+        }
+
+        /* 4. ノイズ（灰色の枠）を除去 */
+        .pdf-export-mode * {
+          box-shadow: none !important;
         }
 
         .pdf-export-mode th,
         .pdf-export-mode td {
           position: static !important;
-          box-shadow: none !important;
         }
 
-        /* 名前列を狭く（150px → 90px） */
+        /* 3. 氏名列（1列目）を広げて全表示 */
         .pdf-export-mode th:nth-child(1),
         .pdf-export-mode td:nth-child(1) {
-          min-width: 90px !important;
-          max-width: 90px !important;
-          width: 90px !important;
+          min-width: 150px !important;
+          width: auto !important;
+          white-space: nowrap !important;
         }
 
-        /* 資格列を狭く（130px → 60px） */
+        /* 2. 資格列（2列目）を削除 */
         .pdf-export-mode th:nth-child(2),
         .pdf-export-mode td:nth-child(2) {
-          min-width: 60px !important;
-          max-width: 60px !important;
-          width: 60px !important;
+          display: none !important;
         }
 
-        /* 日付列を少し狭く（90px → 75px） */
+        /* 日付列のサイズ調整 */
         .pdf-export-mode th:nth-child(n+3):not(.print\\:hidden),
         .pdf-export-mode td:nth-child(n+3):not(.print\\:hidden) {
-          min-width: 75px !important;
-          max-width: 75px !important;
-          width: 75px !important;
+          min-width: 70px !important;
+          max-width: 70px !important;
+          width: 70px !important;
         }
 
         /* PDF Print Styles v3.0 - Updated */
