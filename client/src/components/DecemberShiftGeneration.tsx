@@ -2293,6 +2293,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       )}
 
       <style>{`
+        /* PDF Print Styles v3.0 - Updated */
         @media print {
           @page {
             size: A4 landscape;
@@ -2355,9 +2356,10 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             border: 1px solid #333 !important;
             border-collapse: collapse !important;
             page-break-inside: auto !important;
-            width: 100% !important;
-            margin: 0 !important;
-            table-layout: fixed !important;
+            width: auto !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            table-layout: auto !important;
             font-size: 6.5px !important;
           }
 
@@ -2369,42 +2371,53 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             page-break-inside: avoid !important;
             overflow: hidden !important;
             position: static !important;
+            left: auto !important;
+            box-shadow: none !important;
+          }
+
+          /* Tailwindの幅クラスを全て上書き */
+          table th[class*="w-"],
+          table td[class*="w-"],
+          table th[class*="min-w-"],
+          table td[class*="min-w-"],
+          table th[class*="max-w-"],
+          table td[class*="max-w-"] {
+            width: auto !important;
+            min-width: auto !important;
+            max-width: none !important;
           }
 
           /* A4横向きに収めるため全セル幅を固定 */
           /* 合計: 氏名90 + 資格70 + 日付36x22 = 952px (A4横に収まる) */
 
-          /* 氏名列 */
-          table th.sticky.left-0,
-          table td.sticky.left-0 {
+          /* 1列目: 氏名列 */
+          table thead tr th:nth-child(1),
+          table tbody tr td:nth-child(1) {
             width: 90px !important;
             min-width: 90px !important;
             max-width: 90px !important;
           }
 
-          /* 資格列 */
-          table th.sticky[style*="left: 150px"],
-          table th.sticky[style*="left:150px"],
-          table td.sticky[style*="left: 150px"],
-          table td.sticky[style*="left:150px"] {
+          /* 2列目: 資格列 */
+          table thead tr th:nth-child(2),
+          table tbody tr td:nth-child(2) {
             width: 70px !important;
             min-width: 70px !important;
             max-width: 70px !important;
-            left: 90px !important;
           }
 
-          /* 行事予定セル（colSpan=2） */
-          table th[colspan="2"] {
-            width: 160px !important;
-            min-width: 160px !important;
-          }
-
-          /* 日付列のヘッダーと全セル */
-          table thead th:not(.sticky):not([colspan]),
-          table tbody td:not(.sticky) {
+          /* 3列目以降: 日付列（統計列は印刷時非表示なので無視） */
+          table thead tr:nth-child(2) th:nth-child(n+3):not([class*="print:hidden"]),
+          table tbody tr td:nth-child(n+3):not([class*="print:hidden"]) {
             width: 22px !important;
             min-width: 22px !important;
             max-width: 22px !important;
+          }
+
+          /* 行事予定行（1行目、colSpan=2） */
+          table thead tr:first-child th:first-child {
+            width: 160px !important;
+            min-width: 160px !important;
           }
 
           h1 {
