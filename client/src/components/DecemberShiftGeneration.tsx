@@ -3,6 +3,7 @@ import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lo
 import { useToast } from "../hooks/useToast";
 
 import { trpcClient } from "../lib/trpc";
+import { generateShiftPDF } from "../utils/ShiftPdfLogic";
 
 // --- 設定定数 ---
 const START_DATE = new Date(2025, 11, 1); // 2025年12月1日
@@ -754,9 +755,61 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     return calculateSufficiency(dates, shifts, staffList);
   }, [dates, shifts, staffList]);
 
+  // ====================================================================
+  // PDF出力（新実装 - jsPDF使用）
+  // 元に戻す場合は下記のコメントを外してください
+  // ====================================================================
   const handlePrint = () => {
-    window.print();
+    try {
+      // スタッフデータを変換
+      const scheduleData = staffList.map(staff => {
+        const shiftsMap: Record<string, string> = {};
+
+        dates.forEach(date => {
+          const dateIso = getIsoDate(date);
+          const key = `${staff.id}_${dateIso}`;
+          const cell = shifts[key];
+
+          // セルのデータを取得
+          if (cell && cell.customText) {
+            shiftsMap[dateIso] = cell.customText;
+          } else {
+            shiftsMap[dateIso] = ''; // 空欄
+          }
+        });
+
+        return {
+          name: staff.name,
+          qualification: staff.qualification || '',
+          shifts: shiftsMap
+        };
+      });
+
+      // メタデータを作成
+      const metaData = {
+        startDate: START_DATE,
+        endDate: END_DATE,
+        title: `${FACILITY_NAME} 勤務表`,
+        periodString: '2025年12月 〜 2026年1月5日',
+        events: {} // 必要に応じて行事情報を追加
+      };
+
+      // PDF生成
+      generateShiftPDF(scheduleData, metaData);
+      toast.success('PDFを出力しました');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('PDF出力に失敗しました');
+    }
   };
+
+  // ====================================================================
+  // 旧実装（window.print() 方式）
+  // 元に戻す場合はこちらを使用してください
+  // ====================================================================
+  // const handlePrint = () => {
+  //   window.print();
+  // };
 
   const zoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5));
   const zoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5));
