@@ -1846,9 +1846,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-400 transition-all shadow-lg hover:shadow-orange-500/30 text-xs font-bold border-2 border-orange-600"
+            className="flex items-center gap-2 px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-400 transition-all shadow-lg hover:shadow-orange-500/30 text-sm font-extrabold border-2 border-orange-600"
           >
-            <Printer size={14} />
+            <Printer size={16} />
             PDF出力
           </button>
 
