@@ -2165,7 +2165,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                         {staff.name}
                       </td>
                       {/* 資格列 */}
-                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white sticky left-[150px] z-10 shadow-lg border-r-2 border-r-slate-700 w-24 min-w-[130px]">
+                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white border-r-2 border-r-slate-700 w-24 min-w-[130px]">
                         {staff.qualification}
                       </td>
                       {dates.map(date => {
