@@ -1979,7 +1979,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       <main
         ref={scrollContainerRef}
-        className="flex-1 overflow-auto bg-slate-100 relative"
+        className="flex-1 bg-slate-100 relative"
       >
         <div style={!printPreview ? { zoom: zoom, width: 'fit-content' } : { width: '100%', height: '100%', margin: 0, padding: 0 }} className={`bg-white shadow-2xl shadow-slate-300/50 print:shadow-none mx-auto rounded-xl border border-slate-300 print:border-none ${printPreview ? 'p-0 mt-0 mb-0 mx-0' : 'p-10 mt-8 mb-8'} print:p-0 print:m-0`}>
 
@@ -2152,17 +2152,17 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={5}></th>
                 </tr>
 
-                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-[100] shadow-md">
+                <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-20 shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-30 min-w-[150px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-[110] shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[150px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-30 shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
                   {/* 資格列 */}
-                  <th className="border border-slate-600 p-1 w-24 min-w-[130px] bg-white print:bg-white font-bold text-slate-800 sticky left-[150px] top-0 z-[110] shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
+                  <th className="border border-slate-600 p-1 w-24 min-w-[130px] bg-white print:bg-white font-bold text-slate-800 sticky left-[150px] top-0 z-30 shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-[100]" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-20" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -2172,11 +2172,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                       </th>
                     );
                   })}
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3 sticky top-0 z-[100]">日数</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">時間</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">夜勤</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">休日</th>
-                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-[100]">有給</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold border-l-2 border-l-slate-800 print:hidden px-3 sticky top-0 z-20">日数</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-20">時間</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-20">夜勤</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-20">休日</th>
+                  <th className="border border-slate-600 !w-[270px] !min-w-[270px] !max-w-[270px] bg-indigo-50 text-indigo-900 font-bold print:hidden px-3 sticky top-0 z-20">有給</th>
                 </tr>
               </thead>
               <tbody>
@@ -2185,11 +2185,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   return (
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
                       {/* 氏名列 */}
-                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-30 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px]">
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px]">
                         {staff.name}
                       </td>
                       {/* 資格列 */}
-                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white sticky left-[150px] z-30 shadow-lg border-r-2 border-r-slate-700 w-24 min-w-[130px]">
+                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white sticky left-[150px] z-10 shadow-lg border-r-2 border-r-slate-700 w-24 min-w-[130px]">
                         {staff.qualification}
                       </td>
                       {dates.map(date => {
