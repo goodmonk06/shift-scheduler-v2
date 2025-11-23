@@ -255,9 +255,8 @@ export function ShiftEditorNew({ shiftId, onBack }: ShiftEditorNewProps) {
           {shiftData.length > 0 && (
             <Button
               size="lg"
-              variant="outline"
               onClick={exportToPDF}
-              className="font-extrabold text-gray-900 border-2 border-gray-600 hover:bg-gray-100"
+              className="bg-red-600 text-white hover:bg-red-700 font-bold text-lg px-8 py-4 shadow-lg border-2 border-red-700"
             >
               <FileDown className="w-6 h-6 mr-2" />
               PDF出力
