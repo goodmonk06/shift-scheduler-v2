@@ -2,10 +2,68 @@
 // ShiftPdfLogic.ts
 // PDF生成ロジック - HTML to PDF 方式
 // HTML要素をそのままPDF化することで、日本語やスタイルを完璧に保持
+// oklch色形式を自動的にrgb/hexに変換する色洗浄機能付き
 // =============================================================================
 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+/**
+ * 色洗浄（Color Sanitization）関数
+ * oklch等の新しい色形式をrgb/hexに変換してDOM要素に直接上書き
+ *
+ * @param element - 洗浄対象のルート要素
+ */
+const sanitizeColors = (element: HTMLElement) => {
+  // Canvas コンテキストを作成（色変換用）
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // チェックすべきCSSプロパティ一覧
+  const colorProperties = [
+    'color',
+    'backgroundColor',
+    'borderColor',
+    'borderTopColor',
+    'borderBottomColor',
+    'borderLeftColor',
+    'borderRightColor',
+    'outlineColor',
+    'textDecorationColor',
+    'columnRuleColor',
+  ];
+
+  // 全要素を走査
+  const allElements = element.querySelectorAll('*');
+
+  allElements.forEach((el) => {
+    const htmlEl = el as HTMLElement;
+    const computedStyle = window.getComputedStyle(htmlEl);
+
+    colorProperties.forEach((prop) => {
+      const value = computedStyle[prop as any];
+
+      // oklch または oklab が含まれている場合に変換
+      if (value && (value.includes('oklch') || value.includes('oklab'))) {
+        try {
+          // Canvas API を使ってブラウザに色変換させる
+          ctx.fillStyle = value;
+          const convertedColor = ctx.fillStyle; // rgb(...) または #... 形式に変換される
+
+          // 変換された色を style 属性に直接上書き
+          (htmlEl.style as any)[prop] = convertedColor;
+
+          console.log(`[Color Sanitization] ${prop}: ${value} → ${convertedColor}`);
+        } catch (error) {
+          console.warn(`[Color Sanitization] Failed to convert ${prop}: ${value}`, error);
+        }
+      }
+    });
+  });
+
+  console.log(`[Color Sanitization] Processed ${allElements.length} elements`);
+};
 
 /**
  * HTMLテーブル要素をPDF化する関数
@@ -37,7 +95,7 @@ export const generatePDFFromHTML = async (
       backgroundColor = '#ffffff'
     } = options;
 
-    // HTML要素をCanvasに変換
+    // HTML要素をCanvasに変換（色洗浄機能付き）
     const canvas = await html2canvas(element, {
       scale,
       useCORS,
@@ -46,6 +104,15 @@ export const generatePDFFromHTML = async (
       logging: false,
       windowWidth: element.scrollWidth,
       windowHeight: element.scrollHeight,
+      onclone: (clonedDoc) => {
+        // クローンされたドキュメント内で色を洗浄
+        const clonedElement = clonedDoc.getElementById(elementId);
+        if (clonedElement) {
+          console.log('[PDF Generation] Starting color sanitization...');
+          sanitizeColors(clonedElement as HTMLElement);
+          console.log('[PDF Generation] Color sanitization complete');
+        }
+      },
     });
 
     // Canvas画像データを取得
