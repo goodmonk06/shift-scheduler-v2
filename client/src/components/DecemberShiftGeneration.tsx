@@ -2296,13 +2296,48 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         @media print {
           @page {
             size: A4 landscape;
-            margin: 8mm;
+            margin: 5mm;
           }
+
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
           body {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
             background-color: white !important;
           }
+
+          main {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+          main > div {
+            zoom: 1 !important;
+            width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 2mm 0 !important;
+            margin: 0 !important;
+          }
+
+          #grid-wrapper {
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            width: 100% !important;
+          }
+
           .print\\:hidden {
             display: none !important;
           }
@@ -2316,22 +2351,73 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             background-color: transparent !important;
           }
 
-          table, th, td {
+          table {
             border: 1px solid #333 !important;
             border-collapse: collapse !important;
+            page-break-inside: auto !important;
+            width: 100% !important;
+            margin: 0 !important;
+            table-layout: fixed !important;
+            font-size: 6.5px !important;
           }
 
-          /* Print specific fix for sticky headers */
-          thead tr th, tbody tr td {
+          table th,
+          table td {
+            border: 1px solid #333 !important;
+            padding: 1px !important;
+            line-height: 1.1 !important;
+            page-break-inside: avoid !important;
+            overflow: hidden !important;
             position: static !important;
           }
 
-          table {
-            page-break-inside: auto;
+          /* A4横向きに収めるため全セル幅を固定 */
+          /* 合計: 氏名90 + 資格70 + 日付36x22 = 952px (A4横に収まる) */
+
+          /* 氏名列 */
+          table th.sticky.left-0,
+          table td.sticky.left-0 {
+            width: 90px !important;
+            min-width: 90px !important;
+            max-width: 90px !important;
+          }
+
+          /* 資格列 */
+          table th.sticky[style*="left: 150px"],
+          table th.sticky[style*="left:150px"],
+          table td.sticky[style*="left: 150px"],
+          table td.sticky[style*="left:150px"] {
+            width: 70px !important;
+            min-width: 70px !important;
+            max-width: 70px !important;
+            left: 90px !important;
+          }
+
+          /* 行事予定セル（colSpan=2） */
+          table th[colspan="2"] {
+            width: 160px !important;
+            min-width: 160px !important;
+          }
+
+          /* 日付列のヘッダーと全セル */
+          table thead th:not(.sticky):not([colspan]),
+          table tbody td:not(.sticky) {
+            width: 22px !important;
+            min-width: 22px !important;
+            max-width: 22px !important;
+          }
+
+          h1 {
+            font-size: 12px !important;
+            margin: 2px 0 3px 0 !important;
           }
 
           tbody tr {
-            page-break-inside: avoid;
+            page-break-inside: avoid !important;
+          }
+
+          table thead {
+            display: table-header-group !important;
           }
         }
 
