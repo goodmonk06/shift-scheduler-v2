@@ -2128,6 +2128,13 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             </h1>
 
             <div id="grid-wrapper" className={`shift-print-root overflow-auto max-h-[calc(100vh-300px)] print:overflow-visible print:max-h-none ${printPreview ? 'overflow-visible m-0 p-0 w-full max-h-none flex justify-center' : ''}`}>
+              {/* PDF専用タイトル - 通常時は非表示、PDF出力時のみ表示 */}
+              <div className="hidden pdf-title-header">
+                <h1 className="text-2xl font-bold text-center py-4 text-slate-900">
+                  {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
+                </h1>
+              </div>
+
             <table className="min-w-max text-center border-collapse border border-slate-900 text-[10px] print:text-[6.5px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
@@ -2458,6 +2465,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           max-height: none !important;
           width: auto !important;
           max-width: none !important;
+        }
+
+        /* PDF専用タイトルを表示 */
+        .pdf-export-mode .pdf-title-header {
+          display: block !important;
         }
 
         /* 全要素のノイズ（灰色の枠・影）を除去 */
