@@ -9,6 +9,21 @@ import domtoimage from 'dom-to-image-more';
 import jsPDF from 'jspdf';
 
 /**
+ * 長いテキストの改行ロジック
+ * 「数字+半」などが「～」や「-」で繋がっている場合、改行を入れて2段にする
+ * 例: "8半-16半" → "8半\n~16半"
+ * 例: "9:00-18:00" → "9:00\n~18:00"
+ */
+const formatShiftTextForPdf = (text: string): string => {
+  if (!text) return '';
+  // 既に改行がある場合は何もしない
+  if (text.includes('\n')) return text;
+
+  // 「数字+半」や「数字:数字」が「～」や「-」で繋がっているパターンを改行に変換
+  return text.replace(/([0-9半:]{2,})[-~～]([0-9半:]{2,})/g, '$1\n~$2');
+};
+
+/**
  * HTMLテーブル要素をPDF化する関数
  * dom-to-image-moreを使用し、ブラウザの描画をそのまま画像化
  *
@@ -24,6 +39,10 @@ export const generatePDFFromHTML = async (
     backgroundColor?: string;
   } = {}
 ) => {
+  // PDF用スタイルタグとDOM変更を追跡する変数
+  let pdfStyle: HTMLStyleElement | null = null;
+  const modifiedCells: Array<{ element: HTMLElement; originalText: string }> = [];
+
   try {
     const element = document.getElementById(elementId);
     if (!element) {
@@ -40,6 +59,67 @@ export const generatePDFFromHTML = async (
 
     // 一時的にPDF用スタイルを適用
     element.classList.add('pdf-export-mode');
+
+    // 1. PDF用スタイルを動的に注入
+    pdfStyle = document.createElement('style');
+    pdfStyle.innerHTML = `
+      /* セル内のdivを完全にフラット化 */
+      .pdf-export-mode td > div,
+      .pdf-export-mode td > div > *,
+      .pdf-export-mode td > div > * > * {
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        outline: none !important;
+        ring: 0 !important;
+      }
+
+      /* セル内のdivをセル全体に広げる */
+      .pdf-export-mode .shift-cell-content {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        white-space: pre-wrap !important;
+        line-height: 1.1 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background-color: transparent !important;
+      }
+
+      /* 資格列を表示 */
+      .pdf-export-mode th:nth-child(2),
+      .pdf-export-mode td:nth-child(2) {
+        display: table-cell !important;
+        width: auto !important;
+        min-width: 100px !important;
+      }
+
+      /* 名前列の幅確保 */
+      .pdf-export-mode th:nth-child(1),
+      .pdf-export-mode td:nth-child(1) {
+        min-width: 150px !important;
+        white-space: nowrap !important;
+      }
+    `;
+    document.head.appendChild(pdfStyle);
+
+    // 2. セル内のテキストを改行処理
+    const cells = element.querySelectorAll('td > div');
+    cells.forEach((div) => {
+      const htmlDiv = div as HTMLElement;
+      const originalText = htmlDiv.innerText;
+
+      // 元のテキストを保存
+      modifiedCells.push({ element: htmlDiv, originalText });
+
+      // PDF用に書き換え
+      htmlDiv.innerText = formatShiftTextForPdf(originalText);
+
+      // クラス付与（スタイル適用のため）
+      htmlDiv.classList.add('shift-cell-content');
+    });
 
     // スタイルが適用されるまで少し待つ（レイアウト再計算のため）
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -103,14 +183,38 @@ export const generatePDFFromHTML = async (
 
     console.log('[PDF Generation] PDF saved successfully!');
 
-    // スタイルを戻す
+    // 4. 後始末: 必ず元に戻す
+    // テキストを元に戻す
+    modifiedCells.forEach(({ element: htmlDiv, originalText }) => {
+      htmlDiv.innerText = originalText;
+      htmlDiv.classList.remove('shift-cell-content');
+    });
+
+    // スタイルタグを削除
+    if (pdfStyle && pdfStyle.parentNode) {
+      document.head.removeChild(pdfStyle);
+    }
+
+    // クラスを戻す
     element.classList.remove('pdf-export-mode');
 
     return { success: true };
   } catch (error) {
     console.error('[PDF Generation] Failed:', error);
 
-    // エラー時もスタイルを戻す
+    // エラー時も必ず元に戻す
+    // テキストを元に戻す
+    modifiedCells.forEach(({ element: htmlDiv, originalText }) => {
+      htmlDiv.innerText = originalText;
+      htmlDiv.classList.remove('shift-cell-content');
+    });
+
+    // スタイルタグを削除
+    if (pdfStyle && pdfStyle.parentNode) {
+      document.head.removeChild(pdfStyle);
+    }
+
+    // クラスを戻す
     const element = document.getElementById(elementId);
     if (element) {
       element.classList.remove('pdf-export-mode');
