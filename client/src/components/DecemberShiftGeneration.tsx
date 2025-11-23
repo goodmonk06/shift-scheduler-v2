@@ -1428,6 +1428,18 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     setContextMenu(null);
   };
 
+  const applyAdminLock = () => {
+    if (!contextMenu) return;
+    const key = `${contextMenu.staffId}_${getIsoDate(contextMenu.date)}`;
+    const currentVal = shifts[key] || { type: 'OFF', customText: '', isLocked: false };
+    // 現在の値を保持したまま、isLockedをtrueに設定
+    setShifts((prev: any) => ({
+      ...prev,
+      [key]: { ...currentVal, isLocked: true }
+    }));
+    setContextMenu(null);
+  };
+
   const saveShiftChange = (newVal: any) => {
     if (!popoverState.staffId) return;
     const key = `${popoverState.staffId}_${getIsoDate(popoverState.date)}`;
@@ -1508,7 +1520,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       {/* 右クリックメニュー */}
       {contextMenu && (
         <div
-          className="context-menu fixed z-50 bg-white border border-slate-200 shadow-xl rounded-lg py-1 w-32 animate-in fade-in zoom-in-95 duration-75"
+          className="context-menu fixed z-50 bg-white border border-slate-200 shadow-xl rounded-lg py-1 w-48 animate-in fade-in zoom-in-95 duration-75"
           style={{ top: contextMenu.y, left: contextMenu.x }}
         >
           <div className="text-xs font-bold text-slate-400 px-3 py-1 border-b border-slate-100 mb-1">
@@ -1538,6 +1550,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               {item.label}
             </button>
           ))}
+          <div className="border-t border-slate-100 my-1"></div>
+          <button
+            onClick={applyAdminLock}
+            className="w-full text-left px-3 py-1.5 text-sm hover:bg-yellow-50 text-yellow-700 hover:text-yellow-800 transition-colors flex items-center gap-2 font-semibold"
+          >
+            <Lock className="w-3 h-3" />
+            管理権限でロック
+          </button>
           <div className="border-t border-slate-100 my-1"></div>
           <button
             onClick={() => applyQuickShift('OFF', '')}
