@@ -2343,8 +2343,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         </div>
       </main>
 
-      {/* Legend - fixed at left side below staff names */}
-      <div className="fixed top-[160px] left-4 z-40 print:hidden">
+      {/* Legend - fixed at bottom left */}
+      <div className="fixed bottom-4 left-4 z-40 print:hidden">
         <div className="border border-slate-600 p-3 inline-flex gap-2 bg-white shadow-lg rounded-lg flex-wrap text-[9px] font-serif">
           <span className="font-bold border-r border-slate-300 pr-2 mr-1 text-slate-600">凡例</span>
           <span className="text-red-600 bg-gray-200 px-1.5 py-0.5 rounded border border-gray-300">休</span>
