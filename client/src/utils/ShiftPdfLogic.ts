@@ -1,26 +1,54 @@
 // =============================================================================
 // ShiftPdfLogic.ts
-// PDF生成ロジック - HTML to PDF 方式
-// HTML要素をそのままPDF化することで、日本語やスタイルを完璧に保持
-// oklch色形式を自動的にrgb/hexに変換する色洗浄機能付き
+// PDF生成ロジック - 完全なDOMサニタイズ方式
+// 手動クローン→色変換→PDF生成の流れでoklch色問題を根本解決
 // =============================================================================
 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 /**
- * 色洗浄（Color Sanitization）関数
- * oklch等の新しい色形式をrgb/hexに変換してDOM要素に直接上書き
- *
- * @param element - 洗浄対象のルート要素
+ * oklch色をHEX/RGBに変換する関数
+ * Canvas APIを使ってブラウザに変換させる
  */
-const sanitizeColors = (element: HTMLElement) => {
-  // Canvas コンテキストを作成（色変換用）
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+const convertToHex = (color: string): string => {
+  if (!color || !color.includes('oklch')) return color;
 
-  // チェックすべきCSSプロパティ一覧
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return color;
+
+    ctx.fillStyle = color;
+    return ctx.fillStyle; // ブラウザが計算したHEX/RGBが返る
+  } catch (error) {
+    console.warn('[Color Conversion] Failed to convert:', color, error);
+    return color;
+  }
+};
+
+/**
+ * 要素を完全にサニタイズ（浄化）する関数
+ * オリジナルをクローンし、画面外に配置して、すべてのoklch色をHEX/RGBに変換
+ *
+ * @param element - サニタイズ対象の要素
+ * @returns サニタイズされたクローン要素
+ */
+const sanitizeElement = (element: HTMLElement): HTMLElement => {
+  console.log('[DOM Sanitization] Starting...');
+
+  // 1. 手動でDOMをクローン
+  const clone = element.cloneNode(true) as HTMLElement;
+
+  // 2. 画面外に一時配置（レンダリングさせるため）
+  clone.style.position = 'absolute';
+  clone.style.left = '-9999px';
+  clone.style.top = '0';
+  clone.style.width = element.offsetWidth + 'px'; // 幅を維持
+  clone.style.visibility = 'hidden'; // 念のため非表示
+  document.body.appendChild(clone);
+
+  // 色関連プロパティ一覧
   const colorProperties = [
     'color',
     'backgroundColor',
@@ -34,39 +62,53 @@ const sanitizeColors = (element: HTMLElement) => {
     'columnRuleColor',
   ];
 
-  // 全要素を走査
-  const allElements = element.querySelectorAll('*');
+  let conversionCount = 0;
 
-  allElements.forEach((el) => {
-    const htmlEl = el as HTMLElement;
-    const computedStyle = window.getComputedStyle(htmlEl);
+  // 3. ルート要素自体のスタイル修正
+  const rootStyle = window.getComputedStyle(element);
+  colorProperties.forEach(prop => {
+    const value = (rootStyle as any)[prop];
+    if (value && value.includes('oklch')) {
+      const converted = convertToHex(value);
+      (clone.style as any)[prop] = converted;
+      conversionCount++;
+      console.log(`[Root] ${prop}: ${value} → ${converted}`);
+    }
+  });
 
-    colorProperties.forEach((prop) => {
-      const value = computedStyle[prop as any];
+  // 4. 子要素すべてのスタイル修正
+  const allOriginals = element.querySelectorAll('*');
+  const allClones = clone.querySelectorAll('*');
 
-      // oklch または oklab が含まれている場合に変換
-      if (value && (value.includes('oklch') || value.includes('oklab'))) {
-        try {
-          // Canvas API を使ってブラウザに色変換させる
-          ctx.fillStyle = value;
-          const convertedColor = ctx.fillStyle; // rgb(...) または #... 形式に変換される
+  allOriginals.forEach((orig, i) => {
+    const cln = allClones[i] as HTMLElement;
+    if (!cln) return;
 
-          // 変換された色を style 属性に直接上書き
-          (htmlEl.style as any)[prop] = convertedColor;
+    const style = window.getComputedStyle(orig);
 
-          console.log(`[Color Sanitization] ${prop}: ${value} → ${convertedColor}`);
-        } catch (error) {
-          console.warn(`[Color Sanitization] Failed to convert ${prop}: ${value}`, error);
+    colorProperties.forEach(prop => {
+      const val = (style as any)[prop];
+      if (val && val.includes('oklch')) {
+        const converted = convertToHex(val);
+        (cln.style as any)[prop] = converted;
+        conversionCount++;
+
+        // デバッグ用（最初の10件のみログ出力）
+        if (conversionCount <= 10) {
+          console.log(`[Element ${i}] ${prop}: ${val} → ${converted}`);
         }
       }
     });
   });
 
-  console.log(`[Color Sanitization] Processed ${allElements.length} elements`);
+  console.log(`[DOM Sanitization] Complete. Converted ${conversionCount} color properties across ${allOriginals.length + 1} elements.`);
+
+  return clone;
 };
 
 /**
- * HTMLテーブル要素をPDF化する関数
+ * HTMLテーブル要素をPDF化する関数（完全サニタイズ版）
+ *
  * @param elementId - PDF化するHTML要素のID
  * @param filename - 保存するPDFファイル名
  * @param options - オプション設定
@@ -81,6 +123,8 @@ export const generatePDFFromHTML = async (
     backgroundColor?: string;
   } = {}
 ) => {
+  let sanitizedClone: HTMLElement | null = null;
+
   try {
     const element = document.getElementById(elementId);
     if (!element) {
@@ -95,25 +139,25 @@ export const generatePDFFromHTML = async (
       backgroundColor = '#ffffff'
     } = options;
 
-    // HTML要素をCanvasに変換（色洗浄機能付き）
-    const canvas = await html2canvas(element, {
+    console.log('[PDF Generation] Starting complete DOM sanitization...');
+
+    // 完全なDOMサニタイズを実行
+    sanitizedClone = sanitizeElement(element);
+
+    console.log('[PDF Generation] Sanitization complete. Starting html2canvas...');
+
+    // サニタイズされたクローンをPDF化
+    const canvas = await html2canvas(sanitizedClone, {
       scale,
       useCORS,
       allowTaint,
       backgroundColor,
       logging: false,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
-      onclone: (clonedDoc) => {
-        // クローンされたドキュメント内で色を洗浄
-        const clonedElement = clonedDoc.getElementById(elementId);
-        if (clonedElement) {
-          console.log('[PDF Generation] Starting color sanitization...');
-          sanitizeColors(clonedElement as HTMLElement);
-          console.log('[PDF Generation] Color sanitization complete');
-        }
-      },
+      windowWidth: sanitizedClone.offsetWidth,
+      windowHeight: sanitizedClone.offsetHeight,
     });
+
+    console.log('[PDF Generation] html2canvas complete. Generating PDF...');
 
     // Canvas画像データを取得
     const imgData = canvas.toDataURL('image/png');
@@ -152,22 +196,28 @@ export const generatePDFFromHTML = async (
     // PDFをダウンロード
     pdf.save(filename);
 
+    console.log('[PDF Generation] PDF saved successfully!');
+
     return { success: true };
   } catch (error) {
-    console.error('PDF generation failed:', error);
+    console.error('[PDF Generation] Failed:', error);
     return { success: false, error };
+  } finally {
+    // 後始末: クローンを必ず削除
+    if (sanitizedClone && sanitizedClone.parentNode) {
+      document.body.removeChild(sanitizedClone);
+      console.log('[PDF Generation] Cleanup: Sanitized clone removed.');
+    }
   }
 };
 
 /**
  * 既存のgenerateShiftPDF関数との互換性のための関数
- * （既存のコードを変更せずに使えるようにするラッパー）
  */
 export const generateShiftPDF = async (
   scheduleData: any,
   metaData: any
 ) => {
-  // grid-wrapperまたはshift-tableなどのIDを持つ要素をPDF化
   const result = await generatePDFFromHTML(
     'grid-wrapper',
     `Shift_Schedule_${metaData.startDate.toISOString().split('T')[0]}.pdf`,
