@@ -1432,21 +1432,29 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     const key = `${contextMenu.staffId}_${getIsoDate(contextMenu.date)}`;
 
     setShifts((prev: any) => {
+      const prevCell = prev[key];
       const updated = {
         ...prev,
         [key]: { ...prev[key], type, customText, isLocked: false }
       };
 
+      const nextDay = new Date(contextMenu.date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayKey = `${contextMenu.staffId}_${getIsoDate(nextDay)}`;
+      const nextDayCell = prev[nextDayKey];
+
       // 夜勤を入力した場合、翌日に自動的に「明け」を設定
       if (customText === '夜' || type === 'NIGHT') {
-        const nextDay = new Date(contextMenu.date);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayKey = `${contextMenu.staffId}_${getIsoDate(nextDay)}`;
-
         // 翌日がまだ設定されていない、または休みの場合のみ「明け」を設定
-        const nextDayCell = prev[nextDayKey];
         if (!nextDayCell || nextDayCell.type === 'OFF' || !nextDayCell.customText || nextDayCell.customText === '休') {
           updated[nextDayKey] = { type: 'DAY', customText: '明', isLocked: false };
+        }
+      }
+      // 夜勤を削除した場合、翌日の「明け」も削除
+      else if (prevCell && (prevCell.customText === '夜' || prevCell.type === 'NIGHT')) {
+        // 翌日が「明け」の場合のみ削除
+        if (nextDayCell && nextDayCell.customText === '明') {
+          updated[nextDayKey] = { type: 'OFF', customText: '', isLocked: false };
         }
       }
 
@@ -1473,18 +1481,26 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     const key = `${popoverState.staffId}_${getIsoDate(popoverState.date)}`;
 
     setShifts((prev: any) => {
+      const prevCell = prev[key];
       const updated = { ...prev, [key]: { ...prev[key], ...newVal } };
+
+      const nextDay = new Date(popoverState.date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayKey = `${popoverState.staffId}_${getIsoDate(nextDay)}`;
+      const nextDayCell = prev[nextDayKey];
 
       // 夜勤を入力した場合、翌日に自動的に「明け」を設定
       if (newVal.customText === '夜' || newVal.type === 'NIGHT') {
-        const nextDay = new Date(popoverState.date);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const nextDayKey = `${popoverState.staffId}_${getIsoDate(nextDay)}`;
-
         // 翌日がまだ設定されていない、または休みの場合のみ「明け」を設定
-        const nextDayCell = prev[nextDayKey];
         if (!nextDayCell || nextDayCell.type === 'OFF' || !nextDayCell.customText || nextDayCell.customText === '休') {
           updated[nextDayKey] = { type: 'DAY', customText: '明', isLocked: false };
+        }
+      }
+      // 夜勤を削除した場合、翌日の「明け」も削除
+      else if (prevCell && (prevCell.customText === '夜' || prevCell.type === 'NIGHT')) {
+        // 翌日が「明け」の場合のみ削除
+        if (nextDayCell && nextDayCell.customText === '明') {
+          updated[nextDayKey] = { type: 'OFF', customText: '', isLocked: false };
         }
       }
 
