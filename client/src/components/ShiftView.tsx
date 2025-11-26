@@ -100,7 +100,7 @@ export function ShiftView({ employeeId = 1 }: ShiftViewProps) {
     };
   }, [shifts]);
 
-  // PDFダウンロード（Phase 5完全実装）
+  // PDFダウンロード
   const handleDownloadPDF = async () => {
     if (!shiftInfo?.id) {
       toast.error("シフト情報が見つかりません");
@@ -109,22 +109,13 @@ export function ShiftView({ employeeId = 1 }: ShiftViewProps) {
 
     try {
       toast.info("PDF生成中...");
-
-      // PDF生成APIを呼び出し
-      const result = await trpcClient.shifts.generatePDF.mutate({
-        shiftId: shiftInfo.id
-      });
-
-      if (result.success && result.signedUrl) {
-        toast.success("PDFを生成しました");
-        // 署名付きURLで新しいタブを開く
-        window.open(result.signedUrl, '_blank');
-      } else {
-        toast.warning("PDFが生成されましたが、URLが取得できませんでした");
-      }
+      // TODO: Phase 5でPDF生成APIを実装
+      // const pdfUrl = await trpcClient.shifts.generatePDF.mutate({ shiftId: shiftInfo.id });
+      // window.open(pdfUrl, '_blank');
+      toast.warning("PDF生成機能は実装予定です（Phase 5）");
     } catch (error: any) {
       console.error("PDF生成エラー:", error);
-      toast.error(error.message || "PDF生成に失敗しました");
+      toast.error("PDF生成に失敗しました");
     }
   };
 

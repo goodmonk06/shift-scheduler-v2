@@ -6,7 +6,7 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { ArrowLeft, Save, Calendar, Lock, Play, FileCheck, CheckCircle, Download } from "lucide-react";
+import { ArrowLeft, Save, Calendar, Lock, Play, FileCheck, CheckCircle } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -344,29 +344,6 @@ export function ShiftEditorV2({ shiftId, onBack }: ShiftEditorV2Props) {
     }
   };
 
-  // PDF出力（Phase 5完全実装）
-  const handleExportPDF = async (sendEmail: boolean = false) => {
-    try {
-      toast.info(sendEmail ? "PDF生成・メール送信中..." : "PDF生成中...");
-
-      const result = await trpcClient.shifts.exportPDF.mutate({
-        shiftId,
-        sendEmail,
-      });
-
-      if (result.success && result.signedUrl) {
-        toast.success(sendEmail ? "PDFを生成してメールを送信しました" : "PDFを生成しました");
-        // 署名付きURLで新しいタブを開く
-        window.open(result.signedUrl, '_blank');
-      } else {
-        toast.warning("PDFが生成されましたが、URLが取得できませんでした");
-      }
-    } catch (error: any) {
-      console.error("PDF出力エラー:", error);
-      toast.error(error.message || "PDF出力に失敗しました");
-    }
-  };
-
   // ローディング中
   if (isLoading) {
     return (
@@ -449,16 +426,6 @@ export function ShiftEditorV2({ shiftId, onBack }: ShiftEditorV2Props) {
                 <CheckCircle className="w-4 h-4 mr-2" />
                 確定
               </Button>
-              {(status === 'tentative' || status === 'confirmed') && (
-                <Button
-                  onClick={() => handleExportPDF(false)}
-                  variant="outline"
-                  className="rounded-lg border-purple-300 hover:bg-purple-50"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  PDF出力
-                </Button>
-              )}
             </div>
           </div>
         </div>
