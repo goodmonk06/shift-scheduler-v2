@@ -2,10 +2,6 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
-// Dynamic import to avoid bundling OpenAI at build time
-import { generateShiftPDF } from "./pdfGenerator";
-// Dynamic import to avoid bundling OpenAI at build time
-// import { structureEmployeeData, getEmployeeConstraints } from "./employeeDataStructurer";
 import { z } from "zod";
 import * as db from "./db";
 
@@ -507,12 +503,202 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // PDF生成（フェーズ5で実装）
+    // PDF生成（Phase 5完全実装）
     generatePDF: protectedProcedure
       .input(z.object({ shiftId: z.number() }))
-      .query(async ({ input }) => {
-        // TODO: フェーズ5で実装
-        throw new Error("PDF生成機能はフェーズ5で実装予定です");
+      .mutation(async ({ input }) => {
+        const { generateShiftPDF } = await import("./utils/pdfGenerator");
+        type PDFShiftData = import("./utils/pdfGenerator").PDFShiftData;
+        const { calculateShiftStats } = await import("./utils/shiftStatsCalculator");
+        const { uploadPDF } = await import("./utils/fileStorage");
+
+        // 1. シフトデータ取得
+        const shiftData = await db.getShiftById(input.shiftId);
+        if (!shiftData) {
+          throw new Error("シフトが見つかりません");
+        }
+
+        const shift = shiftData as any;
+        const year = shift.year as number;
+        const month = shift.month as number;
+        const shiftName = shift.name as string;
+
+        // 2. 全職員のシフト詳細を取得
+        const employees = await db.getAllEmployees();
+        const allDetails = await db.getShiftDetailsByShiftId(input.shiftId);
+
+        // 3. 職員ごとにデータを整形
+        const employeeData = employees.map(employee => {
+          const employeeShifts = allDetails.filter(d => d.employeeId === employee.id);
+
+          // シフト詳細を日付ごとにマッピング
+          const shifts = employeeShifts.map(detail => ({
+            date: detail.date,
+            displayText: detail.displayText || '',
+          }));
+
+          // 統計計算
+          const stats = calculateShiftStats(
+            employeeShifts.map(d => ({
+              date: d.date,
+              status: d.status,
+              displayText: d.displayText || '',
+              startTime: d.startTime || null,
+              endTime: d.endTime || null,
+              leaveType: d.leaveType || null,
+            })),
+            employee.breakTimeRule || null,
+            year,
+            month
+          );
+
+          return {
+            id: employee.id,
+            name: employee.name,
+            shifts,
+            stats,
+          };
+        });
+
+        // 4. PDFデータ構造を作成
+        const pdfData: PDFShiftData = {
+          year,
+          month,
+          shiftName,
+          employees: employeeData,
+        };
+
+        // 5. PDF生成
+        const pdfBuffer = await generateShiftPDF(pdfData);
+
+        // 6. ストレージにアップロード（スタブ実装）
+        const filename = `shift_${year}-${String(month).padStart(2, '0')}.pdf`;
+        const uploadResult = await uploadPDF(pdfBuffer, filename);
+
+        return {
+          success: true,
+          url: uploadResult.url,
+          signedUrl: uploadResult.signedUrl,
+          key: uploadResult.key,
+        };
+      }),
+
+    // PDF出力・通知（Phase 5完全実装）
+    exportPDF: protectedProcedure
+      .input(z.object({
+        shiftId: z.number(),
+        sendEmail: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { generateShiftPDF } = await import("./utils/pdfGenerator");
+        type PDFShiftData = import("./utils/pdfGenerator").PDFShiftData;
+        const { calculateShiftStats } = await import("./utils/shiftStatsCalculator");
+        const { uploadPDF } = await import("./utils/fileStorage");
+        const { sendShiftNotification } = await import("./utils/emailNotification");
+
+        // 1. シフトデータ取得
+        const shiftData = await db.getShiftById(input.shiftId);
+        if (!shiftData) {
+          throw new Error("シフトが見つかりません");
+        }
+
+        const shift = shiftData as any;
+        const year = shift.year as number;
+        const month = shift.month as number;
+        const shiftName = shift.name as string;
+        const status = shift.status as string;
+        const isConfirmed = status === 'confirmed';
+
+        // tentativeまたはconfirmedのみPDF出力可能
+        if (status !== 'tentative' && status !== 'tentative_revised' && status !== 'confirmed') {
+          throw new Error("PDF出力は仮確定または確定済みのシフトでのみ可能です");
+        }
+
+        // 2. 全職員のシフト詳細を取得
+        const employees = await db.getAllEmployees();
+        const allDetails = await db.getShiftDetailsByShiftId(input.shiftId);
+
+        // 3. 職員ごとにデータを整形
+        const employeeData = employees.map(employee => {
+          const employeeShifts = allDetails.filter(d => d.employeeId === employee.id);
+
+          const shifts = employeeShifts.map(detail => ({
+            date: detail.date,
+            displayText: detail.displayText || '',
+          }));
+
+          const stats = calculateShiftStats(
+            employeeShifts.map(d => ({
+              date: d.date,
+              status: d.status,
+              displayText: d.displayText || '',
+              startTime: d.startTime || null,
+              endTime: d.endTime || null,
+              leaveType: d.leaveType || null,
+            })),
+            employee.breakTimeRule || null,
+            year,
+            month
+          );
+
+          return {
+            id: employee.id,
+            name: employee.name,
+            email: employee.email || '',
+            shifts,
+            stats,
+          };
+        });
+
+        // 4. PDF生成
+        const pdfData: PDFShiftData = {
+          year,
+          month,
+          shiftName,
+          employees: employeeData.map(e => ({
+            id: e.id,
+            name: e.name,
+            shifts: e.shifts,
+            stats: e.stats,
+          })),
+        };
+
+        const pdfBuffer = await generateShiftPDF(pdfData);
+
+        // 5. ストレージにアップロード
+        const filename = `shift_${year}-${String(month).padStart(2, '0')}_${isConfirmed ? 'confirmed' : 'tentative'}.pdf`;
+        const uploadResult = await uploadPDF(pdfBuffer, filename);
+
+        // 6. メール通知（オプション）
+        let emailResults: any[] = [];
+        if (input.sendEmail) {
+          const recipients = employeeData
+            .filter(e => e.email && e.email.trim() !== '')
+            .map(e => ({
+              email: e.email,
+              name: e.name,
+            }));
+
+          if (recipients.length > 0) {
+            emailResults = await sendShiftNotification({
+              recipients,
+              shiftName,
+              year,
+              month,
+              pdfUrl: uploadResult.signedUrl || uploadResult.url,
+              isConfirmed,
+            });
+          }
+        }
+
+        return {
+          success: true,
+          url: uploadResult.url,
+          signedUrl: uploadResult.signedUrl,
+          key: uploadResult.key,
+          emailSent: input.sendEmail,
+          emailResults,
+        };
       }),
 
     saveStandalone: protectedProcedure
@@ -709,55 +895,6 @@ export const appRouter = router({
       }),
 
     // 段階的配置アルゴリズム（改善版：固定データ保護）
-    generatePhaseBased: protectedProcedure
-      .input(z.object({
-        shiftId: z.number(),
-        options: z.object({
-          keepApprovedRequests: z.boolean().default(true),
-          keepManualEdits: z.boolean().default(false),
-        }).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const draftShift = await db.getShiftById(input.shiftId);
-        if (!draftShift) throw new Error("シフトが見つかりません");
-
-        // Verify the source shift is in vacation_only or draft status
-        if (draftShift.status !== "vacation_only" && draftShift.status !== "draft") {
-          throw new Error("段階的生成は希望休のみまたは下書きのシフトでのみ実行できます");
-        }
-
-        console.log('[generatePhaseBased API] Starting improved generation for shiftId:', input.shiftId);
-
-        // Use improved shift generator with fixed data protection
-        const { generateImprovedShift } = await import("./improvedShiftGenerator");
-        const result = await generateImprovedShift(
-          input.shiftId,
-          draftShift.year,
-          draftShift.month,
-          {
-            keepApprovedRequests: input.options?.keepApprovedRequests ?? true,
-            keepManualEdits: input.options?.keepManualEdits ?? false,
-            useAI: false,
-            usePhased: true,
-          }
-        );
-
-        console.log('[generatePhaseBased API] Generation completed:', {
-          fixedShifts: result.fixedShifts.length,
-          generatedShifts: result.generatedShifts.length,
-          totalShifts: result.totalShifts,
-        });
-
-        return {
-          success: true,
-          shiftId: input.shiftId,
-          fixedShifts: result.fixedShifts.length,
-          generatedShifts: result.generatedShifts.length,
-          totalShifts: result.totalShifts,
-          statistics: result.statistics,
-        };
-      }),
-
     transitionPhase: protectedProcedure
       .input(z.object({
         sourceShiftId: z.number(),
@@ -817,24 +954,6 @@ export const appRouter = router({
         return {
           success: true,
           newShiftId: newShift.id,
-        };
-      }),
-    exportPDF: protectedProcedure
-      .input(z.object({ shiftId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const shift = await db.getShiftById(input.shiftId);
-        if (!shift) throw new Error("シフトが見つかりません");
-
-        const pdfBuffer = await generateShiftPDF({
-          shiftId: input.shiftId,
-          year: shift.year,
-          month: shift.month,
-        });
-
-        // Base64エンコードして返す
-        return {
-          pdf: pdfBuffer.toString('base64'),
-          filename: `shift_${shift.year}_${shift.month}.pdf`,
         };
       }),
   }),
