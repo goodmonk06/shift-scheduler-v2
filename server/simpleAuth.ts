@@ -47,7 +47,28 @@ export async function simpleLogin(req: Request, res: Response) {
   try {
     // 職員IDまたはメールアドレスで検索
     const result = await db
-      .select()
+      .select({
+        id: employees.id,
+        userId: employees.userId,
+        employeeId: employees.employeeId,
+        name: employees.name,
+        email: employees.email,
+        positionGroupId: employees.positionGroupId,
+        skillLevel: employees.skillLevel,
+        canWorkNightShift: employees.canWorkNightShift,
+        workableDays: employees.workableDays,
+        additionalConstraints: employees.additionalConstraints,
+        breakTime: employees.breakTime,
+        // breakTimeRule: employees.breakTimeRule, // 本番DBに存在しないため一時的にコメントアウト
+        isServiceManager: employees.isServiceManager,
+        isOfficeStaff: employees.isOfficeStaff,
+        displayOrder: employees.displayOrder,
+        notificationEnabled: employees.notificationEnabled,
+        notificationEmail: employees.notificationEmail,
+        lineUserId: employees.lineUserId,
+        createdAt: employees.createdAt,
+        updatedAt: employees.updatedAt,
+      })
       .from(employees)
       .where(
         or(
