@@ -176,20 +176,83 @@ export async function deletePositionGroup(id: number) {
 export async function getAllEmployees() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(employees).orderBy(asc(employees.displayOrder));
+  return await db.select({
+    id: employees.id,
+    userId: employees.userId,
+    employeeId: employees.employeeId,
+    name: employees.name,
+    email: employees.email,
+    positionGroupId: employees.positionGroupId,
+    skillLevel: employees.skillLevel,
+    canWorkNightShift: employees.canWorkNightShift,
+    workableDays: employees.workableDays,
+    additionalConstraints: employees.additionalConstraints,
+    breakTime: employees.breakTime,
+    // breakTimeRule: employees.breakTimeRule, // 本番DBに存在しないため一時的にコメントアウト
+    isServiceManager: employees.isServiceManager,
+    isOfficeStaff: employees.isOfficeStaff,
+    displayOrder: employees.displayOrder,
+    notificationEnabled: employees.notificationEnabled,
+    notificationEmail: employees.notificationEmail,
+    lineUserId: employees.lineUserId,
+    createdAt: employees.createdAt,
+    updatedAt: employees.updatedAt,
+  }).from(employees).orderBy(asc(employees.displayOrder));
 }
 
 export async function getEmployeeById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(employees).where(eq(employees.id, id)).limit(1);
+  const result = await db.select({
+    id: employees.id,
+    userId: employees.userId,
+    employeeId: employees.employeeId,
+    name: employees.name,
+    email: employees.email,
+    positionGroupId: employees.positionGroupId,
+    skillLevel: employees.skillLevel,
+    canWorkNightShift: employees.canWorkNightShift,
+    workableDays: employees.workableDays,
+    additionalConstraints: employees.additionalConstraints,
+    breakTime: employees.breakTime,
+    // breakTimeRule: employees.breakTimeRule, // 本番DBに存在しないため一時的にコメントアウト
+    isServiceManager: employees.isServiceManager,
+    isOfficeStaff: employees.isOfficeStaff,
+    displayOrder: employees.displayOrder,
+    notificationEnabled: employees.notificationEnabled,
+    notificationEmail: employees.notificationEmail,
+    lineUserId: employees.lineUserId,
+    createdAt: employees.createdAt,
+    updatedAt: employees.updatedAt,
+  }).from(employees).where(eq(employees.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
 export async function getEmployeeByUserId(userId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(employees).where(eq(employees.userId, userId)).limit(1);
+  const result = await db.select({
+    id: employees.id,
+    userId: employees.userId,
+    employeeId: employees.employeeId,
+    name: employees.name,
+    email: employees.email,
+    positionGroupId: employees.positionGroupId,
+    skillLevel: employees.skillLevel,
+    canWorkNightShift: employees.canWorkNightShift,
+    workableDays: employees.workableDays,
+    additionalConstraints: employees.additionalConstraints,
+    breakTime: employees.breakTime,
+    // breakTimeRule: employees.breakTimeRule, // 本番DBに存在しないため一時的にコメントアウト
+    isServiceManager: employees.isServiceManager,
+    isOfficeStaff: employees.isOfficeStaff,
+    displayOrder: employees.displayOrder,
+    notificationEnabled: employees.notificationEnabled,
+    notificationEmail: employees.notificationEmail,
+    lineUserId: employees.lineUserId,
+    createdAt: employees.createdAt,
+    updatedAt: employees.updatedAt,
+  }).from(employees).where(eq(employees.userId, userId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
