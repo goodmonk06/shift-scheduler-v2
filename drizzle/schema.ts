@@ -1,6 +1,16 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, json } from "drizzle-orm/mysql-core";
 
 /**
+ * 休憩時間ルールの型定義
+ */
+export interface BreakTimeRule {
+  type: 'fixed' | 'conditional' | 'none';
+  duration?: number;        // 固定時間（時間単位、例: 1 = 60分）
+  threshold?: number;       // 条件閾値（時間単位、例: 6 = 6時間）
+  conditionDuration?: number; // 条件を満たした場合の休憩時間（時間単位）
+}
+
+/**
  * Core user table backing auth flow.
  */
 export const users = mysqlTable("users", {
@@ -49,7 +59,8 @@ export const employees = mysqlTable("employees", {
   canWorkNightShift: boolean("canWorkNightShift").default(false).notNull(),
   workableDays: json("workableDays"), // 勤務可能曜日と時間帯 [{dayOfWeek: 0-6, startTime: "09:00", endTime: "17:00"}]
   additionalConstraints: json("additionalConstraints"), // 追加の制約条件（構造化JSON）
-  breakTime: int("breakTime").default(60).notNull(), // 休憩時間（0/30/60分）
+  breakTime: int("breakTime").default(60).notNull(), // 休憩時間（0/30/60分）★旧フィールド（互換性維持）
+  breakTimeRule: json("breakTimeRule").$type<BreakTimeRule>(), // 休憩時間ルール（固定/条件付き/なし）★新フィールド
   isServiceManager: boolean("isServiceManager").default(false).notNull(), // サービス提供責任者フラグ
   isOfficeStaff: boolean("isOfficeStaff").default(false).notNull(), // 事務員フラグ
   displayOrder: int("displayOrder").default(0).notNull(),

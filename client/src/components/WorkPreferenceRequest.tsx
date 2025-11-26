@@ -138,12 +138,12 @@ export function WorkPreferenceRequest({
         await workPreferenceService.create({
           employeeId,
           shiftId,
-          startDate: date,
-          endDate: date,
+          date,
+          preferenceType: "time_specified",
           startTime: pref.startTime,
           endTime: pref.endTime,
-          isAdditional: false,
-          reason: pref.reason,
+          notes: pref.reason || null,
+          isCountAsStaff: true,
         });
       }
 
@@ -316,6 +316,59 @@ export function WorkPreferenceRequest({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* プリセットボタン */}
+            <div className="space-y-2">
+              <Label>よく使う時間帯プリセット</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setStartTime("09:00");
+                    setEndTime("13:00");
+                  }}
+                  className="rounded-xl hover:bg-primary hover:text-white transition-colors"
+                >
+                  9～13
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setStartTime("09:00");
+                    setEndTime("15:00");
+                  }}
+                  className="rounded-xl hover:bg-primary hover:text-white transition-colors"
+                >
+                  9～15
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setStartTime("13:00");
+                    setEndTime("17:00");
+                  }}
+                  className="rounded-xl hover:bg-primary hover:text-white transition-colors"
+                >
+                  13～17
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    // カスタム: 下の時間選択で自由に設定
+                  }}
+                  className="rounded-xl hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  カスタム
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ※プリセットを選択後、下の時間選択で微調整できます
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startTime">開始時刻</Label>
@@ -323,7 +376,7 @@ export function WorkPreferenceRequest({
                   id="startTime"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
                   {timeOptions.map(time => (
                     <option key={time} value={time}>{time}</option>
@@ -337,7 +390,7 @@ export function WorkPreferenceRequest({
                   id="endTime"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full rounded-xl border border-gray-300 px-3 py-2"
+                  className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
                   {timeOptions.map(time => (
                     <option key={time} value={time}>{time}</option>

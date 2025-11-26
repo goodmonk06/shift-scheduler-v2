@@ -416,51 +416,103 @@ export const appRouter = router({
           confirmedAt: new Date(),
         });
       }),
-    generateAI: protectedProcedure
-      .input(z.object({
-        shiftId: z.number(),
-        prompt: z.string().optional(), // Optional custom prompt for AI
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const draftShift = await db.getShiftById(input.shiftId);
-        if (!draftShift) throw new Error("シフトが見つかりません");
 
-        // Verify the source shift is in vacation_only or draft status
-        if (draftShift.status !== "vacation_only" && draftShift.status !== "draft") {
-          throw new Error("AI生成は希望休のみまたは下書きのシフトでのみ実行できます");
+    // 段階的配置実行（新ロジック: simpleShiftGenerator）
+    generatePhased: protectedProcedure
+      .input(z.object({ shiftId: z.number() }))
+      .mutation(async ({ input }) => {
+        const shift = await db.getShiftById(input.shiftId);
+        if (!shift) throw new Error("シフトが見つかりません");
+
+        // 希望休のみまたは下書きのシフトでのみ実行可能
+        if (shift.status !== "vacation_only" && shift.status !== "draft") {
+          throw new Error("段階的配置は希望休のみまたは下書きのシフトでのみ実行できます");
         }
 
-        // Create a new shift record with ai_generated status
-        const aiShift = await db.createShift({
-          year: draftShift.year,
-          month: draftShift.month,
-          name: `${draftShift.name} (AI生成)`,
-          status: "ai_generated",
-          generatedBy: "ai",
-          parentShiftId: draftShift.id,
-          leaveRequestDeadline: draftShift.leaveRequestDeadline,
-          additionalRequestDeadline: draftShift.additionalRequestDeadline,
-          userId: ctx.user?.id || null,
-        });
-
-        // Run improved generation on the new shift (uses AI mode if available)
-        const { generateImprovedShift } = await import("./improvedShiftGenerator");
-        await generateImprovedShift(
-          aiShift.id,
-          aiShift.year,
-          aiShift.month,
-          {
-            keepApprovedRequests: true,  // 希望休は保護
-            keepManualEdits: false,
-            usePhased: true,
-            useAI: true,  // AI生成モードを使用
-          }
-        );
+        const { executePhased } = await import("./simpleShiftGenerator");
+        const result = await executePhased(input.shiftId);
 
         return {
-          success: true,
-          newShiftId: aiShift.id,
+          success: result.success,
+          phase1Count: result.phase1Count,
+          phase2Count: result.phase2Count,
+          totalCount: result.totalCount,
         };
+      }),
+
+    // 段階的配置リセット（新ロジック: simpleShiftGenerator）
+    resetPhased: protectedProcedure
+      .input(z.object({
+        shiftId: z.number(),
+        options: z.object({
+          keepApprovedRequests: z.boolean().default(true),
+          keepManualEdits: z.boolean().default(false),
+        }).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const shift = await db.getShiftById(input.shiftId);
+        if (!shift) throw new Error("シフトが見つかりません");
+
+        const { resetShift } = await import("./simpleShiftGenerator");
+        const result = await resetShift(input.shiftId, input.options);
+
+        return {
+          success: result.success,
+          deletedCount: result.deletedCount,
+          keptCount: result.keptCount,
+        };
+      }),
+
+    // 仮確定
+    setTentative: protectedProcedure
+      .input(z.object({ shiftId: z.number() }))
+      .mutation(async ({ input }) => {
+        const shift = await db.getShiftById(input.shiftId);
+        if (!shift) throw new Error("シフトが見つかりません");
+
+        // ai_generatedまたはdraftのシフトでのみ実行可能
+        if (shift.status !== "ai_generated" && shift.status !== "draft") {
+          throw new Error("仮確定はAI生成済みまたは下書きのシフトでのみ実行できます");
+        }
+
+        await db.updateShift(input.shiftId, {
+          status: "tentative",
+          tentativePublishedAt: new Date(),
+        });
+
+        // TODO: フェーズ5でPDF生成・メール通知を実装
+
+        return { success: true };
+      }),
+
+    // 確定
+    confirmShift: protectedProcedure
+      .input(z.object({ shiftId: z.number() }))
+      .mutation(async ({ input }) => {
+        const shift = await db.getShiftById(input.shiftId);
+        if (!shift) throw new Error("シフトが見つかりません");
+
+        // tentativeまたはtentative_revisedのシフトでのみ実行可能
+        if (shift.status !== "tentative" && shift.status !== "tentative_revised") {
+          throw new Error("確定は仮確定のシフトでのみ実行できます");
+        }
+
+        await db.updateShift(input.shiftId, {
+          status: "confirmed",
+          confirmedAt: new Date(),
+        });
+
+        // TODO: フェーズ5でPDF生成・メール通知を実装
+
+        return { success: true };
+      }),
+
+    // PDF生成（フェーズ5で実装）
+    generatePDF: protectedProcedure
+      .input(z.object({ shiftId: z.number() }))
+      .query(async ({ input }) => {
+        // TODO: フェーズ5で実装
+        throw new Error("PDF生成機能はフェーズ5で実装予定です");
       }),
 
     saveStandalone: protectedProcedure
@@ -703,50 +755,6 @@ export const appRouter = router({
           generatedShifts: result.generatedShifts.length,
           totalShifts: result.totalShifts,
           statistics: result.statistics,
-        };
-      }),
-
-    // 段階的配置をリセット（改善版：固定データ保護）
-    resetPhaseBased: protectedProcedure
-      .input(z.object({
-        shiftId: z.number(),
-        options: z.object({
-          keepApprovedRequests: z.boolean().default(true),
-          keepManualEdits: z.boolean().default(false),
-        }).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const shift = await db.getShiftById(input.shiftId);
-        if (!shift) throw new Error("シフトが見つかりません");
-
-        // Verify the shift is in vacation_only or draft status
-        if (shift.status !== "vacation_only" && shift.status !== "draft") {
-          throw new Error("段階的配置のリセットは希望休のみまたは下書きのシフトでのみ実行できます");
-        }
-
-        console.log('[resetPhaseBased API] Starting improved reset for shiftId:', input.shiftId);
-
-        // Use improved reset with fixed data protection
-        const { resetShifts } = await import("./improvedShiftGenerator");
-        const result = await resetShifts(
-          input.shiftId,
-          {
-            keepApprovedRequests: input.options?.keepApprovedRequests ?? true,
-            keepManualEdits: input.options?.keepManualEdits ?? false,
-            useAI: false,
-            usePhased: true,
-          }
-        );
-
-        console.log('[resetPhaseBased API] Reset completed:', {
-          deletedCount: result.deletedCount,
-          keptCount: result.keptCount,
-        });
-
-        return {
-          success: true,
-          deletedCount: result.deletedCount,
-          keptCount: result.keptCount,
         };
       }),
 
@@ -1623,8 +1631,9 @@ export const appRouter = router({
         targetStatus: z.string()
       }))
       .query(async ({ input }) => {
-        const shift = await db.getShiftById(input.shiftId);
-        if (!shift) throw new Error("シフトが見つかりません");
+        const shiftData = await db.getShiftById(input.shiftId);
+        if (!shiftData) throw new Error("シフトが見つかりません");
+        const shift = shiftData as any;
 
         const allowed = SHIFT_STATUS_TRANSITIONS[shift.status] || [];
         const canTransition = allowed.includes(input.targetStatus);
@@ -1673,8 +1682,9 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const dbWorkflow = await import('./dbWorkflow');
 
-        const shift = await db.getShiftById(input.shiftId);
-        if (!shift) throw new Error("シフトが見つかりません");
+        const shiftData = await db.getShiftById(input.shiftId);
+        if (!shiftData) throw new Error("シフトが見つかりません");
+        const shift = shiftData as any;
 
         // Generate default messages based on type
         let title = input.title;

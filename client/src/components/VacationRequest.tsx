@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Sparkles, Heart, CheckCircle } from "lucide-react";
+import { Sparkles, Heart, CheckCircle, Clock, Lock, XCircle } from "lucide-react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -346,18 +346,24 @@ export function VacationRequest({
       const reqType = String(existingRequest.leaveType || '');
       const emoji = reqType === "休" ? "🌸" : reqType === "有休" ? "💐" : "🌸";
       const text = reqType;
+      const isApproved = existingRequest.status === "approved";
+      const isPending = existingRequest.status === "pending";
+      const isRejected = existingRequest.status === "rejected";
 
       console.log('[Badge existingRequest]', { emojiType: typeof emoji, textType: typeof text, emojiValue: emoji, textValue: text, status: existingRequest.status });
 
       // ステータスに応じた色
-      const color = existingRequest.status === "approved"
+      const color = isApproved
         ? "bg-success"
-        : existingRequest.status === "rejected"
+        : isRejected
         ? "bg-destructive"
-        : "bg-success/60";
+        : "bg-yellow-500/80";
 
       return (
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-1/4 px-1.5 py-0.5 rounded-full text-white ${color} shadow-md flex items-center gap-0.5`}>
+          {isApproved && <Lock className="w-2.5 h-2.5" />}
+          {isPending && <Clock className="w-2.5 h-2.5" />}
+          {isRejected && <XCircle className="w-2.5 h-2.5" />}
           <span className="text-[0.5rem]">{String(emoji)}</span>
           {text && typeof text === 'string' && text.length > 0 && (
             <span className="leading-tight whitespace-pre-line text-center text-[0.55rem]">
@@ -404,8 +410,11 @@ export function VacationRequest({
     );
   }
 
-  // 申請済み希望休のカウント
-  const submittedCount = existingRequests.filter(req => req.status === "pending" || req.status === "approved").length;
+  // 申請状態別のカウント
+  const pendingCount = existingRequests.filter(req => req.status === "pending").length;
+  const approvedCount = existingRequests.filter(req => req.status === "approved").length;
+  const rejectedCount = existingRequests.filter(req => req.status === "rejected").length;
+  const submittedCount = pendingCount + approvedCount;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -435,14 +444,26 @@ export function VacationRequest({
                   ⚠️ 未送信 {requests.size}件
                 </Badge>
               )}
-              {submittedCount > 0 && (
-                <Badge className="bg-gradient-to-r from-success/60 to-success/50 shadow-lg">
+              {pendingCount > 0 && (
+                <Badge className="bg-gradient-to-r from-yellow-500/70 to-yellow-400/60 shadow-lg">
+                  <Clock className="w-3 h-3 mr-1" />
+                  申請中 {pendingCount}件
+                </Badge>
+              )}
+              {approvedCount > 0 && (
+                <Badge className="bg-gradient-to-r from-success to-success/80 shadow-lg">
                   <CheckCircle className="w-3 h-3 mr-1" />
-                  申請済み {submittedCount}件
+                  承認済み {approvedCount}件
+                </Badge>
+              )}
+              {rejectedCount > 0 && (
+                <Badge className="bg-gradient-to-r from-destructive to-destructive/80 shadow-lg">
+                  <XCircle className="w-3 h-3 mr-1" />
+                  却下 {rejectedCount}件
                 </Badge>
               )}
               {!isBeforeDeadline && (
-                <Badge className="bg-gradient-to-r from-destructive to-destructive/70 shadow-lg">
+                <Badge className="bg-gradient-to-r from-muted-foreground to-muted-foreground/70 shadow-lg">
                   🔒 締切済み
                 </Badge>
               )}
@@ -496,21 +517,38 @@ export function VacationRequest({
             </div>
           </Card>
 
-          {/* 申請済み状態の説明 */}
+          {/* 申請状態の詳細説明 */}
           {submittedCount > 0 && isBeforeDeadline && (
             <Card className="p-4 bg-gradient-to-br from-success/10 to-success/5 border-2 border-success/30">
               <div className="flex gap-3">
                 <div className="text-2xl">✨</div>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <h4 className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-success" />
-                    申請済み
+                    申請状況
                   </h4>
-                  <p className="text-muted-foreground">
-                    現在{submittedCount}件の希望休を申請中です。締切日までは変更できます。
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    💡 日付をタップして変更・削除できます
+                  <div className="space-y-1 text-sm text-muted-foreground">
+                    {pendingCount > 0 && (
+                      <p className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-yellow-500" />
+                        申請中: {pendingCount}件（管理者の承認待ち）
+                      </p>
+                    )}
+                    {approvedCount > 0 && (
+                      <p className="flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-success" />
+                        承認済み: {approvedCount}件（シフトに確定反映）
+                      </p>
+                    )}
+                    {rejectedCount > 0 && (
+                      <p className="flex items-center gap-2">
+                        <XCircle className="w-3.5 h-3.5 text-destructive" />
+                        却下: {rejectedCount}件（再申請可能）
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-1">
+                    💡 日付をタップして変更・削除できます（締切日まで）
                   </p>
                 </div>
               </div>
