@@ -3,8 +3,6 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 // Dynamic import to avoid bundling OpenAI at build time
-import { generateShiftPDF } from "./pdfGenerator";
-// Dynamic import to avoid bundling OpenAI at build time
 // import { structureEmployeeData, getEmployeeConstraints } from "./employeeDataStructurer";
 import { z } from "zod";
 import * as db from "./db";
@@ -708,56 +706,6 @@ export const appRouter = router({
         };
       }),
 
-    // 段階的配置アルゴリズム（改善版：固定データ保護）
-    generatePhaseBased: protectedProcedure
-      .input(z.object({
-        shiftId: z.number(),
-        options: z.object({
-          keepApprovedRequests: z.boolean().default(true),
-          keepManualEdits: z.boolean().default(false),
-        }).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const draftShift = await db.getShiftById(input.shiftId);
-        if (!draftShift) throw new Error("シフトが見つかりません");
-
-        // Verify the source shift is in vacation_only or draft status
-        if (draftShift.status !== "vacation_only" && draftShift.status !== "draft") {
-          throw new Error("段階的生成は希望休のみまたは下書きのシフトでのみ実行できます");
-        }
-
-        console.log('[generatePhaseBased API] Starting improved generation for shiftId:', input.shiftId);
-
-        // Use improved shift generator with fixed data protection
-        const { generateImprovedShift } = await import("./improvedShiftGenerator");
-        const result = await generateImprovedShift(
-          input.shiftId,
-          draftShift.year,
-          draftShift.month,
-          {
-            keepApprovedRequests: input.options?.keepApprovedRequests ?? true,
-            keepManualEdits: input.options?.keepManualEdits ?? false,
-            useAI: false,
-            usePhased: true,
-          }
-        );
-
-        console.log('[generatePhaseBased API] Generation completed:', {
-          fixedShifts: result.fixedShifts.length,
-          generatedShifts: result.generatedShifts.length,
-          totalShifts: result.totalShifts,
-        });
-
-        return {
-          success: true,
-          shiftId: input.shiftId,
-          fixedShifts: result.fixedShifts.length,
-          generatedShifts: result.generatedShifts.length,
-          totalShifts: result.totalShifts,
-          statistics: result.statistics,
-        };
-      }),
-
     transitionPhase: protectedProcedure
       .input(z.object({
         sourceShiftId: z.number(),
@@ -817,24 +765,6 @@ export const appRouter = router({
         return {
           success: true,
           newShiftId: newShift.id,
-        };
-      }),
-    exportPDF: protectedProcedure
-      .input(z.object({ shiftId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        const shift = await db.getShiftById(input.shiftId);
-        if (!shift) throw new Error("シフトが見つかりません");
-
-        const pdfBuffer = await generateShiftPDF({
-          shiftId: input.shiftId,
-          year: shift.year,
-          month: shift.month,
-        });
-
-        // Base64エンコードして返す
-        return {
-          pdf: pdfBuffer.toString('base64'),
-          filename: `shift_${shift.year}_${shift.month}.pdf`,
         };
       }),
   }),
