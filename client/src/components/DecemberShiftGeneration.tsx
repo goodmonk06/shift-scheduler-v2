@@ -2318,7 +2318,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
                         // 「実際の稼働シフト」モードで編集されたセルは黄色背景（夜勤は除く）
                         if (cellData.editedInActualMode && cellData.customText !== '夜') {
-                          styles.backgroundColor = '#fef08a'; // yellow-200
+                          styles.backgroundColor = '#facc15'; // yellow-400（濃い黄色）
                           styles.color = '#1f2937'; // 文字色は濃いグレー
                         }
 
