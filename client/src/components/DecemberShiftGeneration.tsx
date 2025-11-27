@@ -2316,10 +2316,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.backgroundColor = isLockedAndActive ? '#f9a8d4' : '#fce7f3'; // Pink 100
                         }
 
-                        // 「実際の稼働シフト」モードで編集されたセルは黄色背景（夜勤は除く）
+                        // 「実際の稼働シフト」モードで編集されたセルは蛍光グリーン背景＋枠線（夜勤は除く）
                         if (cellData.editedInActualMode && cellData.customText !== '夜') {
-                          styles.backgroundColor = '#facc15'; // yellow-400（濃い黄色）
+                          styles.backgroundColor = '#bef264'; // lime-300（蛍光グリーン）
                           styles.color = '#1f2937'; // 文字色は濃いグレー
+                          styles.boxShadow = 'inset 0 0 0 3px #65a30d'; // lime-600の太い枠線
                         }
 
                         const isNightPrint = cellData.customText === '夜';
