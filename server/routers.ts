@@ -524,6 +524,7 @@ export const appRouter = router({
           type: z.string(), // 'work' | 'holiday'
           text: z.string(), // e.g. "9:00～18:00" or "休"
           isLocked: z.boolean().optional(), // ロック状態（希望休・希望勤務時間）
+          editedInActualMode: z.boolean().optional(), // 実際の稼働シフトモードで編集されたかどうか
         })),
         overwriteShiftId: z.number().optional(), // 上書き保存用のシフトID
       }))
@@ -655,6 +656,7 @@ export const appRouter = router({
               displayText: entry.text, // Save original display text as shown in UI
               generatedBy: generatedBy,
               isChanged: false,
+              editedInActualMode: entry.editedInActualMode || false, // 実際の稼働シフトモードで編集されたかどうか
               createdAt: new Date(),
               updatedAt: new Date(),
             };

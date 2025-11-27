@@ -208,6 +208,7 @@ export const shiftDetails = mysqlTable("shiftDetails", {
   isFixed: boolean("isFixed").default(false).notNull(), // 固定データフラグ（希望休・勤務希望由来の場合true）
   sourceType: varchar("sourceType", { length: 50 }), // データソース（leave_request, work_preference, manual, ai_generated, rule_based）
   sourceId: int("sourceId"), // ソースデータのID（leaveRequests.id または workPreferences.id）
+  editedInActualMode: boolean("editedInActualMode").default(false).notNull(), // 実際の稼働シフトモードで編集されたかどうか
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

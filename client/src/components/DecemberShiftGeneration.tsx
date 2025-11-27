@@ -610,6 +610,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
               type: cell.type === 'OFF' ? 'holiday' : 'work',
               text: cell.customText,
               isLocked: cell.isLocked || false, // ロック状態を送信
+              editedInActualMode: cell.editedInActualMode || false, // 実際の稼働シフト編集フラグ
             });
           }
         }
@@ -778,6 +779,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             customText: customText,
             backgroundColor: undefined, // デフォルトの色を使用
             isLocked: isLocked, // ロック状態を設定
+            editedInActualMode: detail.editedInActualMode || false, // 実際の稼働シフト編集フラグ
           };
         }
 
