@@ -451,6 +451,7 @@ export async function getShiftById(id: number) {
       displayText: shiftDetails.displayText,
       generatedBy: shiftDetails.generatedBy,
       isChanged: shiftDetails.isChanged,
+      editedInActualMode: shiftDetails.editedInActualMode,
       createdAt: shiftDetails.createdAt,
       updatedAt: shiftDetails.updatedAt,
       employee: {
