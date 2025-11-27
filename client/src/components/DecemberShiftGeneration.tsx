@@ -532,6 +532,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [editLockEnabled, setEditLockEnabled] = useState(true);
   const [zoom, setZoom] = useState(1.0);
 
+  // 実際の稼働シフトモード（編集したセルを黄色で表示）
+  const [actualOperationMode, setActualOperationMode] = useState(false);
+
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
@@ -1592,9 +1595,21 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
     setShifts((prev: any) => {
       const prevCell = prev[key];
+
+      // 「実際の稼働シフト」モードの場合、夜勤以外はeditedInActualModeをtrueに設定
+      const isNightShift = customText === '夜' || type === 'NIGHT';
+      const shouldMarkEdited = actualOperationMode && !isNightShift;
+
       const updated = {
         ...prev,
-        [key]: { ...prev[key], type, customText, isLocked: false }
+        [key]: {
+          ...prev[key],
+          type,
+          customText,
+          isLocked: false,
+          // 夜勤以外の編集でモードがONの場合はマーク
+          editedInActualMode: shouldMarkEdited ? true : prev[key]?.editedInActualMode
+        }
       };
 
       const nextDay = new Date(contextMenu.date);
@@ -1603,17 +1618,23 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       const nextDayCell = prev[nextDayKey];
 
       // 夜勤を入力した場合、翌日に自動的に「明け」を設定
-      if (customText === '夜' || type === 'NIGHT') {
+      if (isNightShift) {
         // 翌日がまだ設定されていない、または休みの場合のみ「明け」を設定
         if (!nextDayCell || nextDayCell.type === 'OFF' || !nextDayCell.customText || nextDayCell.customText === '休') {
-          updated[nextDayKey] = { type: 'DAY', customText: '明', isLocked: false };
+          // 「実際の稼働シフト」モードの場合、「明け」にeditedInActualModeをマーク
+          updated[nextDayKey] = {
+            type: 'DAY',
+            customText: '明',
+            isLocked: false,
+            editedInActualMode: actualOperationMode ? true : false
+          };
         }
       }
       // 夜勤を削除した場合、翌日の「明け」も削除
       else if (prevCell && (prevCell.customText === '夜' || prevCell.type === 'NIGHT')) {
         // 翌日が「明け」の場合のみ削除
         if (nextDayCell && nextDayCell.customText === '明') {
-          updated[nextDayKey] = { type: 'OFF', customText: '', isLocked: false };
+          updated[nextDayKey] = { type: 'OFF', customText: '', isLocked: false, editedInActualMode: false };
         }
       }
 
@@ -1641,7 +1662,20 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
     setShifts((prev: any) => {
       const prevCell = prev[key];
-      const updated = { ...prev, [key]: { ...prev[key], ...newVal } };
+
+      // 「実際の稼働シフト」モードの場合、夜勤以外はeditedInActualModeをtrueに設定
+      const isNightShift = newVal.customText === '夜' || newVal.type === 'NIGHT';
+      const shouldMarkEdited = actualOperationMode && !isNightShift;
+
+      const updated = {
+        ...prev,
+        [key]: {
+          ...prev[key],
+          ...newVal,
+          // 夜勤以外の編集でモードがONの場合はマーク
+          editedInActualMode: shouldMarkEdited ? true : prev[key]?.editedInActualMode
+        }
+      };
 
       const nextDay = new Date(popoverState.date);
       nextDay.setDate(nextDay.getDate() + 1);
@@ -1649,17 +1683,23 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       const nextDayCell = prev[nextDayKey];
 
       // 夜勤を入力した場合、翌日に自動的に「明け」を設定
-      if (newVal.customText === '夜' || newVal.type === 'NIGHT') {
+      if (isNightShift) {
         // 翌日がまだ設定されていない、または休みの場合のみ「明け」を設定
         if (!nextDayCell || nextDayCell.type === 'OFF' || !nextDayCell.customText || nextDayCell.customText === '休') {
-          updated[nextDayKey] = { type: 'DAY', customText: '明', isLocked: false };
+          // 「実際の稼働シフト」モードの場合、「明け」にeditedInActualModeをマーク
+          updated[nextDayKey] = {
+            type: 'DAY',
+            customText: '明',
+            isLocked: false,
+            editedInActualMode: actualOperationMode ? true : false
+          };
         }
       }
       // 夜勤を削除した場合、翌日の「明け」も削除
       else if (prevCell && (prevCell.customText === '夜' || prevCell.type === 'NIGHT')) {
         // 翌日が「明け」の場合のみ削除
         if (nextDayCell && nextDayCell.customText === '明') {
-          updated[nextDayKey] = { type: 'OFF', customText: '', isLocked: false };
+          updated[nextDayKey] = { type: 'OFF', customText: '', isLocked: false, editedInActualMode: false };
         }
       }
 
@@ -1949,11 +1989,22 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700 mr-2">
-            <button onClick={zoomOut} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 transition-colors"><ZoomOut size={14} /></button>
-            <span className="px-2 text-xs font-mono w-12 text-center font-bold text-slate-300">{Math.round(zoom * 100)}%</span>
-            <button onClick={zoomIn} className="p-1.5 hover:bg-slate-700 rounded-md text-slate-400 transition-colors"><ZoomIn size={14} /></button>
-          </div>
+          {/* 実際の稼働シフトモード切替ボタン */}
+          <button
+            onClick={() => setActualOperationMode(!actualOperationMode)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all border-2 ${actualOperationMode
+              ? 'bg-yellow-400 text-slate-900 border-yellow-500 shadow-lg shadow-yellow-400/30'
+              : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-yellow-500 hover:text-slate-900 hover:border-yellow-600'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={actualOperationMode}
+              onChange={() => {}}
+              className="w-4 h-4 accent-yellow-600"
+            />
+            実際の稼働シフト
+          </button>
 
           <div className="h-8 w-px bg-slate-800 mx-1"></div>
 
@@ -2263,6 +2314,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                         else if (cellData.customText === '日B' || cellData.customText === '9～18' || cellData.customText === '9-18') {
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#f9a8d4' : '#fce7f3'; // Pink 100
+                        }
+
+                        // 「実際の稼働シフト」モードで編集されたセルは黄色背景（夜勤は除く）
+                        if (cellData.editedInActualMode && cellData.customText !== '夜') {
+                          styles.backgroundColor = '#fef08a'; // yellow-200
+                          styles.color = '#1f2937'; // 文字色は濃いグレー
                         }
 
                         const isNightPrint = cellData.customText === '夜';
