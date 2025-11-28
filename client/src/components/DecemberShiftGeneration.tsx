@@ -1599,9 +1599,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     setShifts((prev: any) => {
       const prevCell = prev[key];
 
+      // クリア（空文字）の場合は常にeditedInActualModeをfalseにする
+      const isClear = customText === '';
       // 「実際の稼働シフト」モードの場合、夜勤以外はeditedInActualModeをtrueに設定
       const isNightShift = customText === '夜' || type === 'NIGHT';
-      const shouldMarkEdited = actualOperationMode && !isNightShift;
+      const shouldMarkEdited = actualOperationMode && !isNightShift && !isClear;
 
       const updated = {
         ...prev,
@@ -1610,8 +1612,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           type,
           customText,
           isLocked: false,
-          // 夜勤以外の編集でモードがONの場合はマーク
-          editedInActualMode: shouldMarkEdited ? true : prev[key]?.editedInActualMode
+          // クリアの場合はfalse、それ以外はモードに応じて設定
+          editedInActualMode: isClear ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
       };
 
@@ -1666,17 +1668,19 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     setShifts((prev: any) => {
       const prevCell = prev[key];
 
+      // クリア（空文字）の場合は常にeditedInActualModeをfalseにする
+      const isClear = newVal.customText === '';
       // 「実際の稼働シフト」モードの場合、夜勤以外はeditedInActualModeをtrueに設定
       const isNightShift = newVal.customText === '夜' || newVal.type === 'NIGHT';
-      const shouldMarkEdited = actualOperationMode && !isNightShift;
+      const shouldMarkEdited = actualOperationMode && !isNightShift && !isClear;
 
       const updated = {
         ...prev,
         [key]: {
           ...prev[key],
           ...newVal,
-          // 夜勤以外の編集でモードがONの場合はマーク
-          editedInActualMode: shouldMarkEdited ? true : prev[key]?.editedInActualMode
+          // クリアの場合はfalse、それ以外はモードに応じて設定
+          editedInActualMode: isClear ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
       };
 
