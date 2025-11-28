@@ -578,6 +578,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             customText: '',
             backgroundColor: undefined,
             isLocked: false,
+            editedInActualMode: false,
           };
           clearedCount++;
         }
