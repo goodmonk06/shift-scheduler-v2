@@ -2247,7 +2247,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     return (
                       <td
                         key={date.toString()}
-                        className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px] cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px] cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                         onClick={() => {
                           if (!isEditing) {
                             setEditingEventDate(dateStr);
@@ -2274,9 +2275,10 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                             }}
                             autoFocus
                             className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-0"
+                            style={{ writingMode: 'horizontal-tb' }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
+                          <div className="w-full h-full flex items-center justify-center leading-tight">
                             {eventText || <span className="text-slate-300">+</span>}
                           </div>
                         )}
