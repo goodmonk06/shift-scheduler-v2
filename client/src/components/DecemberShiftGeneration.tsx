@@ -2459,10 +2459,20 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   </td>
                   <td colSpan={dates.length} className="border border-slate-600 bg-white p-1">
                     <textarea
-                      className="w-full h-12 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-none bg-transparent print:text-[8px] print:h-8"
+                      className="w-full min-h-[3rem] p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-none bg-transparent print:text-[8px]"
                       placeholder="自由にコメントを入力..."
                       value={footerComment}
-                      onChange={(e) => setFooterComment(e.target.value)}
+                      onChange={(e) => {
+                        setFooterComment(e.target.value);
+                        e.target.style.height = 'auto';
+                        e.target.style.height = e.target.scrollHeight + 'px';
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = target.scrollHeight + 'px';
+                      }}
+                      style={{ overflow: 'hidden' }}
                     />
                   </td>
                   <td colSpan={5} className="border border-slate-600 bg-slate-50 print:hidden"></td>
