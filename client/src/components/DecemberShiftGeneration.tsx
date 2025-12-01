@@ -535,6 +535,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   // 実際の稼働シフトモード（編集したセルを黄色で表示）
   const [actualOperationMode, setActualOperationMode] = useState(false);
 
+  // 初期値保存用（元に戻したかどうかの判定に使用）
+  const [originalShifts, setOriginalShifts] = useState<any>({});
+
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
@@ -786,6 +789,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
         console.log('[DecemberShiftGeneration] Matched:', matchedCount, 'Unmatched employees:', unmatchedEmployees);
         setShifts(newShifts);
+        // 初期値を保存（元に戻したかどうかの判定に使用）
+        setOriginalShifts(JSON.parse(JSON.stringify(newShifts)));
         setLoadedShiftId(initialShiftId); // 読み込み完了をマーク
         toast.success(`シフトデータを読み込みました (${shiftData.name})`);
       } catch (error: any) {
@@ -1545,6 +1550,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       normalizeEarlyShiftPerDay(newShifts, dates);
 
       setShifts(newShifts);
+      // 初期値を保存（元に戻したかどうかの判定に使用）
+      setOriginalShifts(JSON.parse(JSON.stringify(newShifts)));
     } catch (e) {
       console.error("Generation Error:", e);
     } finally {
@@ -1603,7 +1610,13 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       const isClear = customText === '';
       // 「実際の稼働シフト」モードの場合、夜勤以外はeditedInActualModeをtrueに設定
       const isNightShift = customText === '夜' || type === 'NIGHT';
-      const shouldMarkEdited = actualOperationMode && !isNightShift && !isClear;
+
+      // 初期値と比較して、元に戻したかどうかを判定
+      const originalCell = originalShifts[key];
+      const isRevertedToOriginal = originalCell && originalCell.customText === customText;
+
+      // 元に戻した場合はfalse、クリアの場合もfalse、それ以外はモードに応じて設定
+      const shouldMarkEdited = actualOperationMode && !isNightShift && !isClear && !isRevertedToOriginal;
 
       const updated = {
         ...prev,
@@ -1612,8 +1625,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           type,
           customText,
           isLocked: false,
-          // クリアの場合はfalse、それ以外はモードに応じて設定
-          editedInActualMode: isClear ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
+          // 元に戻した場合・クリアの場合はfalse、それ以外はモードに応じて設定
+          editedInActualMode: (isClear || isRevertedToOriginal) ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
       };
 
@@ -1672,15 +1685,21 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
       const isClear = newVal.customText === '';
       // 「実際の稼働シフト」モードの場合、夜勤以外はeditedInActualModeをtrueに設定
       const isNightShift = newVal.customText === '夜' || newVal.type === 'NIGHT';
-      const shouldMarkEdited = actualOperationMode && !isNightShift && !isClear;
+
+      // 初期値と比較して、元に戻したかどうかを判定
+      const originalCell = originalShifts[key];
+      const isRevertedToOriginal = originalCell && originalCell.customText === newVal.customText;
+
+      // 元に戻した場合はfalse、クリアの場合もfalse、それ以外はモードに応じて設定
+      const shouldMarkEdited = actualOperationMode && !isNightShift && !isClear && !isRevertedToOriginal;
 
       const updated = {
         ...prev,
         [key]: {
           ...prev[key],
           ...newVal,
-          // クリアの場合はfalse、それ以外はモードに応じて設定
-          editedInActualMode: isClear ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
+          // 元に戻した場合・クリアの場合はfalse、それ以外はモードに応じて設定
+          editedInActualMode: (isClear || isRevertedToOriginal) ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
       };
 
