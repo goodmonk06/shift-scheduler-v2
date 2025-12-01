@@ -2453,6 +2453,24 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 })}
 
               </tbody>
+
+              {/* コメント欄 */}
+              <tfoot>
+                <tr className="border-t-2 border-slate-400">
+                  <td colSpan={2} className="border border-slate-600 bg-slate-100 font-bold text-slate-700 px-2 py-2 sticky left-0 z-10 text-sm print:text-[8px]">
+                    備考
+                  </td>
+                  <td colSpan={dates.length + 5} className="border border-slate-600 bg-white p-1">
+                    <textarea
+                      className="w-full h-12 p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-none bg-transparent print:text-[8px] print:h-8"
+                      placeholder="自由にコメントを入力..."
+                      value={footerComment}
+                      onChange={(e) => setFooterComment(e.target.value)}
+                    />
+                  </td>
+                </tr>
+              </tfoot>
+
               {/* 不足判定フッター */}
               <tfoot className="print:hidden">
                 <tr className="h-12 border-t-4 border-slate-800">
@@ -2508,20 +2526,6 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 )}
               </tfoot>
             </table>
-
-            {/* コメント欄 */}
-            <div className="mt-4 print:mt-2">
-              <div className="flex items-start gap-2">
-                <label className="text-sm font-bold text-slate-700 whitespace-nowrap pt-2 print:text-[8px]">備考：</label>
-                <textarea
-                  className="flex-1 p-2 border border-slate-300 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 print:border-slate-400 print:text-[8px] print:p-1"
-                  rows={2}
-                  placeholder="自由にコメントを入力..."
-                  value={footerComment}
-                  onChange={(e) => setFooterComment(e.target.value)}
-                />
-              </div>
-            </div>
           </div>
         </div>
         </div>
