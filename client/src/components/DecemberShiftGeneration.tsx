@@ -543,8 +543,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [editingEventDate, setEditingEventDate] = useState<string | null>(null);
   const [editingEventValue, setEditingEventValue] = useState<string>('');
 
-  // フッターコメント欄
-  const [footerComment, setFooterComment] = useState<string>('');
+  // 検食欄（日付ごと）
+  const [inspectionMeals, setInspectionMeals] = useState<Record<string, string>>({});
 
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
@@ -2452,29 +2452,30 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   );
                 })}
 
-                {/* コメント欄（職員リストの最後） */}
+                {/* 検食欄（職員リストの最後） */}
                 <tr className="border-t-2 border-slate-400">
                   <td colSpan={2} className="border border-slate-600 bg-slate-100 font-bold text-slate-700 px-2 py-2 sticky left-0 z-10 text-sm print:text-[8px]">
-                    備考
+                    検食
                   </td>
-                  <td colSpan={dates.length} className="border border-slate-600 bg-white p-1">
-                    <textarea
-                      className="w-full min-h-[3rem] p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-none bg-transparent print:text-[8px]"
-                      placeholder="自由にコメントを入力..."
-                      value={footerComment}
-                      onChange={(e) => {
-                        setFooterComment(e.target.value);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = e.target.scrollHeight + 'px';
-                      }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = target.scrollHeight + 'px';
-                      }}
-                      style={{ overflow: 'hidden' }}
-                    />
-                  </td>
+                  {dates.map((date) => {
+                    const dateStr = format(date, 'yyyy-MM-dd');
+                    return (
+                      <td key={dateStr} className="border border-slate-600 bg-white p-1 text-center">
+                        <input
+                          type="text"
+                          className="w-full h-full text-center text-sm p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 border-none bg-transparent print:text-[8px]"
+                          placeholder=""
+                          value={inspectionMeals[dateStr] || ''}
+                          onChange={(e) => {
+                            setInspectionMeals(prev => ({
+                              ...prev,
+                              [dateStr]: e.target.value
+                            }));
+                          }}
+                        />
+                      </td>
+                    );
+                  })}
                   <td colSpan={5} className="border border-slate-600 bg-slate-50 print:hidden"></td>
                 </tr>
               </tbody>
