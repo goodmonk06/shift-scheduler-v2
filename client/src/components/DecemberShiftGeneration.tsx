@@ -543,6 +543,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [editingEventDate, setEditingEventDate] = useState<string | null>(null);
   const [editingEventValue, setEditingEventValue] = useState<string>('');
 
+  // フッターコメント欄
+  const [footerComment, setFooterComment] = useState<string>('');
+
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
@@ -2505,6 +2508,20 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 )}
               </tfoot>
             </table>
+
+            {/* コメント欄 */}
+            <div className="mt-4 print:mt-2">
+              <div className="flex items-start gap-2">
+                <label className="text-sm font-bold text-slate-700 whitespace-nowrap pt-2 print:text-[8px]">備考：</label>
+                <textarea
+                  className="flex-1 p-2 border border-slate-300 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 print:border-slate-400 print:text-[8px] print:p-1"
+                  rows={2}
+                  placeholder="自由にコメントを入力..."
+                  value={footerComment}
+                  onChange={(e) => setFooterComment(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         </div>
         </div>
