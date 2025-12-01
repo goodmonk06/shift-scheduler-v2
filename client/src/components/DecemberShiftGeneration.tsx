@@ -538,6 +538,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   // 初期値保存用（元に戻したかどうかの判定に使用）
   const [originalShifts, setOriginalShifts] = useState<any>({});
 
+  // カスタム行事予定（日付をキーとして保存）
+  const [customEvents, setCustomEvents] = useState<Record<string, string>>({});
+  const [editingEventDate, setEditingEventDate] = useState<string | null>(null);
+  const [editingEventValue, setEditingEventValue] = useState<string>('');
+
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
@@ -2234,13 +2239,50 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     行事予定
                   </th>
 
-                  {dates.map(date => (
-                    <td key={date.toString()} className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px]">
-                      <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
-                        {getEventName(date)}
-                      </div>
-                    </td>
-                  ))}
+                  {dates.map(date => {
+                    const dateStr = getIsoDate(date);
+                    const isEditing = editingEventDate === dateStr;
+                    const eventText = customEvents[dateStr] !== undefined ? customEvents[dateStr] : getEventName(date);
+
+                    return (
+                      <td
+                        key={date.toString()}
+                        className="border border-slate-600 text-[9px] text-slate-700 font-medium align-bottom pb-2 px-0.5 h-full bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px] cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        onClick={() => {
+                          if (!isEditing) {
+                            setEditingEventDate(dateStr);
+                            setEditingEventValue(eventText);
+                          }
+                        }}
+                      >
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingEventValue}
+                            onChange={(e) => setEditingEventValue(e.target.value)}
+                            onBlur={() => {
+                              setCustomEvents(prev => ({ ...prev, [dateStr]: editingEventValue }));
+                              setEditingEventDate(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setCustomEvents(prev => ({ ...prev, [dateStr]: editingEventValue }));
+                                setEditingEventDate(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingEventDate(null);
+                              }
+                            }}
+                            autoFocus
+                            className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-0"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-end justify-center leading-tight break-words whitespace-normal">
+                            {eventText || <span className="text-slate-300">+</span>}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
                   <th className="border border-slate-600 bg-slate-100 print:hidden" colSpan={5}></th>
                 </tr>
 
