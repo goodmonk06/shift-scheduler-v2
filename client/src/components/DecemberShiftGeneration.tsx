@@ -2227,7 +2227,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 </h1>
               </div>
 
-            <table className="min-w-max text-center border-collapse border border-slate-900 text-sm print:text-[8px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
+            <table className="min-w-max text-center border-collapse border border-slate-900 text-base print:text-[8px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
                   <th className="border border-slate-600 font-bold bg-white text-slate-700 w-30 min-w-[280px]" colSpan={2}>
