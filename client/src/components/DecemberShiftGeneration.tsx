@@ -545,6 +545,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
   // 検食欄（日付ごと）
   const [inspectionMeals, setInspectionMeals] = useState<Record<string, string>>({});
+  const [editingMealDate, setEditingMealDate] = useState<string | null>(null);
+  const [editingMealValue, setEditingMealValue] = useState<string>('');
 
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
@@ -2459,20 +2461,47 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                   </td>
                   {dates.map((date) => {
                     const dateStr = date.toISOString().split('T')[0];
+                    const isEditing = editingMealDate === dateStr;
+                    const mealText = inspectionMeals[dateStr] || '';
+
                     return (
-                      <td key={dateStr} className="border border-slate-600 bg-white p-1 text-center">
-                        <input
-                          type="text"
-                          className="w-full h-full text-center text-sm p-1 focus:outline-none focus:ring-2 focus:ring-blue-500 border-none bg-transparent print:text-[8px]"
-                          placeholder=""
-                          value={inspectionMeals[dateStr] || ''}
-                          onChange={(e) => {
-                            setInspectionMeals(prev => ({
-                              ...prev,
-                              [dateStr]: e.target.value
-                            }));
-                          }}
-                        />
+                      <td
+                        key={dateStr}
+                        className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-white cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                        onClick={() => {
+                          if (!isEditing) {
+                            setEditingMealDate(dateStr);
+                            setEditingMealValue(mealText);
+                          }
+                        }}
+                      >
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingMealValue}
+                            onChange={(e) => setEditingMealValue(e.target.value)}
+                            onBlur={() => {
+                              setInspectionMeals(prev => ({ ...prev, [dateStr]: editingMealValue }));
+                              setEditingMealDate(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setInspectionMeals(prev => ({ ...prev, [dateStr]: editingMealValue }));
+                                setEditingMealDate(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingMealDate(null);
+                              }
+                            }}
+                            autoFocus
+                            className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-0"
+                            style={{ writingMode: 'horizontal-tb' }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center leading-tight">
+                            {mealText || <span className="text-slate-300">+</span>}
+                          </div>
+                        )}
                       </td>
                     );
                   })}
