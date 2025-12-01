@@ -2305,8 +2305,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                           styles.backgroundColor = isLockedAndActive ? '#fef7fb' : '#ffffff'; // ほぼ白のピンク : 白
                         }
                         else if (cellData.customText === '有' || cellData.customText === '有給') {
-                          styles.color = '#c2410c'; // オレンジ文字
-                          styles.backgroundColor = '#ffedd5'; // 薄いオレンジ背景（オレンジ100）
+                          styles.color = '#9a3412'; // オレンジ文字（濃く）
+                          styles.backgroundColor = '#fed7aa'; // オレンジ背景（オレンジ200）
                         }
                         else if (cellData.customText === '夜') {
                           styles.color = '#ffffff';
@@ -2319,11 +2319,11 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                         }
                         else if (cellData.customText === '早') {
                           styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#a7f3d0' : '#bbf7d0'; // Green 200
+                          styles.backgroundColor = isLockedAndActive ? '#6ee7b7' : '#86efac'; // Green 300（濃く）
                         }
                         else if (cellData.customText === '遅' || cellData.customText.startsWith('11') || cellData.customText.startsWith('18')) {
                           styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#fcd34d' : '#fed7aa'; // Orange 200
+                          styles.backgroundColor = isLockedAndActive ? '#fb923c' : '#fdba74'; // Orange 300（濃く）
                         }
                         else if (cellData.customText === '冬') {
                           styles.color = '#1e40af';
@@ -2335,7 +2335,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                         }
                         else if (cellData.customText === '日B' || cellData.customText === '9～18' || cellData.customText === '9-18') {
                           styles.color = '#1f2937';
-                          styles.backgroundColor = isLockedAndActive ? '#f9a8d4' : '#fce7f3'; // Pink 100
+                          styles.backgroundColor = isLockedAndActive ? '#f472b6' : '#f9a8d4'; // Pink 300（濃く）
                         }
 
                         // 「実際の稼働シフト」モードで編集されたセルは蛍光黄色背景＋枠線（夜勤は除く）
