@@ -2458,7 +2458,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                     検食
                   </td>
                   {dates.map((date) => {
-                    const dateStr = format(date, 'yyyy-MM-dd');
+                    const dateStr = date.toISOString().split('T')[0];
                     return (
                       <td key={dateStr} className="border border-slate-600 bg-white p-1 text-center">
                         <input
