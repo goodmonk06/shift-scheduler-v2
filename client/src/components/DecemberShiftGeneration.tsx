@@ -2227,7 +2227,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 </h1>
               </div>
 
-            <table className="min-w-max text-center border-collapse border border-slate-900 text-[10px] print:text-[6.5px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
+            <table className="min-w-max text-center border-collapse border border-slate-900 text-[12px] print:text-[7px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
                   <th className="border border-slate-600 font-bold bg-white text-slate-700 w-30 min-w-[280px]" colSpan={2}>
@@ -2275,7 +2275,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                 {staffList.map((staff, index) => {
                   const stats = staffStats[staff.id] || { days: 0, hours: 0, nightCount: 0, holidays: 0, paidHolidays: 0 };
                   return (
-                    <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-10 transition-colors">
+                    <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-12 transition-colors">
                       {/* 氏名列 */}
                       <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px]">
                         {staff.name}
@@ -2387,7 +2387,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
                                 </div>
                               )}
 
-                              <div className={`w-full h-full flex items-center justify-center ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
+                              <div className={`w-full h-full flex items-center justify-center font-semibold ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
                                 <span className={`transform inline-block whitespace-nowrap ${cellData.customText.length > 4 ? 'scale-75' : cellData.customText.length > 2 ? 'scale-90' : 'scale-100'}`}>
                                   {getDisplayText(cellData.customText, cellData.type)}
                                 </span>
