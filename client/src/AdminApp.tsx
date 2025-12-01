@@ -10,7 +10,6 @@ import { ScrollArea } from "./components/ui/scroll-area";
 import { Separator } from "./components/ui/separator";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { ShiftEditor } from "./components/ShiftEditor";
-import { ShiftEditorNew } from "./components/ShiftEditorNew";
 import { VacationManagement } from "./components/VacationManagement";
 import { WorkPreferenceManagement } from "./components/WorkPreferenceManagement";
 import { StaffManagement } from "./components/StaffManagement";
