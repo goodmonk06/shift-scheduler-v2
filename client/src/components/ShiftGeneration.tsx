@@ -562,11 +562,16 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
 
         console.log(`[ShiftGeneration] Checking for previous month shift: ${prevYear}年${prevMonth}月`);
 
-        // 前月のシフトを取得
+        // 前月のシフトを取得（更新日時で最新のものを使用）
         const allShifts = await trpcClient.shifts.list.query();
         const prevMonthShifts = allShifts
           .filter(s => s.year === prevYear && s.month === prevMonth)
-          .sort((a, b) => b.id - a.id); // 最新を優先
+          .sort((a, b) => {
+            // updatedAtで降順ソート（最新が先頭）
+            const dateA = new Date(a.updatedAt).getTime();
+            const dateB = new Date(b.updatedAt).getTime();
+            return dateB - dateA;
+          });
 
         if (prevMonthShifts.length === 0) {
           console.log('[ShiftGeneration] No previous month shift found');
@@ -574,7 +579,7 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
         }
 
         const prevShift = prevMonthShifts[0];
-        console.log(`[ShiftGeneration] Found previous shift: ${prevShift.name} (ID: ${prevShift.id})`);
+        console.log(`[ShiftGeneration] Found previous shift: ${prevShift.name} (ID: ${prevShift.id}, 更新: ${new Date(prevShift.updatedAt).toLocaleString('ja-JP')})`);
 
         // 前月シフトの詳細を取得
         const prevShiftData = await trpcClient.shifts.getById.query({ id: prevShift.id });
