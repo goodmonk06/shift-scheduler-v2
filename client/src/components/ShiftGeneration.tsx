@@ -549,6 +549,98 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
     loadPreferences();
   }, [staffList, isLoadingStaff, startDate, endDate, initialShiftId]);
 
+  // 前月シフトから当月1～5日をコピー（夜勤連続性のため）
+  useEffect(() => {
+    if (staffList.length === 0 || isLoadingStaff) return;
+    if (initialShiftId) return; // 新規作成時のみ
+
+    const loadPreviousMonthCarryover = async () => {
+      try {
+        // 前月を計算
+        const prevMonth = month === 1 ? 12 : month - 1;
+        const prevYear = month === 1 ? year - 1 : year;
+
+        console.log(`[ShiftGeneration] Checking for previous month shift: ${prevYear}年${prevMonth}月`);
+
+        // 前月のシフトを取得
+        const allShifts = await trpcClient.shifts.list.query();
+        const prevMonthShifts = allShifts
+          .filter(s => s.year === prevYear && s.month === prevMonth)
+          .sort((a, b) => b.id - a.id); // 最新を優先
+
+        if (prevMonthShifts.length === 0) {
+          console.log('[ShiftGeneration] No previous month shift found');
+          return;
+        }
+
+        const prevShift = prevMonthShifts[0];
+        console.log(`[ShiftGeneration] Found previous shift: ${prevShift.name} (ID: ${prevShift.id})`);
+
+        // 前月シフトの詳細を取得
+        const prevShiftData = await trpcClient.shifts.getById.query({ id: prevShift.id });
+        if (!prevShiftData || !prevShiftData.shiftDetails) {
+          console.log('[ShiftGeneration] No shift details in previous shift');
+          return;
+        }
+
+        // 当月1～5日の日付文字列を生成
+        const carryoverDates = Array.from({ length: 5 }, (_, i) => {
+          const d = new Date(year, month - 1, i + 1);
+          return getIsoDate(d);
+        });
+
+        console.log('[ShiftGeneration] Carryover dates:', carryoverDates);
+
+        const carryoverShifts: any = {};
+        let copiedCount = 0;
+
+        // 前月シフトから当月1～5日のデータを抽出
+        for (const detail of prevShiftData.shiftDetails) {
+          if (!carryoverDates.includes(detail.date)) continue;
+
+          const staff = staffList.find(s => s.employeeDbId === detail.employeeId);
+          if (!staff) continue;
+
+          const key = `${staff.id}_${detail.date}`;
+          const customText = detail.displayText || '';
+
+          // 休暇・休日の場合
+          if (detail.status === 'leave') {
+            carryoverShifts[key] = {
+              type: 'OFF',
+              customText: customText || '休',
+              isLocked: true, // ロックして編集不可
+              editedInActualMode: false,
+            };
+          }
+          // 勤務の場合
+          else if (detail.status === 'working') {
+            carryoverShifts[key] = {
+              type: 'WORK',
+              customText: customText,
+              isLocked: true, // ロックして編集不可
+              editedInActualMode: false,
+            };
+          }
+
+          copiedCount++;
+        }
+
+        if (copiedCount > 0) {
+          console.log(`[ShiftGeneration] Copied ${copiedCount} cells from previous month (1～5日)`);
+          setShifts(prev => ({ ...carryoverShifts, ...prev }));
+          setOriginalShifts(prev => ({ ...carryoverShifts, ...prev }));
+          toast.info(`前月シフトから${copiedCount}件のデータをコピーしました（1～5日、ロック済み）`);
+        }
+      } catch (error) {
+        console.error('[ShiftGeneration] Failed to load previous month carryover:', error);
+        // エラーでも処理を続行（前月データがないだけかもしれない）
+      }
+    };
+
+    loadPreviousMonthCarryover();
+  }, [staffList, isLoadingStaff, year, month, initialShiftId]);
+
   // 初期シフトデータの読み込み
   useEffect(() => {
     if (!initialShiftId || initialShiftId === loadedShiftId) return;
