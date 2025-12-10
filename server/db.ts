@@ -397,24 +397,29 @@ export async function getAllRequiredStaffing() {
 export async function upsertRequiredStaffing(data: InsertRequiredStaffing) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  // Check if exists
+
+  // デフォルト値を設定（30分刻み対応）
+  const halfHour = data.halfHour ?? 0;
+
+  // Check if exists (dayOfWeek + hour + halfHour の組み合わせでユニーク)
   const existing = await db.select().from(requiredStaffing)
     .where(and(
       eq(requiredStaffing.dayOfWeek, data.dayOfWeek),
-      eq(requiredStaffing.hour, data.hour)
+      eq(requiredStaffing.hour, data.hour),
+      eq(requiredStaffing.halfHour, halfHour)
     ))
     .limit(1);
-  
+
   if (existing.length > 0) {
     return await db.update(requiredStaffing)
-      .set({ requiredCount: data.requiredCount })
+      .set({ requiredCount: data.requiredCount, staffingDetails: data.staffingDetails })
       .where(and(
         eq(requiredStaffing.dayOfWeek, data.dayOfWeek),
-        eq(requiredStaffing.hour, data.hour)
+        eq(requiredStaffing.hour, data.hour),
+        eq(requiredStaffing.halfHour, halfHour)
       ));
   } else {
-    return await db.insert(requiredStaffing).values(data);
+    return await db.insert(requiredStaffing).values({ ...data, halfHour });
   }
 }
 
@@ -632,6 +637,32 @@ export async function deleteLeaveRequest(id: number) {
   return await db.delete(leaveRequests).where(eq(leaveRequests.id, id));
 }
 
+export async function getLeaveRequestsByDateRange(startDate: string, endDate: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // 日付範囲が重複するレコードを取得
+  // startDate <= endDate AND endDate >= startDate
+  const results = await db.select({
+    leaveRequest: leaveRequests,
+    employee: employees,
+  })
+  .from(leaveRequests)
+  .innerJoin(employees, eq(leaveRequests.employeeId, employees.id))
+  .where(
+    and(
+      sql`${leaveRequests.startDate} <= ${endDate}`,
+      sql`${leaveRequests.endDate} >= ${startDate}`
+    )
+  )
+  .orderBy(desc(leaveRequests.createdAt));
+
+  return results.map(r => ({
+    ...r.leaveRequest,
+    employee: r.employee,
+  }));
+}
+
 // ========== Work Preferences ==========
 
 export async function getAllWorkPreferences() {
@@ -669,6 +700,31 @@ export async function deleteWorkPreference(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return await db.delete(workPreferences).where(eq(workPreferences.id, id));
+}
+
+export async function getWorkPreferencesByDateRange(startDate: string, endDate: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // 日付範囲が重複するレコードを取得
+  const results = await db.select({
+    workPreference: workPreferences,
+    employee: employees,
+  })
+  .from(workPreferences)
+  .innerJoin(employees, eq(workPreferences.employeeId, employees.id))
+  .where(
+    and(
+      sql`${workPreferences.startDate} <= ${endDate}`,
+      sql`${workPreferences.endDate} >= ${startDate}`
+    )
+  )
+  .orderBy(desc(workPreferences.createdAt));
+
+  return results.map(r => ({
+    ...r.workPreference,
+    employee: r.employee,
+  }));
 }
 
 // ========== Change Proposals ==========

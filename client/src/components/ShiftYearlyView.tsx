@@ -10,6 +10,7 @@ import type { Shift as ApiShift, ShiftStatus } from "../types/api";
 interface ShiftYearlyViewProps {
   onEditShift?: (shiftId: string) => void;
   onDecemberClick?: () => void;
+  onMonthClick?: (year: number, month: number, existingShiftId: number | null) => void;
 }
 
 interface MonthCardData {
@@ -18,7 +19,7 @@ interface MonthCardData {
   status: ShiftStatus | "uncreated";
 }
 
-export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyViewProps = {}) {
+export function ShiftYearlyView({ onEditShift, onDecemberClick, onMonthClick }: ShiftYearlyViewProps = {}) {
   const toast = useToast();
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
@@ -64,26 +65,23 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick }: ShiftYearlyVie
 
   // カードクリック処理
   const handleCardClick = async (card: MonthCardData) => {
-    // 12月の場合：保存済みシフトがあれば編集、なければ生成画面へ
+    // 12月の場合：既存の12月専用システムを使用
     if (card.month === 12) {
-      if (card.shift) {
-        // 保存済みシフトがある場合は編集画面へ
-        if (onEditShift) {
-          onEditShift(card.shift.id.toString());
-        } else {
-          toast.info("シフト編集画面へ遷移します");
-        }
+      if (onDecemberClick) {
+        onDecemberClick();
       } else {
-        // シフトがない場合は12月シフト生成画面へ
-        if (onDecemberClick) {
-          onDecemberClick();
-        } else {
-          toast.info("12月シフト生成画面へ遷移します");
-        }
+        toast.info("12月シフト生成画面へ遷移します");
       }
       return;
     }
 
+    // 12月以外：新しいシステムを使用（選択モーダル表示）
+    if (onMonthClick) {
+      onMonthClick(selectedYear, card.month, card.shift?.id || null);
+      return;
+    }
+
+    // フォールバック：従来の動作（onMonthClickが設定されていない場合）
     if (card.shift) {
       // 既存のシフトがある場合は編集画面へ
       if (onEditShift) {

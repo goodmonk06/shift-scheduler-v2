@@ -1,125 +1,125 @@
 /**
  * 職員の個別勤務条件の型定義
- * AI自動生成時に参照されるJSON構造
+ * AI自動生成時に読み取りやすいJSON構造
  */
 
 /**
- * 曜日ごとの勤務パターン
+ * 曜日名（日本語）
  */
-export interface WeeklyPattern {
-  monday?: DayConstraint;
-  tuesday?: DayConstraint;
-  wednesday?: DayConstraint;
-  thursday?: DayConstraint;
-  friday?: DayConstraint;
-  saturday?: DayConstraint;
-  sunday?: DayConstraint;
+export type DayName = "日" | "月" | "火" | "水" | "木" | "金" | "土";
+
+/**
+ * 休憩時間ルール（条件付き）
+ */
+export interface BreakTimeRule {
+  threshold: number;   // 勤務時間がこれを超えたら休憩を取る（時間単位）
+  duration: number;    // 休憩時間（時間単位、例: 1 = 1時間）
 }
 
 /**
- * 曜日の制約タイプ
+ * 月間シフト回数指定
+ * 例: { '9～15': 2 } = 9時～15時勤務を月2回
  */
-export type DayConstraint =
-  | "work"              // 通常勤務
-  | "off"               // 休み
-  | "offOrNightShift"   // 休みまたは夜勤のみ
-  | "nightShiftOnly"    // 夜勤のみ
-  | { startTime: string; endTime: string; breakMinutes?: number }; // 固定時間勤務
-
-/**
- * シフトタイプの制約
- */
-export interface ShiftTypeConstraints {
-  allowed?: string[];    // 許可されたシフトタイプ（例：["夜勤", "早番", "日勤A", "日勤B"]）
-  forbidden?: string[];  // 禁止されたシフトタイプ（例：["遅番"]）
+export interface MonthlyShiftCounts {
+  [shiftPattern: string]: number;
 }
 
 /**
- * 複数の勤務パターン（例：月16日は8-16時、月2日は9-15時）
+ * 固定勤務曜日（日本語キー）
+ * 例: { "月": "9～16", "木": "8～16" }
  */
-export interface WorkPattern {
-  startTime: string;          // 開始時刻（HH:MM）
-  endTime: string;            // 終了時刻（HH:MM）
-  daysPerMonth?: number;      // 月の勤務日数
-  daysPerWeek?: number;       // 週の勤務日数
-  breakMinutes?: number;      // 休憩時間（分）
-  description?: string;       // 説明（例：「基本勤務」「サブ勤務」）
-}
-
-/**
- * 固定曜日スケジュール（特定の曜日に固定時間で勤務）
- */
-export interface FixedSchedule {
-  monday?: FixedDaySchedule;
-  tuesday?: FixedDaySchedule;
-  wednesday?: FixedDaySchedule;
-  thursday?: FixedDaySchedule;
-  friday?: FixedDaySchedule;
-  saturday?: FixedDaySchedule;
-  sunday?: FixedDaySchedule;
-}
-
-export interface FixedDaySchedule {
-  startTime: string;      // 開始時刻（HH:MM）
-  endTime: string;        // 終了時刻（HH:MM）
-  breakMinutes?: number;  // 休憩時間（分）
-}
-
-/**
- * 特殊ルール
- */
-export interface SpecialRules {
-  canDoConsecutiveNightShifts?: boolean;  // 連続夜勤可能
-  nightShiftPattern?: string;              // 夜勤パターンの説明
-  weekendWorkFollowedByRest?: boolean;     // 土日出勤した場合、翌週土日は休み
-  description?: string;                     // その他の特殊ルール説明
+export interface FixedDays {
+  [dayName: string]: string;
 }
 
 /**
  * 職員の個別勤務条件（JSON構造）
+ * AIが直接読み取れる日本語形式
  */
 export interface EmployeeWorkConstraints {
-  // 曜日ごとのパターン
-  weeklyPattern?: WeeklyPattern;
+  // ========== 基本設定 ==========
 
-  // シフトタイプの制約
-  shiftTypeConstraints?: ShiftTypeConstraints;
+  /** 時間固定フラグ（trueの場合、早番・遅番・夜勤の自動割り当て対象外） */
+  fixedTimeOnly?: boolean;
 
-  // 複数の勤務パターン
-  workPatterns?: WorkPattern[];
+  /** デフォルト勤務時間（例: '9～18', '8半～16半'） */
+  defaultShift?: string;
 
-  // 固定曜日スケジュール
-  fixedSchedule?: FixedSchedule;
+  /** 夜勤目標回数（月） */
+  nightShiftTarget?: number;
 
-  // 月間目標労働時間
-  monthlyHoursTarget?: number;
+  // ========== 勤務日数 ==========
 
-  // 週の勤務日数
-  weeklyWorkDays?: number;
-
-  // 週の休日数
-  weeklyOffDays?: number;
-
-  // 月の勤務日数
+  /** 月間勤務日数 */
   monthlyWorkDays?: number;
 
-  // 個別の最大連勤日数（職場ルールを上書き）
-  maxConsecutiveDays?: number;
+  /** 週間勤務日数 */
+  weeklyWorkDays?: number;
 
-  // 祝日休み
+  /** 祝日休み */
   holidayOff?: boolean;
 
-  // 土日休み
-  weekendOff?: boolean;
+  // ========== 曜日設定（日本語形式） ==========
 
-  // 土日祝日休み
-  weekendAndHolidayOff?: boolean;
+  /** 固定休曜日（例: ["日", "土"]） */
+  offDays?: DayName[];
 
-  // 特殊ルール
-  specialRules?: SpecialRules;
+  /** 固定勤務曜日（例: { "月": "9～16", "木": "8～16" }） */
+  fixedDays?: FixedDays;
 
-  // 備考（本人希望シフトなど）
+  // ========== 禁止シフト（日本語形式） ==========
+
+  /** 禁止シフト（例: ["夜勤", "遅番"]） */
+  forbiddenShifts?: string[];
+
+  // ========== 月間特定シフト回数 ==========
+
+  /** 月間シフト回数（例: { "9～15": 2 } = 9-15時勤務を月2回） */
+  monthlyShiftCounts?: MonthlyShiftCounts;
+
+  // ========== 休憩時間 ==========
+
+  /** 固定休憩時間（時間単位。例: 1 = 1時間、0 = 休憩なし） */
+  breakTime?: number;
+
+  /** 条件付き休憩（例: { threshold: 6, duration: 1 } = 6時間超で1時間休憩） */
+  breakTimeRule?: BreakTimeRule;
+
+  // ========== 特殊ルール ==========
+
+  /** 特殊ルール識別子（例: 'SUGIYAMA_FRIDAY', 'OHASHI_NIGHT_COMBO'） */
+  specialRuleId?: string;
+
+  /** 備考 */
   notes?: string;
+
+  // ========== 夜勤特殊ルール ==========
+
+  /** 早番不可（trueの場合、早番シフトを割り当てない） */
+  noEarlyShift?: boolean;
+
+  /** 金曜夜勤不可（trueの場合、金曜日の夜勤を割り当てない。通常勤務は可能） */
+  noFridayNightShift?: boolean;
+
+  /** 連続夜勤可（trueの場合、夜→明→夜→明→休の5日サイクルが可能） */
+  allowConsecutiveNight?: boolean;
+
+  /** 通常夜勤サイクル可（trueの場合、夜→明→休の3日サイクルが可能） */
+  allowNormalNightCycle?: boolean;
+
+  // ========== 旧形式（互換性のために保持） ==========
+
+  /** @deprecated offDaysを使用してください */
+  offDayOfWeek?: number[];
+
+  /** @deprecated fixedDaysを使用してください */
+  fixedDayOfWeek?: { [dayOfWeek: number]: string };
+
+  /** @deprecated forbiddenShiftsを使用してください */
+  forbiddenTypes?: string[];
+
+  /** ランダムに割り当てるシフト（例: ['早', '8～17', '9～18']） */
+  randomShifts?: string[];
 }
 
 /**
@@ -136,80 +136,205 @@ export function hasConstraints(constraints: EmployeeWorkConstraints | null | und
 }
 
 /**
+ * 曜日インデックスと日本語名のマッピング
+ */
+export const DAY_INDEX_TO_NAME: Record<number, DayName> = {
+  0: "日", 1: "月", 2: "火", 3: "水", 4: "木", 5: "金", 6: "土"
+};
+
+export const DAY_NAME_TO_INDEX: Record<DayName, number> = {
+  "日": 0, "月": 1, "火": 2, "水": 3, "木": 4, "金": 5, "土": 6
+};
+
+/**
+ * 禁止シフトの英語→日本語マッピング
+ */
+export const FORBIDDEN_TYPE_TO_JP: Record<string, string> = {
+  "NIGHT": "夜勤",
+  "EARLY": "早番",
+  "LATE": "遅番",
+  "11～20": "11～20"
+};
+
+export const FORBIDDEN_JP_TO_TYPE: Record<string, string> = {
+  "夜勤": "NIGHT",
+  "早番": "EARLY",
+  "遅番": "LATE",
+  "11～20": "11～20"
+};
+
+/**
+ * 旧形式から新形式に変換
+ */
+export function convertToNewFormat(constraints: EmployeeWorkConstraints): EmployeeWorkConstraints {
+  const result = { ...constraints };
+
+  // offDayOfWeek → offDays
+  if (result.offDayOfWeek && !result.offDays) {
+    result.offDays = result.offDayOfWeek.map(i => DAY_INDEX_TO_NAME[i]);
+    delete result.offDayOfWeek;
+  }
+
+  // fixedDayOfWeek → fixedDays
+  if (result.fixedDayOfWeek && !result.fixedDays) {
+    result.fixedDays = {};
+    for (const [key, value] of Object.entries(result.fixedDayOfWeek)) {
+      const dayIndex = parseInt(key);
+      result.fixedDays[DAY_INDEX_TO_NAME[dayIndex]] = value;
+    }
+    delete result.fixedDayOfWeek;
+  }
+
+  // forbiddenTypes → forbiddenShifts
+  if (result.forbiddenTypes && !result.forbiddenShifts) {
+    result.forbiddenShifts = result.forbiddenTypes.map(t => FORBIDDEN_TYPE_TO_JP[t] || t);
+    delete result.forbiddenTypes;
+  }
+
+  return result;
+}
+
+/**
+ * 新形式から旧形式に変換（DecemberShiftGeneration互換用）
+ */
+export function convertToOldFormat(constraints: EmployeeWorkConstraints): EmployeeWorkConstraints {
+  const result = { ...constraints };
+
+  // offDays → offDayOfWeek
+  if (result.offDays && !result.offDayOfWeek) {
+    result.offDayOfWeek = result.offDays.map(d => DAY_NAME_TO_INDEX[d]);
+    delete result.offDays;
+  }
+
+  // fixedDays → fixedDayOfWeek
+  if (result.fixedDays && !result.fixedDayOfWeek) {
+    result.fixedDayOfWeek = {};
+    for (const [key, value] of Object.entries(result.fixedDays)) {
+      const dayIndex = DAY_NAME_TO_INDEX[key as DayName];
+      if (dayIndex !== undefined) {
+        result.fixedDayOfWeek[dayIndex] = value;
+      }
+    }
+    delete result.fixedDays;
+  }
+
+  // forbiddenShifts → forbiddenTypes
+  if (result.forbiddenShifts && !result.forbiddenTypes) {
+    result.forbiddenTypes = result.forbiddenShifts.map(s => FORBIDDEN_JP_TO_TYPE[s] || s);
+    delete result.forbiddenShifts;
+  }
+
+  return result;
+}
+
+/**
  * AI用の読み取りやすい説明文を生成
  */
 export function generateConstraintDescription(constraints: EmployeeWorkConstraints): string {
   const parts: string[] = [];
 
-  // 曜日パターン
-  if (constraints.weeklyPattern) {
-    const days = ["月", "火", "水", "木", "金", "土", "日"];
-    const dayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-    dayKeys.forEach((key, index) => {
-      const pattern = constraints.weeklyPattern?.[key as keyof WeeklyPattern];
-      if (pattern === "off") {
-        parts.push(`${days[index]}曜日：休み`);
-      } else if (pattern === "offOrNightShift") {
-        parts.push(`${days[index]}曜日：休みまたは夜勤のみ`);
-      } else if (typeof pattern === "object") {
-        parts.push(`${days[index]}曜日：${pattern.startTime}-${pattern.endTime}`);
-      }
-    });
+  // 時間固定
+  if (constraints.fixedTimeOnly) {
+    parts.push("時間固定");
   }
 
-  // 固定スケジュール
-  if (constraints.fixedSchedule) {
-    const days = ["月", "火", "水", "木", "金", "土", "日"];
-    const dayKeys = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-    dayKeys.forEach((key, index) => {
-      const schedule = constraints.fixedSchedule?.[key as keyof FixedSchedule];
-      if (schedule) {
-        parts.push(`${days[index]}曜日：${schedule.startTime}-${schedule.endTime}勤務`);
-      }
-    });
+  // デフォルトシフト
+  if (constraints.defaultShift) {
+    parts.push(`基本：${constraints.defaultShift}`);
   }
 
-  // シフトタイプ制約
-  if (constraints.shiftTypeConstraints?.forbidden) {
-    parts.push(`${constraints.shiftTypeConstraints.forbidden.join("・")}なし`);
+  // 夜勤目標
+  if (constraints.nightShiftTarget) {
+    parts.push(`夜勤${constraints.nightShiftTarget}回/月`);
   }
 
-  // 勤務パターン
-  if (constraints.workPatterns && constraints.workPatterns.length > 0) {
-    constraints.workPatterns.forEach((pattern, index) => {
-      if (pattern.daysPerMonth) {
-        parts.push(
-          `パターン${index + 1}：${pattern.startTime}-${pattern.endTime}勤務 月${pattern.daysPerMonth}日`
-        );
-      }
-    });
-  }
-
-  // 週・月の勤務日数
-  if (constraints.weeklyWorkDays) {
-    parts.push(`週${constraints.weeklyWorkDays}日勤務`);
-  }
+  // 勤務日数
   if (constraints.monthlyWorkDays) {
-    parts.push(`月${constraints.monthlyWorkDays}日勤務`);
+    parts.push(`月${constraints.monthlyWorkDays}日`);
+  }
+  if (constraints.weeklyWorkDays) {
+    parts.push(`週${constraints.weeklyWorkDays}日`);
   }
 
-  // 月間労働時間
-  if (constraints.monthlyHoursTarget) {
-    parts.push(`月${constraints.monthlyHoursTarget}時間労働`);
+  // 祝日休み
+  if (constraints.holidayOff) {
+    parts.push("祝日休");
   }
 
-  // 休日
-  if (constraints.weekendAndHolidayOff) {
-    parts.push("土日祝日休み");
-  } else if (constraints.weekendOff) {
-    parts.push("土日休み");
-  } else if (constraints.holidayOff) {
-    parts.push("祝日休み");
+  // 固定休曜日（新形式）
+  if (constraints.offDays && constraints.offDays.length > 0) {
+    parts.push(`${constraints.offDays.join("")}休`);
+  }
+  // 旧形式対応
+  else if (constraints.offDayOfWeek && constraints.offDayOfWeek.length > 0) {
+    const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+    const offDays = constraints.offDayOfWeek.map(d => dayNames[d]).join("");
+    parts.push(`${offDays}休`);
+  }
+
+  // 固定勤務曜日（新形式）
+  if (constraints.fixedDays) {
+    const entries = Object.entries(constraints.fixedDays);
+    if (entries.length > 0) {
+      const desc = entries.map(([day, shift]) => `${day}:${shift}`).join(" ");
+      parts.push(desc);
+    }
+  }
+  // 旧形式対応
+  else if (constraints.fixedDayOfWeek) {
+    const dayNames = ["日", "月", "火", "水", "木", "金", "土"];
+    const entries = Object.entries(constraints.fixedDayOfWeek);
+    if (entries.length > 0) {
+      const desc = entries.map(([day, shift]) => `${dayNames[parseInt(day)]}:${shift}`).join(" ");
+      parts.push(desc);
+    }
+  }
+
+  // 禁止シフト（新形式）
+  if (constraints.forbiddenShifts && constraints.forbiddenShifts.length > 0) {
+    parts.push(`${constraints.forbiddenShifts.join("・")}不可`);
+  }
+  // 旧形式対応
+  else if (constraints.forbiddenTypes && constraints.forbiddenTypes.length > 0) {
+    const jpTypes = constraints.forbiddenTypes.map(t => FORBIDDEN_TYPE_TO_JP[t] || t);
+    parts.push(`${jpTypes.join("・")}不可`);
+  }
+
+  // 月間シフト回数
+  if (constraints.monthlyShiftCounts) {
+    Object.entries(constraints.monthlyShiftCounts).forEach(([shift, count]) => {
+      parts.push(`${shift}:${count}回/月`);
+    });
+  }
+
+  // 休憩時間
+  if (constraints.breakTime !== undefined) {
+    if (constraints.breakTime === 0) {
+      parts.push("休憩なし");
+    } else {
+      parts.push(`休憩${constraints.breakTime}h`);
+    }
+  } else if (constraints.breakTimeRule) {
+    parts.push(`${constraints.breakTimeRule.threshold}h超→休憩${constraints.breakTimeRule.duration}h`);
   }
 
   // 特殊ルール
-  if (constraints.specialRules?.nightShiftPattern) {
-    parts.push(constraints.specialRules.nightShiftPattern);
+  if (constraints.specialRuleId) {
+    parts.push(`[${constraints.specialRuleId}]`);
+  }
+
+  // 夜勤特殊ルール
+  if (constraints.noEarlyShift) {
+    parts.push("早番不可");
+  }
+  if (constraints.noFridayNightShift) {
+    parts.push("金曜夜勤不可");
+  }
+  if (constraints.allowConsecutiveNight) {
+    parts.push("連続夜勤可");
+  }
+  if (constraints.allowNormalNightCycle) {
+    parts.push("通常夜勤サイクル可");
   }
 
   // 備考

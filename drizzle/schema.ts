@@ -37,6 +37,7 @@ export const positionGroups = mysqlTable("positionGroups", {
   name: varchar("name", { length: 100 }).notNull(),
   employmentType: mysqlEnum("employmentType", ["fulltime", "parttime"]).notNull(),
   minDaysOffPerMonth: int("minDaysOffPerMonth").default(0).notNull(), // 月の公休日数（正社員=9、パート=0）
+  isExcludedFromCount: boolean("isExcludedFromCount").default(false).notNull(), // 9:00-16:00の人数カウントから除外（管理者用）
   displayOrder: int("displayOrder").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -143,12 +144,13 @@ export type InsertWorkplaceRule = typeof workplaceRules.$inferInsert;
 
 /**
  * Required Staffing (必要人数設定)
- * 24時間×7曜日のマトリクス
+ * 24時間×7曜日のマトリクス（30分刻み対応）
  */
 export const requiredStaffing = mysqlTable("requiredStaffing", {
   id: int("id").autoincrement().primaryKey(),
   dayOfWeek: int("dayOfWeek").notNull(), // 0-6 (0=Sunday)
   hour: int("hour").notNull(), // 0-23
+  halfHour: int("halfHour").default(0).notNull(), // 0=:00, 30=:30（30分刻み対応）
   requiredCount: int("requiredCount").notNull(),
   staffingDetails: json("staffingDetails"), // 詳細情報（役職グループ、事務員など）
   createdAt: timestamp("createdAt").defaultNow().notNull(),

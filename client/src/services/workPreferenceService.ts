@@ -191,15 +191,137 @@ class WorkPreferenceServiceProduction implements WorkPreferenceService {
   }
 
   async create(input: CreateWorkPreferenceInput): Promise<WorkPreference> {
-    throw new Error("Create not implemented - use direct database access");
+    try {
+      // 勤務希望タイプをDBのenum値にマッピング
+      const preferenceTypeMap: Record<string, WorkPreferenceType> = {
+        "時間指定": "time_specified",
+        "早番希望": "time_specified", // 早番・遅番も時間指定として扱う
+        "遅番希望": "time_specified",
+        "夜勤希望": "night_shift",
+      };
+      const dbPreferenceType = preferenceTypeMap[input.preferenceType as string] || input.preferenceType;
+
+      await trpcClient.db.query.mutate({
+        sql: `
+          INSERT INTO workPreferences (
+            employeeId, shiftId, requestDate, startDate, endDate,
+            startTime, endTime, preferenceType, reason, status, isCountAsStaff
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+        `,
+        params: [
+          input.employeeId,
+          input.shiftId || null,
+          input.date,
+          input.date,
+          input.date,
+          input.startTime || null,
+          input.endTime || null,
+          dbPreferenceType,
+          input.notes || null,
+          input.isCountAsStaff !== false ? 1 : 0,
+        ],
+      });
+
+      // 作成したレコードを取得して返す
+      const result = await trpcClient.db.query.mutate({
+        sql: `SELECT * FROM workPreferences WHERE employeeId = ? AND startDate = ? ORDER BY id DESC LIMIT 1`,
+        params: [input.employeeId, input.date],
+      });
+
+      const row = (result as any[])[0];
+      return {
+        id: row.id,
+        employeeId: row.employeeId,
+        shiftId: row.shiftId,
+        date: row.startDate,
+        preferenceType: row.preferenceType,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        notes: row.reason,
+        isCountAsStaff: Boolean(row.isCountAsStaff),
+        displayIcon: row.displayIcon,
+        status: row.status,
+        submittedAt: row.submittedAt ? new Date(row.submittedAt).toISOString() : new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Failed to create work preference:", error);
+      throw error;
+    }
   }
 
   async update(id: number, data: Partial<CreateWorkPreferenceInput>): Promise<WorkPreference> {
-    throw new Error("Update not implemented - use direct database access");
+    try {
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.startTime !== undefined) {
+        updates.push("startTime = ?");
+        params.push(data.startTime);
+      }
+      if (data.endTime !== undefined) {
+        updates.push("endTime = ?");
+        params.push(data.endTime);
+      }
+      if (data.notes !== undefined) {
+        updates.push("reason = ?");
+        params.push(data.notes);
+      }
+      if (data.preferenceType !== undefined) {
+        const preferenceTypeMap: Record<string, WorkPreferenceType> = {
+          "時間指定": "time_specified",
+          "早番希望": "time_specified",
+          "遅番希望": "time_specified",
+          "夜勤希望": "night_shift",
+        };
+        updates.push("preferenceType = ?");
+        params.push(preferenceTypeMap[data.preferenceType as string] || data.preferenceType);
+      }
+
+      if (updates.length > 0) {
+        params.push(id);
+        await trpcClient.db.query.mutate({
+          sql: `UPDATE workPreferences SET ${updates.join(", ")} WHERE id = ?`,
+          params,
+        });
+      }
+
+      // 更新したレコードを取得して返す
+      const result = await trpcClient.db.query.mutate({
+        sql: `SELECT * FROM workPreferences WHERE id = ?`,
+        params: [id],
+      });
+
+      const row = (result as any[])[0];
+      return {
+        id: row.id,
+        employeeId: row.employeeId,
+        shiftId: row.shiftId,
+        date: row.startDate,
+        preferenceType: row.preferenceType,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        notes: row.reason,
+        isCountAsStaff: Boolean(row.isCountAsStaff),
+        displayIcon: row.displayIcon,
+        status: row.status,
+        submittedAt: row.submittedAt ? new Date(row.submittedAt).toISOString() : new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Failed to update work preference:", error);
+      throw error;
+    }
   }
 
   async delete(id: number): Promise<void> {
-    throw new Error("Delete not implemented - use direct database access");
+    try {
+      await trpcClient.db.query.mutate({
+        sql: `DELETE FROM workPreferences WHERE id = ?`,
+        params: [id],
+      });
+    } catch (error) {
+      console.error("Failed to delete work preference:", error);
+      throw error;
+    }
   }
 
   async approve(id: number): Promise<WorkPreference> {
@@ -358,10 +480,9 @@ class WorkPreferenceServiceMock implements WorkPreferenceService {
 
 /**
  * 勤務希望サービス
- * 環境に応じて本番実装またはMock実装を使用
- * TODO: TRPCルーターにworkPreferencesエンドポイントを実装後、本番実装を有効化
+ * 本番実装を使用
  */
-export const workPreferenceService: WorkPreferenceService = new WorkPreferenceServiceMock();
+export const workPreferenceService: WorkPreferenceService = new WorkPreferenceServiceProduction();
 
 // ===========================
 // ヘルパー関数

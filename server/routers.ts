@@ -116,7 +116,7 @@ export const appRouter = router({
           startTime: z.string(),
           endTime: z.string(),
         })).optional(),
-        additionalConstraints: z.string().optional(),
+        additionalConstraints: z.record(z.unknown()).optional(),
         displayOrder: z.number().optional(),
         userId: z.number().optional(),
       }))
@@ -136,7 +136,7 @@ export const appRouter = router({
           startTime: z.string(),
           endTime: z.string(),
         })).optional(),
-        additionalConstraints: z.string().optional(),
+        additionalConstraints: z.record(z.unknown()).optional(),
         displayOrder: z.number().optional(),
         userId: z.number().optional(),
       }))
@@ -435,6 +435,7 @@ export const appRouter = router({
           phase1Count: result.phase1Count,
           phase2Count: result.phase2Count,
           totalCount: result.totalCount,
+          stats: result.stats,  // Phase 3: 統計情報を追加
         };
       }),
 
@@ -863,6 +864,14 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getLeaveRequestsByShift(input.shiftId);
       }),
+    getByDateRange: protectedProcedure
+      .input(z.object({
+        startDate: z.string(), // YYYY-MM-DD
+        endDate: z.string(),   // YYYY-MM-DD
+      }))
+      .query(async ({ input }) => {
+        return await db.getLeaveRequestsByDateRange(input.startDate, input.endDate);
+      }),
     create: protectedProcedure
       .input(z.object({
         employeeId: z.number(),
@@ -1066,6 +1075,14 @@ export const appRouter = router({
       .input(z.object({ shiftId: z.number() }))
       .query(async ({ input }) => {
         return await db.getWorkPreferencesByShift(input.shiftId);
+      }),
+    getByDateRange: protectedProcedure
+      .input(z.object({
+        startDate: z.string(), // YYYY-MM-DD
+        endDate: z.string(),   // YYYY-MM-DD
+      }))
+      .query(async ({ input }) => {
+        return await db.getWorkPreferencesByDateRange(input.startDate, input.endDate);
       }),
     create: protectedProcedure
       .input(z.object({
