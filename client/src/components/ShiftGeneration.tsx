@@ -340,10 +340,14 @@ interface ShiftGenerationProps {
 export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGenerationProps) {
   const toast = useToast();
 
-  // 日付範囲を計算（月初から翌月5日まで）
+  // 日付範囲を計算
+  // 12月のみ翌月5日まで（夜勤対応）、その他の月は月末まで
   const { startDate, endDate, dates } = useMemo(() => {
     const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 5); // 翌月5日まで（夜勤対応）
+    // 12月の場合は翌1月5日まで、それ以外は月末まで
+    const end = month === 12
+      ? new Date(year + 1, 0, 5)  // 12月 → 翌年1月5日
+      : new Date(year, month, 0);  // その他 → 月末日
     return { startDate: start, endDate: end, dates: generateDateRange(start, end) };
   }, [year, month]);
 
@@ -370,6 +374,11 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
   const [customEvents, setCustomEvents] = useState<Record<string, string>>({});
   const [editingEventDate, setEditingEventDate] = useState<string | null>(null);
   const [editingEventValue, setEditingEventValue] = useState<string>('');
+
+  // 検食欄（日付ごと）
+  const [inspectionMeals, setInspectionMeals] = useState<Record<string, string>>({});
+  const [editingMealDate, setEditingMealDate] = useState<string | null>(null);
+  const [editingMealValue, setEditingMealValue] = useState<string>('');
 
   // フッターコメント欄
   const [footerComment, setFooterComment] = useState<string>('');
@@ -1524,6 +1533,60 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
                       style={{ overflow: 'hidden' }}
                     />
                   </td>
+                  <td colSpan={5} className="border border-slate-600 bg-slate-50 print:hidden"></td>
+                </tr>
+
+                {/* 検食欄（職員リストの最後） */}
+                <tr className="border-t-2 border-slate-400">
+                  <td colSpan={2} className="border border-slate-600 bg-slate-100 font-bold text-slate-700 px-2 py-2 sticky left-0 z-10 text-sm print:text-[8px]">
+                    検食
+                  </td>
+                  {dates.map((date) => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const isEditing = editingMealDate === dateStr;
+                    const mealText = inspectionMeals[dateStr] || '';
+
+                    return (
+                      <td
+                        key={dateStr}
+                        className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-white cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                        onClick={() => {
+                          if (!isEditing) {
+                            setEditingMealDate(dateStr);
+                            setEditingMealValue(mealText);
+                          }
+                        }}
+                      >
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingMealValue}
+                            onChange={(e) => setEditingMealValue(e.target.value)}
+                            onBlur={() => {
+                              setInspectionMeals(prev => ({ ...prev, [dateStr]: editingMealValue }));
+                              setEditingMealDate(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setInspectionMeals(prev => ({ ...prev, [dateStr]: editingMealValue }));
+                                setEditingMealDate(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingMealDate(null);
+                              }
+                            }}
+                            autoFocus
+                            className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-0"
+                            style={{ writingMode: 'horizontal-tb' }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center leading-tight">
+                            {mealText || <span className="text-slate-300">+</span>}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
                   <td colSpan={5} className="border border-slate-600 bg-slate-50 print:hidden"></td>
                 </tr>
               </tbody>
