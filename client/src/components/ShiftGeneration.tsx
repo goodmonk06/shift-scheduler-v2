@@ -446,6 +446,8 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
         }));
 
         setStaffList(staffData);
+        console.log(`[ShiftGeneration] Loaded ${staffData.length} employees`);
+        console.log('[ShiftGeneration] Employee IDs in staffList:', staffData.map(s => s.employeeDbId).sort((a, b) => a - b));
       } catch (error) {
         console.error('Failed to load staff data:', error);
         toast.error('職員データの読み込みに失敗しました');
@@ -537,8 +539,9 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
         }
 
         if (Object.keys(newShifts).length > 0) {
-          setShifts(newShifts);
-          setOriginalShifts(JSON.parse(JSON.stringify(newShifts)));
+          // 既存のシフトデータとマージ（前月コピーなど既存データを保持）
+          setShifts(prev => ({ ...prev, ...newShifts }));
+          setOriginalShifts(prev => ({ ...prev, ...newShifts }));
           toast.info(`${leaveRequests.length}件の希望休、${workPrefs.length}件の勤務希望を反映しました`);
         }
       } catch (error) {
@@ -598,13 +601,39 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
 
         const carryoverShifts: any = {};
         let copiedCount = 0;
+        let skippedCount = 0;
+        const skippedEmployees = new Set<number>();
+
+        console.log(`[ShiftGeneration] staffList count: ${staffList.length}`);
+        console.log(`[ShiftGeneration] Previous shift details count: ${prevShiftData.shiftDetails.length}`);
+
+        // 前月シフトから当月1～5日分のemployeeIdを抽出
+        const prevShiftEmployeeIds = [...new Set(
+          prevShiftData.shiftDetails
+            .filter(d => carryoverDates.includes(d.date))
+            .map(d => d.employeeId)
+        )].sort((a, b) => a - b);
+
+        console.log('[ShiftGeneration] Employee IDs in previous shift (days 1-5):', prevShiftEmployeeIds);
+        console.log('[ShiftGeneration] Current staffList employee IDs:', staffList.map(s => s.employeeDbId).sort((a, b) => a - b));
+
+        // どのemployeeIdがstaffListにないか確認
+        const missingIds = prevShiftEmployeeIds.filter(id => !staffList.some(s => s.employeeDbId === id));
+        if (missingIds.length > 0) {
+          console.error('[ShiftGeneration] ⚠️  Missing employee IDs in staffList:', missingIds);
+        }
 
         // 前月シフトから当月1～5日のデータを抽出
         for (const detail of prevShiftData.shiftDetails) {
           if (!carryoverDates.includes(detail.date)) continue;
 
           const staff = staffList.find(s => s.employeeDbId === detail.employeeId);
-          if (!staff) continue;
+          if (!staff) {
+            skippedCount++;
+            skippedEmployees.add(detail.employeeId);
+            console.warn(`[ShiftGeneration] Employee not found in staffList: employeeId=${detail.employeeId}, date=${detail.date}`);
+            continue;
+          }
 
           const key = `${staff.id}_${detail.date}`;
           const customText = detail.displayText || '';
@@ -631,11 +660,22 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
           copiedCount++;
         }
 
+        if (skippedCount > 0) {
+          console.error(`[ShiftGeneration] ⚠️  ${skippedCount}件のデータをスキップ（職員マッチング失敗）`);
+          console.error(`[ShiftGeneration] スキップされた職員ID:`, Array.from(skippedEmployees));
+          toast.error(`警告: ${skippedCount}件のデータがコピーできませんでした（職員マッチング失敗）`);
+        }
+
         if (copiedCount > 0) {
           console.log(`[ShiftGeneration] Copied ${copiedCount} cells from previous month (1～5日)`);
-          setShifts(prev => ({ ...carryoverShifts, ...prev }));
-          setOriginalShifts(prev => ({ ...carryoverShifts, ...prev }));
-          toast.info(`前月シフトから${copiedCount}件のデータをコピーしました（1～5日、ロック済み）`);
+          // 前月データを優先（既存データの上に上書き）
+          setShifts(prev => ({ ...prev, ...carryoverShifts }));
+          setOriginalShifts(prev => ({ ...prev, ...carryoverShifts }));
+
+          const message = skippedCount > 0
+            ? `前月シフトから${copiedCount}件コピー（${skippedCount}件スキップ、職員データ確認が必要）`
+            : `前月シフトから${copiedCount}件のデータをコピーしました（1～5日、ロック済み）`;
+          toast.info(message, { duration: 6000 });
         }
       } catch (error) {
         console.error('[ShiftGeneration] Failed to load previous month carryover:', error);

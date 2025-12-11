@@ -4,10 +4,11 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
-import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { WorkableDaysEditor } from "./WorkableDaysEditor";
+import { StaffConstraintsEditor } from "./StaffConstraintsEditor";
 import type { StaffFormDialogProps } from "../types/staffManagementTypes";
+import type { EmployeeWorkConstraints } from "../types/employeeConstraints";
+import { generateConstraintDescription } from "../types/employeeConstraints";
 
 export function StaffFormDialog({
   open,
@@ -20,7 +21,7 @@ export function StaffFormDialog({
 }: StaffFormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingEmployee ? "職員情報を編集" : "職員を追加"}
@@ -116,28 +117,19 @@ export function StaffFormDialog({
             </Label>
           </div>
 
-          <div className="pt-4 border-t">
-            <WorkableDaysEditor
-              workableDays={formData.workableDays}
-              onChange={(workableDays) =>
-                setFormData({ ...formData, workableDays })
-              }
+          <div className="space-y-4 pt-4 border-t">
+            <Label className="text-base font-semibold">個別勤務条件</Label>
+            <StaffConstraintsEditor
+              constraints={(formData.additionalConstraintsRaw as EmployeeWorkConstraints) || {}}
+              onChange={(constraints) => {
+                const description = generateConstraintDescription(constraints);
+                setFormData({
+                  ...formData,
+                  additionalConstraintsRaw: constraints as unknown as Record<string, unknown>,
+                  additionalConstraints: description,
+                });
+              }}
             />
-          </div>
-
-          <div className="space-y-2 pt-4 border-t">
-            <Label htmlFor="additionalConstraints">個別勤務条件</Label>
-            <Textarea
-              id="additionalConstraints"
-              placeholder="設定されている個別条件がここに表示されます"
-              value={formData.additionalConstraints}
-              readOnly
-              className="rounded-xl bg-muted/50"
-              rows={5}
-            />
-            <p className="text-xs text-muted-foreground">
-              ※ 個別勤務条件はシフト自動生成時にAIが参照します。編集が必要な場合は開発チームにご連絡ください。
-            </p>
           </div>
         </div>
 

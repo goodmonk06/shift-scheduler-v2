@@ -21,6 +21,7 @@ export const getInitialFormData = (): EmployeeFormData => ({
   canWorkNight: false,
   workableDays: [],
   additionalConstraints: "",
+  additionalConstraintsRaw: null,
 });
 
 // 新しい従業員IDの生成

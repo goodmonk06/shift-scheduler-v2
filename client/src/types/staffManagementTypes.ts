@@ -14,7 +14,8 @@ export interface Employee {
   canWorkNight: boolean;
   // 勤務可能曜日と時間帯
   workableDays?: WorkableDay[];
-  additionalConstraints?: string;
+  additionalConstraints?: string; // 表示用（テキスト形式）
+  additionalConstraintsRaw?: Record<string, unknown> | null; // 生のJSONオブジェクト
   createdAt: string;
   updatedAt: string;
 }
@@ -32,6 +33,7 @@ export interface EmployeeFormData {
   canWorkNight: boolean;
   workableDays: WorkableDay[];
   additionalConstraints: string;
+  additionalConstraintsRaw: Record<string, unknown> | null; // 生のJSONオブジェクト
 }
 
 export interface StaffFormDialogProps {

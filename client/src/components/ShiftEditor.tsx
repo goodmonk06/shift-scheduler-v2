@@ -68,6 +68,16 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     confirmedShifts: number;
     ruleBasedShifts: number;
     totalShifts: number;
+    stats?: Array<{
+      employeeId: number;
+      employeeName: string;
+      workDays: number;
+      workHours: number;
+      nightShifts: number;
+      offDays: number;
+      paidLeaveDays: number;
+      postNightDays: number;
+    }>;
   } | null>(null);
 
   // シフトデータをロードする関数（成功後の再取得にも使用）
@@ -430,7 +440,7 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
         throw new Error("無効なシフトIDです");
       }
 
-      const result = await trpcClient.shifts.generatePhaseBased.mutate({
+      const result = await trpcClient.shifts.generatePhased.mutate({
         shiftId: numericShiftId,
       });
       return result;
@@ -438,10 +448,12 @@ export function ShiftEditor({ shiftId, onBack }: ShiftEditorProps = {}) {
     {
       onSuccess: async (result) => {
         // Store result and show detailed dialog
+        // Map from server response format to client format
         setPhaseResult({
-          confirmedShifts: result.confirmedShifts,
-          ruleBasedShifts: result.ruleBasedShifts,
-          totalShifts: result.totalShifts,
+          confirmedShifts: result.phase1Count,
+          ruleBasedShifts: result.phase2Count,
+          totalShifts: result.totalCount,
+          stats: result.stats,
         });
         setShowPhaseResultDialog(true);
 

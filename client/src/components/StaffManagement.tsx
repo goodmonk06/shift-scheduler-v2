@@ -36,11 +36,19 @@ export function StaffManagement() {
       const mappedEmployees: Employee[] = employeesData.map((emp: any) => {
         // additionalConstraintsが JSONオブジェクトの場合、人間が読める形式に変換
         let constraintsDisplay = "";
+        let constraintsRaw: Record<string, unknown> | null = null;
         if (emp.additionalConstraints) {
           if (typeof emp.additionalConstraints === "object") {
+            constraintsRaw = emp.additionalConstraints;
             constraintsDisplay = generateConstraintDescription(emp.additionalConstraints as EmployeeWorkConstraints);
           } else if (typeof emp.additionalConstraints === "string") {
-            constraintsDisplay = emp.additionalConstraints;
+            // 文字列の場合はJSONとしてパースを試みる
+            try {
+              constraintsRaw = JSON.parse(emp.additionalConstraints);
+              constraintsDisplay = generateConstraintDescription(constraintsRaw as EmployeeWorkConstraints);
+            } catch {
+              constraintsDisplay = emp.additionalConstraints;
+            }
           }
         }
 
@@ -54,6 +62,7 @@ export function StaffManagement() {
           canWorkNight: emp.canWorkNightShift || false,
           workableDays: emp.workableDays || [],
           additionalConstraints: constraintsDisplay,
+          additionalConstraintsRaw: constraintsRaw,
           createdAt: emp.createdAt,
           updatedAt: emp.updatedAt,
         };
@@ -100,6 +109,7 @@ export function StaffManagement() {
       canWorkNight: employee.canWorkNight,
       workableDays: employee.workableDays || [],
       additionalConstraints: employee.additionalConstraints || "",
+      additionalConstraintsRaw: employee.additionalConstraintsRaw || null,
     });
     setIsDialogOpen(true);
   };
@@ -114,7 +124,7 @@ export function StaffManagement() {
 
     try {
       if (editingEmployee) {
-        // 更新（additionalConstraints は変更しない = JSON データを保護）
+        // 更新（constraintsも更新）
         await trpcClient.employees.update.mutate({
           id: parseInt(editingEmployee.id),
           name: formData.name,
@@ -123,7 +133,7 @@ export function StaffManagement() {
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
           workableDays: formData.workableDays,
-          // additionalConstraints は送信しない（既存の JSON データを保護）
+          additionalConstraints: formData.additionalConstraintsRaw || undefined,
         });
         toast.success("職員情報を更新しました");
       } else {
@@ -135,7 +145,7 @@ export function StaffManagement() {
           skillLevel: formData.skillLevel,
           canWorkNightShift: formData.canWorkNight,
           workableDays: formData.workableDays,
-          additionalConstraints: "", // 新規作成時は空文字列
+          additionalConstraints: formData.additionalConstraintsRaw || {},
         });
         toast.success("職員を追加しました");
       }
