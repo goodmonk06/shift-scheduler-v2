@@ -208,10 +208,8 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
   let holidays = 0;
   let paidHolidays = 0;
 
-  // 12月のみを集計（1月分は除外）
-  const decemberDates = dates.filter(d => d.getMonth() === 11); // 11 = 12月
-
-  decemberDates.forEach(date => {
+  // 1月のすべての日付を集計
+  dates.forEach(date => {
     const key = `${staffId}_${getIsoDate(date)}`;
     const cell = shifts[key];
     if (!cell) return;
