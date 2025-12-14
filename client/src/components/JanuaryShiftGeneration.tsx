@@ -780,7 +780,17 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
           matchedCount++;
 
           // 日付をパース (YYYY-MM-DD形式)
-          const key = `${staff.id}_${detail.date}`;
+          // 引き継ぎモードの場合、12月の日付を1月の日付に変換
+          let dateStr = detail.date;
+          if (isInherit) {
+            // 2025-12-XX → 2026-01-XX に変換
+            const dateParts = detail.date.split('-');
+            if (dateParts.length === 3 && dateParts[1] === '12') {
+              const day = dateParts[2];
+              dateStr = `2026-01-${day}`;
+            }
+          }
+          const key = `${staff.id}_${dateStr}`;
 
           // displayTextを優先、なければフォールバック
           let customText = '';
