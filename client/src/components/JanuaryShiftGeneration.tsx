@@ -521,6 +521,7 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
   const [loadedShiftId, setLoadedShiftId] = useState<number | null>(null);
   const [loadedShiftName, setLoadedShiftName] = useState<string>("");
+  const [isInheritMode, setIsInheritMode] = useState(false); // 12月データからの引き継ぎモード
   const [progress, setProgress] = useState(0);
   const [loadingStage, setLoadingStage] = useState('');
   const [printPreview, setPrintPreview] = useState(false);
@@ -637,7 +638,8 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
       console.log(`[JanuaryShiftGeneration] Saving ${entries.length} shift entries...`);
 
       let result;
-      if (saveMode === 'overwrite' && loadedShiftId) {
+      // 引き継ぎモードの場合は常に新規保存として扱う
+      if (saveMode === 'overwrite' && loadedShiftId && !isInheritMode) {
         // 上書き保存: 既存のシフト詳細を削除してから新規保存（同じID）
         console.log(`[JanuaryShiftGeneration] Overwriting shift ID: ${loadedShiftId}`);
 
@@ -647,8 +649,8 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
 
         // 暫定: 新規保存として処理し、loadedShiftIdとloadedShiftNameを更新
         result = await trpcClient.shifts.saveStandalone.mutate({
-          year: 2025,
-          month: 12,
+          year: 2026,
+          month: 1,
           name: saveName,
           entries: entries,
           overwriteShiftId: loadedShiftId  // サーバー側で対応が必要
@@ -656,10 +658,13 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
 
         toast.success(`シフトを上書き保存しました (${entries.length}件)`);
       } else {
-        // 新規保存
+        // 新規保存（引き継ぎモードも含む）
+        if (isInheritMode) {
+          console.log(`[JanuaryShiftGeneration] Saving as new shift (inherit mode from December)`);
+        }
         result = await trpcClient.shifts.saveStandalone.mutate({
-          year: 2025,
-          month: 12,
+          year: 2026,
+          month: 1,
           name: saveName,
           entries: entries
         });
@@ -671,6 +676,8 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
         if (result && result.shiftId) {
           setLoadedShiftId(result.shiftId);
           setLoadedShiftName(saveName);
+          // 引き継ぎモードを解除（保存後は通常の編集モードに）
+          setIsInheritMode(false);
         }
       }
 
@@ -684,6 +691,14 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
   };
 
   const handleOverwriteSave = () => {
+    // 引き継ぎモードの場合は上書き保存を無効化
+    if (isInheritMode) {
+      toast.error("12月データから引き継いだシフトは上書き保存できません", {
+        description: "別名で保存してください"
+      });
+      return;
+    }
+
     if (loadedShiftId && loadedShiftName) {
       // 既存シフトがある場合は直接上書き保存
       setSaveMode('overwrite');
@@ -691,7 +706,7 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
       setIsSaveModalOpen(true);
     } else {
       // 新規の場合は名前入力モーダル
-      const defaultName = `12月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
+      const defaultName = `1月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
       setSaveMode('overwrite');
       setSaveName(defaultName);
       setIsSaveModalOpen(true);
@@ -700,7 +715,7 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
 
   const handleNewSave = () => {
     // 常に新しい名前で保存
-    const defaultName = `12月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
+    const defaultName = `1月シフト_${new Date().toLocaleDateString('ja-JP').replace(/\//g, '')}_${Math.floor(Math.random() * 1000)}`;
     setSaveMode('new');
     setSaveName(defaultName);
     setIsSaveModalOpen(true);
@@ -727,8 +742,17 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
           return;
         }
 
-        // シフト名を保存
-        setLoadedShiftName(shiftData.name || "");
+        // 12月データからの引き継ぎモードかどうかをチェック
+        const isInherit = shiftData.month === 12;
+        setIsInheritMode(isInherit);
+
+        // シフト名を保存（引き継ぎモードの場合はプレフィックスを付与）
+        if (isInherit) {
+          setLoadedShiftName(`(12月からコピー) 2026年1月シフト`);
+          console.log('[JanuaryShiftGeneration] Inherit mode from December shift:', shiftData.name);
+        } else {
+          setLoadedShiftName(shiftData.name || "");
+        }
 
         console.log('[JanuaryShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
 
@@ -2000,15 +2024,21 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
               シフト管理 <span className="px-2 py-0.5 bg-slate-800 rounded text-[10px] text-slate-400 font-mono border border-slate-700">PRO</span>
             </h1>
             <p className="text-xs text-slate-400 font-medium mt-0.5 flex items-center gap-1">
-              <span>2025年12月度</span>
+              <span>2026年1月度</span>
               <span className="w-1 h-1 rounded-full bg-slate-600"></span>
               <span>{FACILITY_NAME}</span>
             </p>
             {loadedShiftName && (
               <p className="text-sm font-medium mt-1.5 flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30 font-bold text-xs">
-                  編集中
-                </span>
+                {isInheritMode ? (
+                  <span className="px-2 py-0.5 bg-green-500/20 text-green-300 rounded border border-green-500/30 font-bold text-xs">
+                    12月から引き継ぎ
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded border border-indigo-500/30 font-bold text-xs">
+                    編集中
+                  </span>
+                )}
                 <span className="text-green-400 font-bold text-base">{loadedShiftName}</span>
               </p>
             )}

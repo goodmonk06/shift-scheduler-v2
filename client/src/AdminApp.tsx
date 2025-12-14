@@ -123,6 +123,12 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     setAdminView("january-shift-generation");
   };
 
+  // 1月シフト：12月データを引き継いで新規作成
+  const handleJanuaryInherit = (decemberShiftId: number) => {
+    setSelectedJanuaryShiftId(decemberShiftId);
+    setAdminView("january-shift-generation");
+  };
+
   // 12月・1月以外の月クリック時（年間ビューから）
   const handleMonthClick = (year: number, month: number, existingShiftId: number | null) => {
     setSelectedYear(year);
@@ -419,6 +425,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           onClose={() => setIsJanuarySelectionModalOpen(false)}
           onSelectNew={handleJanuaryNew}
           onSelectExisting={handleJanuaryExisting}
+          onSelectInherit={handleJanuaryInherit}
         />
 
         {/* Shift Selection Modal (12月・1月以外用) */}

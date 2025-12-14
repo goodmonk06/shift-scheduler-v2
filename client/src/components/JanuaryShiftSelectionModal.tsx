@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Plus, Archive, Loader2, Calendar } from "lucide-react";
+import { X, Plus, Archive, Loader2, Calendar, ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { trpcClient } from "../lib/trpc";
 import type { Shift } from "../types/api";
@@ -9,6 +9,7 @@ interface JanuaryShiftSelectionModalProps {
   onClose: () => void;
   onSelectNew: () => void;
   onSelectExisting: (shiftId: number) => void;
+  onSelectInherit: (decemberShiftId: number) => void;
 }
 
 export function JanuaryShiftSelectionModal({
@@ -16,14 +17,18 @@ export function JanuaryShiftSelectionModal({
   onClose,
   onSelectNew,
   onSelectExisting,
+  onSelectInherit,
 }: JanuaryShiftSelectionModalProps) {
-  const [mode, setMode] = useState<"choice" | "archive">("choice");
-  const [decemberShifts, setJanuaryShifts] = useState<Shift[]>([]);
+  const [mode, setMode] = useState<"choice" | "archive" | "inherit">("choice");
+  const [januaryShifts, setJanuaryShifts] = useState<Shift[]>([]);
+  const [decemberShifts, setDecemberShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen && mode === "archive") {
       loadJanuaryShifts();
+    } else if (isOpen && mode === "inherit") {
+      loadDecemberShifts();
     }
   }, [isOpen, mode]);
 
@@ -32,10 +37,10 @@ export function JanuaryShiftSelectionModal({
       setIsLoading(true);
       const allShifts = await trpcClient.shifts.list.query();
       // 1月のシフトのみフィルタリング（降順でソート）
-      const decShifts = allShifts
-        .filter((s) => s.month === 12)
+      const janShifts = allShifts
+        .filter((s) => s.month === 1)
         .sort((a, b) => b.id - a.id); // 新しい順
-      setJanuaryShifts(decShifts);
+      setJanuaryShifts(janShifts);
     } catch (error) {
       console.error("Failed to load January shifts:", error);
     } finally {
@@ -43,8 +48,29 @@ export function JanuaryShiftSelectionModal({
     }
   };
 
+  const loadDecemberShifts = async () => {
+    try {
+      setIsLoading(true);
+      const allShifts = await trpcClient.shifts.list.query();
+      // 12月のシフトのみフィルタリング（降順でソート）
+      const decShifts = allShifts
+        .filter((s) => s.month === 12)
+        .sort((a, b) => b.id - a.id); // 新しい順
+      setDecemberShifts(decShifts);
+    } catch (error) {
+      console.error("Failed to load December shifts:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSelectExisting = (shift: Shift) => {
     onSelectExisting(shift.id);
+    onClose();
+  };
+
+  const handleSelectInherit = (shift: Shift) => {
+    onSelectInherit(shift.id);
     onClose();
   };
 
@@ -67,7 +93,11 @@ export function JanuaryShiftSelectionModal({
             <div>
               <h2 className="text-xl font-bold text-gray-900">1月シフト生成</h2>
               <p className="text-sm text-muted-foreground">
-                {mode === "choice" ? "作成方法を選択してください" : "過去のシフトを選択"}
+                {mode === "choice"
+                  ? "作成方法を選択してください"
+                  : mode === "archive"
+                  ? "1月の保存済みシフトを選択"
+                  : "12月のシフトを選択"}
               </p>
             </div>
           </div>
@@ -84,44 +114,67 @@ export function JanuaryShiftSelectionModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {mode === "choice" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 新規作成 */}
-              <button
-                onClick={handleSelectNew}
-                className="p-6 rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 transition-all group"
-              >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                    <Plus className="w-8 h-8 text-blue-600" />
+            <div className="space-y-4">
+              {/* メインの2つのボタン */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 先月のデータを引き継いで新規作成 */}
+                <button
+                  onClick={() => setMode("inherit")}
+                  className="p-6 rounded-2xl border-2 border-dashed border-green-300 bg-green-50 hover:bg-green-100 hover:border-green-400 transition-all group"
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 rounded-full bg-green-100 group-hover:bg-green-200 transition-colors">
+                      <ArrowRight className="w-8 h-8 text-green-600" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold text-gray-900">先月のデータを引き継いで新規作成</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        12月のシフトをベースに作成します
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <h3 className="text-lg font-bold text-gray-900">新規作成</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      ゼロからシフトを作成します
-                    </p>
-                  </div>
-                </div>
-              </button>
+                </button>
 
-              {/* 過去データから作成 */}
-              <button
-                onClick={() => setMode("archive")}
-                className="p-6 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 hover:bg-purple-100 hover:border-purple-400 transition-all group"
-              >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="p-4 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors">
-                    <Archive className="w-8 h-8 text-purple-600" />
+                {/* 過去データから作成 */}
+                <button
+                  onClick={() => setMode("archive")}
+                  className="p-6 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 hover:bg-purple-100 hover:border-purple-400 transition-all group"
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors">
+                      <Archive className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold text-gray-900">過去データから作成</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        保存済みの1月シフトを読み込んで編集
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <h3 className="text-lg font-bold text-gray-900">過去データから作成</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      保存済みのシフトを読み込んで編集
-                    </p>
+                </button>
+              </div>
+
+              {/* 新規作成（小さめ） */}
+              <div className="flex justify-center">
+                <button
+                  onClick={handleSelectNew}
+                  className="px-6 py-3 rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 hover:bg-blue-100 hover:border-blue-400 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
+                      <Plus className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-sm font-bold text-gray-900">新規作成</h3>
+                      <p className="text-xs text-muted-foreground">
+                        ゼロからシフトを作成
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
+              </div>
             </div>
-          ) : (
+          ) : mode === "archive" ? (
             <div className="space-y-4">
               {/* 戻るボタン */}
               <Button
@@ -133,7 +186,7 @@ export function JanuaryShiftSelectionModal({
                 ← 戻る
               </Button>
 
-              {/* シフト一覧 */}
+              {/* 1月シフト一覧 */}
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -141,7 +194,7 @@ export function JanuaryShiftSelectionModal({
                     読み込み中...
                   </div>
                 </div>
-              ) : decemberShifts.length === 0 ? (
+              ) : januaryShifts.length === 0 ? (
                 <div className="text-center py-12">
                   <Archive className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
                   <p className="text-muted-foreground">
@@ -150,7 +203,7 @@ export function JanuaryShiftSelectionModal({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {decemberShifts.map((shift) => (
+                  {januaryShifts.map((shift) => (
                     <button
                       key={shift.id}
                       onClick={() => handleSelectExisting(shift)}
@@ -175,6 +228,68 @@ export function JanuaryShiftSelectionModal({
                           </div>
                         </div>
                         <div className="text-purple-600 group-hover:translate-x-1 transition-transform">
+                          →
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* 戻るボタン */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMode("choice")}
+                className="rounded-xl"
+              >
+                ← 戻る
+              </Button>
+
+              {/* 12月シフト一覧 */}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    読み込み中...
+                  </div>
+                </div>
+              ) : decemberShifts.length === 0 ? (
+                <div className="text-center py-12">
+                  <Archive className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                  <p className="text-muted-foreground">
+                    12月のシフトがありません
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {decemberShifts.map((shift) => (
+                    <button
+                      key={shift.id}
+                      onClick={() => handleSelectInherit(shift)}
+                      className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all text-left group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-gray-900 group-hover:text-green-900">
+                              {shift.name}
+                            </h3>
+                            <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+                              {shift.year}年{shift.month}月
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>作成: {new Date(shift.createdAt).toLocaleDateString("ja-JP")}</span>
+                            <span>更新: {new Date(shift.updatedAt).toLocaleDateString("ja-JP")}</span>
+                            <span className="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs">
+                              {shift.status}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-green-600 group-hover:translate-x-1 transition-transform">
                           →
                         </div>
                       </div>
