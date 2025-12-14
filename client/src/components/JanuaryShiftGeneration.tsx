@@ -193,10 +193,6 @@ const getNightShiftCandidates = (staffList: any[]): string[] => {
 const getEventName = (date: Date): string => {
   const m = date.getMonth() + 1;
   const d = date.getDate();
-  if (m === 12 && d === 8) return '給食委員会';
-  if (m === 12 && d === 18) return '誕生日会';
-  if (m === 12 && d === 25) return 'クリスマス会';
-  if (m === 12 && d === 31) return '大晦日';
   if (m === 1 && d === 1) return '元旦';
   return '';
 };
@@ -1478,14 +1474,14 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
 
             if (consecutiveWorkDays >= MAX_CONSECUTIVE_WORK_DAYS) {
               newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-              if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+              if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 0) {
                 currentOffDays++;
               }
             } else {
               // 正社員の場合、休日数を9日に近づける
               let shouldBeOff = false;
 
-              if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+              if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 0) {
                 if (currentOffDays < 9) {
                   // 休日が9日未満なら、休みを入れる確率を上げる
                   shouldBeOff = Math.random() > 0.3; // 70%の確率で休み
@@ -1539,12 +1535,12 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
 
                 if (cons.workDaysPerWeek && Math.random() > 0.6) {
                   newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-                  if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+                  if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 0) {
                     currentOffDays++;
                   }
                 } else if (cons.workDaysPerMonth && Math.random() > 0.8) {
                   newShifts[key] = { type: 'OFF', customText: '休', isLocked: false };
-                  if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 11) {
+                  if (FULL_TIME_STAFF_IDS.includes(staff.id) && date.getMonth() === 0) {
                     currentOffDays++;
                   }
                 } else {
