@@ -63,7 +63,7 @@ const STAFF_RAW_DATA = [
   { id: '4', name: '松嵜 愛梨', role: 'admin', qualification: 'サ責', schedule: { '2026-01-01': '明', '2026-01-02': '休' }, constraints: { defaultShift: '9～18', breakTime: 1 } },
   {
     id: '5', name: '杉山 美佳子', role: 'staff', qualification: '介護主任',
-    // 12/1明, 12/2休 固定
+    // 1/1夜, 1/2明, 1/3休 固定
     schedule: { '2026-01-01': '夜', '2026-01-02': '明', '2026-01-03': '休' },
     constraints: { defaultShift: '9～18', specialRule: 'SUGIYAMA_FRIDAY', breakTime: 1 }
   },
@@ -942,7 +942,7 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
       setIsChecking(true);
       setCheckResult(null);
 
-      const response = await fetch('/api/external-shifts/december/ai-check', {
+      const response = await fetch('/api/external-shifts/january/ai-check', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
