@@ -27,6 +27,8 @@ import { ServerManagement } from "./components/ServerManagement";
 import { FacilityEventManagement } from "./components/FacilityEventManagement";
 import { DecemberShiftGeneration } from "./components/DecemberShiftGeneration";
 import { DecemberShiftSelectionModal } from "./components/DecemberShiftSelectionModal";
+import { JanuaryShiftGeneration } from "./components/JanuaryShiftGeneration";
+import { JanuaryShiftSelectionModal } from "./components/JanuaryShiftSelectionModal";
 import { ShiftGeneration } from "./components/ShiftGeneration";
 import { ShiftSelectionModal } from "./components/ShiftSelectionModal";
 import { VacationProvider } from "./contexts/VacationContext";
@@ -43,6 +45,7 @@ type AdminView =
   | "shift-editor"
   | "shift-generation"
   | "december-shift-generation"
+  | "january-shift-generation"
   | "leave-requests"
   | "work-preferences"
   | "change-proposals"
@@ -62,9 +65,11 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
   const [isDecemberSelectionModalOpen, setIsDecemberSelectionModalOpen] = useState(false);
   const [selectedDecemberShiftId, setSelectedDecemberShiftId] = useState<number | null>(null);
+  const [isJanuarySelectionModalOpen, setIsJanuarySelectionModalOpen] = useState(false);
+  const [selectedJanuaryShiftId, setSelectedJanuaryShiftId] = useState<number | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // 新しいシフト生成システム用（12月以外）
+  // 新しいシフト生成システム用（12月・1月以外）
   const [isShiftSelectionModalOpen, setIsShiftSelectionModalOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
@@ -101,7 +106,24 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     setAdminView("december-shift-generation");
   };
 
-  // 12月以外の月クリック時（年間ビューから）
+  // 1月シフト生成画面へ遷移（年間ビューから）
+  const handleJanuaryClick = () => {
+    setIsJanuarySelectionModalOpen(true);
+  };
+
+  // 1月シフト：新規作成
+  const handleJanuaryNew = () => {
+    setSelectedJanuaryShiftId(null);
+    setAdminView("january-shift-generation");
+  };
+
+  // 1月シフト：既存データから作成
+  const handleJanuaryExisting = (shiftId: number) => {
+    setSelectedJanuaryShiftId(shiftId);
+    setAdminView("january-shift-generation");
+  };
+
+  // 12月・1月以外の月クリック時（年間ビューから）
   const handleMonthClick = (year: number, month: number, existingShiftId: number | null) => {
     setSelectedYear(year);
     setSelectedMonth(month);
@@ -145,7 +167,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       case "facility-events":
         return <FacilityEventManagement />;
       case "shifts":
-        return <ShiftYearlyView onEditShift={handleEditShift} onDecemberClick={handleDecemberClick} onMonthClick={handleMonthClick} />;
+        return <ShiftYearlyView onEditShift={handleEditShift} onDecemberClick={handleDecemberClick} onJanuaryClick={handleJanuaryClick} onMonthClick={handleMonthClick} />;
       case "shift-editor":
         console.log('[AdminApp] Rendering shift-editor, editingShiftId:', editingShiftId);
         if (!editingShiftId) {
@@ -159,6 +181,8 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
         return <ShiftGeneration year={selectedYear} month={selectedMonth} initialShiftId={selectedShiftId} onBack={handleBackFromShiftGeneration} />;
       case "december-shift-generation":
         return <DecemberShiftGeneration initialShiftId={selectedDecemberShiftId} />;
+      case "january-shift-generation":
+        return <JanuaryShiftGeneration initialShiftId={selectedJanuaryShiftId} />;
       case "leave-requests":
         return <VacationManagement />;
       case "work-preferences":
@@ -389,7 +413,15 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           onSelectExisting={handleDecemberExisting}
         />
 
-        {/* Shift Selection Modal (12月以外用) */}
+        {/* January Shift Selection Modal */}
+        <JanuaryShiftSelectionModal
+          isOpen={isJanuarySelectionModalOpen}
+          onClose={() => setIsJanuarySelectionModalOpen(false)}
+          onSelectNew={handleJanuaryNew}
+          onSelectExisting={handleJanuaryExisting}
+        />
+
+        {/* Shift Selection Modal (12月・1月以外用) */}
         <ShiftSelectionModal
           isOpen={isShiftSelectionModalOpen}
           onClose={() => setIsShiftSelectionModalOpen(false)}

@@ -6,8 +6,8 @@ import { trpcClient } from "../lib/trpc";
 import { generateShiftPDF } from "../utils/ShiftPdfLogic";
 
 // --- 設定定数 ---
-const START_DATE = new Date(2025, 11, 1); // 2025年12月1日
-const END_DATE = new Date(2026, 0, 5);    // 2026年1月5日
+const START_DATE = new Date(2026, 0, 1);  // 2026年1月1日
+const END_DATE = new Date(2026, 0, 31);   // 2026年1月31日
 const FACILITY_NAME = "からふる庭園 蘇原";
 
 // ルール定数
@@ -50,72 +50,61 @@ const STAFF_RAW_DATA = [
   {
     id: '1', name: '髙野 幹成', role: 'admin', qualification: '社長',
     note: 'スポット勤務',
-    schedule: { '2025-12-11': '夜', '2025-12-12': '明', '2025-12-13': '休', '2025-12-24': '夜', '2025-12-25': '明', '2025-12-26': '休' },
+    schedule: {},
     constraints: { fixedTimeOnly: true, breakTime: 1 }
   },
-  { id: '2', name: '山口 夕香里', role: 'admin', qualification: '施設長', schedule: { '2025-12-01': '研修', '2025-12-04': '研修', '2025-12-07': '休', '2025-12-10': '研修' }, constraints: { defaultShift: '9～18', breakTime: 1 } },
+  { id: '2', name: '山口 夕香里', role: 'admin', qualification: '施設長', schedule: {}, constraints: { defaultShift: '9～18', breakTime: 1 } },
   {
     id: '3', name: '馬渕 尊至', role: 'admin', qualification: '管理者兼サ責',
     schedule: {},
     // 夜勤禁止
     constraints: { randomShifts: ['早', '8～17', '9～18'], forbiddenTypes: ['NIGHT'], breakTime: 1 }
   },
-  { id: '4', name: '松嵜 愛梨', role: 'admin', qualification: 'サ責', schedule: { '2025-12-12': '休', '2025-12-27': '冬', '2025-12-31': '夜', '2026-01-01': '明', '2026-01-02': '休' }, constraints: { defaultShift: '9～18', breakTime: 1 } },
+  { id: '4', name: '松嵜 愛梨', role: 'admin', qualification: 'サ責', schedule: { '2026-01-01': '明', '2026-01-02': '休' }, constraints: { defaultShift: '9～18', breakTime: 1 } },
   {
     id: '5', name: '杉山 美佳子', role: 'staff', qualification: '介護主任',
     // 12/1明, 12/2休 固定
-    schedule: { '2025-12-01': '明', '2025-12-02': '休', '2025-12-05': '休', '2025-12-12': '休', '2025-12-13': '冬', '2025-12-19': '休', '2025-12-26': '休', '2026-01-01': '夜', '2026-01-02': '明', '2026-01-03': '休' },
+    schedule: { '2026-01-01': '夜', '2026-01-02': '明', '2026-01-03': '休' },
     constraints: { defaultShift: '9～18', specialRule: 'SUGIYAMA_FRIDAY', breakTime: 1 }
   },
-  { id: '6', name: '梅田 英津子', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-03': '休', '2025-12-25': '休', '2025-12-28': '有給', '2025-12-29': '冬', '2025-12-30': '夜', '2025-12-31': '明', '2026-01-01': '休', '2026-01-03': '夜', '2026-01-04': '明', '2026-01-05': '休' }, constraints: { defaultShift: '9～18', forbiddenTypes: ['LATE', '11～20'], breakTime: 1 } },
-  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '休', '2025-12-06': '冬', '2025-12-07': '休', '2025-12-29': '夜', '2025-12-30': '明', '2025-12-31': '休', '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO', breakTime: 1 } },
+  { id: '6', name: '梅田 英津子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-03': '夜', '2026-01-04': '明', '2026-01-05': '休' }, constraints: { defaultShift: '9～18', forbiddenTypes: ['LATE', '11～20'], breakTime: 1 } },
+  { id: '7', name: '大橋 健一', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-02': '夜', '2026-01-03': '明', '2026-01-04': '休' }, constraints: { defaultShift: '9～18', nightShiftTarget: 9, specialRule: 'OHASHI_NIGHT_COMBO', breakTime: 1 } },
   {
     id: '8', name: '上条 やえ子', role: 'staff', qualification: '介護福祉士',
-    schedule: { '2025-12-01': '休', '2025-12-07': '休', '2025-12-14': '休', '2025-12-16': '休', '2025-12-21': '休', '2025-12-27': '休', '2025-12-28': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
+    schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
     // 時間固定 (自動早番NG)、9-15を月2回
     constraints: { workDaysPerMonth: 18, defaultShift: '8～16', monthlyShiftCounts: { '9～15': 2 }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
   },
   {
     id: '9', name: '若森 直子', role: 'staff', qualification: '介護福祉士',
-    schedule: { '2025-12-02': '休', '2025-12-03': '休', '2025-12-06': '休', '2025-12-07': '9～14', '2025-12-11': '休', '2025-12-12': '休', '2025-12-13': '休', '2025-12-14': '9～14', '2025-12-21': '休', '2025-12-22': '休', '2025-12-23': '休', '2025-12-27': '9～14', '2025-12-28': '9～14', '2025-12-29': '休', '2025-12-30': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
+    schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
     // 時間固定、8-10を月1回
     constraints: { workDaysPerMonth: 13, defaultShift: '8～14', monthlyShiftCounts: { '8～10': 1 }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
   },
-  { id: '10', name: '足立 洋子', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '9～16', '2025-12-02': '休', '2025-12-03': '休', '2025-12-04': '8～16', '2025-12-05': '休', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～16', '2025-12-09': '休', '2025-12-10': '休', '2025-12-11': '8～16', '2025-12-12': '休', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '9～16', '2025-12-16': '休', '2025-12-17': '休', '2025-12-18': '8～16', '2025-12-19': '休', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '9～16', '2025-12-23': '休', '2025-12-24': '休', '2025-12-25': '8～16', '2025-12-26': '休', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '9～16', '2025-12-30': '休', '2025-12-31': '休', '2026-01-01': '8～13', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～16' }, constraints: { fixedDayOfWeek: { 1: '9～16', 4: '8～16' }, offDayOfWeek: [0, 2, 3, 5, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '11', name: '野仲 彩香', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '8半～12半', '2025-12-02': '8半～12半', '2025-12-03': '休', '2025-12-04': '8半～13', '2025-12-05': '8半～12半', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '8半～13', '2025-12-09': '休', '2025-12-10': '8半～12半', '2025-12-11': '8半～12半', '2025-12-12': '8半～13', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '8半～13', '2025-12-16': '休', '2025-12-17': '8半～12半', '2025-12-18': '8半～12半', '2025-12-19': '8半～12半', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '8半～13', '2025-12-23': '8半～13', '2025-12-24': '8半～13', '2025-12-25': '休', '2025-12-26': '8半～12半', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2025-12-31': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '8半～13半', fixedTimeOnly: true, breakTime: 0 } },
-  { id: '12', name: '桂川 美幸', role: 'staff', qualification: '実務者研修', schedule: { '2025-12-01': '18～20', '2025-12-02': '休', '2025-12-03': '18～20', '2025-12-04': '休', '2025-12-05': '18～20', '2025-12-06': '休', '2025-12-07': '18～20', '2025-12-08': '18～20', '2025-12-09': '休', '2025-12-10': '18～20', '2025-12-11': '休', '2025-12-12': '18～20', '2025-12-13': '休', '2025-12-14': '18～20', '2025-12-15': '18～20', '2025-12-16': '休', '2025-12-17': '18～20', '2025-12-18': '休', '2025-12-19': '18～20', '2025-12-20': '休', '2025-12-21': '18～20', '2025-12-22': '18～20', '2025-12-23': '休', '2025-12-24': '18～20', '2025-12-25': '休', '2025-12-26': '18～20', '2025-12-27': '休', '2025-12-28': '18～20', '2025-12-29': '18～20', '2025-12-30': '18～20', '2025-12-31': '18～20', '2026-01-01': '18～20', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '18～20', '2026-01-05': '18～20' }, constraints: { fixedDayOfWeek: { 1: '18～20', 3: '18～20', 5: '18～20', 0: '18～20' }, offDayOfWeek: [2, 4, 6], fixedTimeOnly: true, breakTime: 0 } },
-  { id: '13', name: '加藤 広大', role: 'staff', qualification: '実務者研修', schedule: { '2025-12-01': '休', '2025-12-02': '休', '2025-12-03': '休', '2025-12-04': '11～20', '2025-12-05': '休', '2025-12-06': '11～20', '2025-12-07': '休', '2025-12-08': '休', '2025-12-09': '休', '2025-12-10': '休', '2025-12-11': '休', '2025-12-12': '休', '2025-12-13': '11～20', '2025-12-14': '休', '2025-12-15': '休', '2025-12-16': '休', '2025-12-17': '休', '2025-12-18': '11～20', '2025-12-19': '休', '2025-12-20': '11～20', '2025-12-21': '休', '2025-12-22': '休', '2025-12-23': '休', '2025-12-24': '休', '2025-12-25': '11～20', '2025-12-26': '休', '2025-12-27': '11～20', '2025-12-28': '休', '2026-01-03': '16～20', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { fixedDayOfWeek: { 3: '11～20', 6: '11～20' }, offDayOfWeek: [2], defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '14', name: '湯本 智子', role: 'staff', qualification: '実務者研修', schedule: { '2025-12-03': '休', '2025-12-05': '休', '2025-12-06': '9～18', '2025-12-07': '9～18', '2025-12-10': '休', '2025-12-11': '休', '2025-12-13': '9～18', '2025-12-14': '9～18', '2025-12-17': '休', '2025-12-19': '休', '2025-12-20': '9～18', '2025-12-21': '9～18', '2025-12-27': '9～18', '2025-12-28': '9～18' }, constraints: { defaultShift: '9～18', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '15', name: '楠 美佐', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '9～16', '2025-12-02': '休', '2025-12-03': '休', '2025-12-04': '9～12', '2025-12-05': '13～16', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～16', '2025-12-09': '休', '2025-12-10': '休', '2025-12-11': '休', '2025-12-12': '13～16', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '9～16', '2025-12-16': '休', '2025-12-17': '休', '2025-12-18': '9～16', '2025-12-19': '13～16', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '9～12', '2025-12-23': '休', '2025-12-24': '休', '2025-12-25': '13～16', '2025-12-26': '13～16', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2025-12-31': '9～12', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '9～12', '2026-01-04': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6, 2], defaultShift: '9～16', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '16', name: '平井 英子', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '休', '2025-12-02': '休', '2025-12-03': '10～16', '2025-12-04': '休', '2025-12-05': '10～16', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '休', '2025-12-09': '休', '2025-12-10': '10～16', '2025-12-11': '休', '2025-12-12': '10～16', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '休', '2025-12-16': '休', '2025-12-17': '13～16', '2025-12-18': '休', '2025-12-19': '10～16', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '休', '2025-12-23': '休', '2025-12-24': '10～16', '2025-12-25': '休', '2025-12-26': '10～16', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2025-12-31': '10～16', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { fixedDayOfWeek: { 3: '10～16', 5: '10～16' }, offDayOfWeek: [0, 1, 2, 4, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 0.5 } } },
-  { id: '17', name: '海野 はるか', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '休', '2025-12-02': '9～14', '2025-12-03': '9～14', '2025-12-04': '休', '2025-12-05': '9～14', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～13', '2025-12-09': '9～13', '2025-12-10': '休', '2025-12-11': '9～13', '2025-12-12': '9～13', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '9～14', '2025-12-16': '休', '2025-12-17': '9～12', '2025-12-18': '9～14', '2025-12-19': '9～14', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '9～14', '2025-12-23': '9～14', '2025-12-24': '9～14', '2025-12-25': '休', '2025-12-26': '9～14', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '9～14', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], defaultShift: '9～14', fixedTimeOnly: true, breakTime: { threshold: 5, duration: 0.5 } } },
+  { id: '10', name: '足立 洋子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '8～13', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～16' }, constraints: { fixedDayOfWeek: { 1: '9～16', 4: '8～16' }, offDayOfWeek: [0, 2, 3, 5, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '11', name: '野仲 彩香', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '8半～13半', fixedTimeOnly: true, breakTime: 0 } },
+  { id: '12', name: '桂川 美幸', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '18～20', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '18～20', '2026-01-05': '18～20' }, constraints: { fixedDayOfWeek: { 1: '18～20', 3: '18～20', 5: '18～20', 0: '18～20' }, offDayOfWeek: [2, 4, 6], fixedTimeOnly: true, breakTime: 0 } },
+  { id: '13', name: '加藤 広大', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-03': '16～20', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { fixedDayOfWeek: { 3: '11～20', 6: '11～20' }, offDayOfWeek: [2], defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '14', name: '湯本 智子', role: 'staff', qualification: '実務者研修', schedule: {}, constraints: { defaultShift: '9～18', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '15', name: '楠 美佐', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '9～12', '2026-01-04': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6, 2], defaultShift: '9～16', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '16', name: '平井 英子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { fixedDayOfWeek: { 3: '10～16', 5: '10～16' }, offDayOfWeek: [0, 1, 2, 4, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 0.5 } } },
+  { id: '17', name: '海野 はるか', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-03': '休', '2026-01-04': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], defaultShift: '9～14', fixedTimeOnly: true, breakTime: { threshold: 5, duration: 0.5 } } },
   {
     id: '18', name: '山田 明美', role: 'staff', qualification: '介護福祉士',
-    schedule: { '2025-12-02': '休', '2025-12-04': '休', '2025-12-06': '9～15', '2025-12-07': '休', '2025-12-09': '休', '2025-12-16': '休', '2025-12-18': '休', '2025-12-25': '休', '2025-12-30': '休', '2026-01-02': '休' },
+    schedule: { '2026-01-02': '休' },
     // ★完全固定: 9～15のみ, 早番自動割り当てNG
     constraints: { defaultShift: '9～15', workDaysPerMonth: 15, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
   },
-  { id: '19', name: '足立 豊子', role: 'staff', qualification: '実務者研修', schedule: { '2025-12-03': '休', '2025-12-06': '有給', '2025-12-07': '休', '2025-12-09': '休', '2025-12-10': '休', '2025-12-18': '9～17', '2025-12-24': '休', '2025-12-25': '9～17', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2026-01-01': '休', '2026-01-02': '有給', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '9～17', workDaysPerMonth: 18, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '20', name: '関田 あゆみ', role: 'staff', qualification: '実務者研修', schedule: { '2025-12-01': '9～15', '2025-12-02': '休', '2025-12-03': '有給', '2025-12-04': '9～15', '2025-12-05': '9～16', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～15', '2025-12-09': '9～15', '2025-12-10': '9～13', '2025-12-11': '9～13', '2025-12-12': '9～13', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '9～13', '2025-12-16': '休', '2025-12-17': '有給', '2025-12-18': '9～15', '2025-12-19': '9～16', '2025-12-21': '休', '2025-12-22': '9～15', '2025-12-25': '休', '2025-12-27': '休', '2025-12-28': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '9～12', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], fixedDayOfWeek: { 1: '9～15', 2: '9～15', 4: '9～15', 3: '9～16', 5: '9～16' }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '21', name: '長山 真梨奈', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '休', '2025-12-02': '9～14', '2025-12-03': '9～14', '2025-12-04': '9～14', '2025-12-05': '休', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～14', '2025-12-09': '9～14', '2025-12-10': '休', '2025-12-11': '9～12半', '2025-12-12': '9～12半', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '9～13', '2025-12-16': '休', '2025-12-17': '9～13', '2025-12-18': '9～13', '2025-12-19': '休', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '9～14', '2025-12-23': '9～14', '2025-12-24': '休', '2025-12-25': '9～14', '2025-12-26': '9～14', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2025-12-31': '9～12半', '2026-01-01': '休', '2026-01-02': '9～12半', '2026-01-03': '9～12半', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], defaultShift: '9～13半', fixedTimeOnly: true, breakTime: 0 } },
-  { id: '22', name: '近藤 由美子', role: 'staff', qualification: '介護福祉士', schedule: { '2025-12-01': '休', '2025-12-02': '休', '2025-12-03': '休', '2025-12-04': '休', '2025-12-05': '9～13', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '休', '2025-12-09': '休', '2025-12-10': '休', '2025-12-11': '休', '2025-12-12': '9～13', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '休', '2025-12-16': '休', '2025-12-17': '休', '2025-12-18': '休', '2025-12-19': '9～13', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '休', '2025-12-23': '休', '2025-12-24': '休', '2025-12-25': '休', '2025-12-26': '9～13', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '休', '2025-12-30': '休', '2025-12-31': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { workDaysPerWeek: 1, defaultShift: '9～13', fixedTimeOnly: true, breakTime: 0 } },
+  { id: '19', name: '足立 豊子', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '休', '2026-01-02': '有給', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '9～17', workDaysPerMonth: 18, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '20', name: '関田 あゆみ', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '9～12', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], fixedDayOfWeek: { 1: '9～15', 2: '9～15', 4: '9～15', 3: '9～16', 5: '9～16' }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '21', name: '長山 真梨奈', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '9～12半', '2026-01-03': '9～12半', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], defaultShift: '9～13半', fixedTimeOnly: true, breakTime: 0 } },
+  { id: '22', name: '近藤 由美子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { workDaysPerWeek: 1, defaultShift: '9～13', fixedTimeOnly: true, breakTime: 0 } },
   {
     id: '23', name: '大堀SHIRLEY TAN', role: 'staff', qualification: '初任者研修',
-    schedule: {
-      '2025-12-01': '休', '2025-12-02': '9～18', '2025-12-03': '9～18', '2025-12-04': '9～18', '2025-12-05': '9～18',
-      '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '9～18', '2025-12-09': '9～18', '2025-12-10': '9～18', '2025-12-11': '9～18', '2025-12-12': '9～18',
-      '2025-12-13': '休', '2025-12-14': '休',
-      '2025-12-15': '9～18', '2025-12-16': '9～18', '2025-12-17': '9～18', '2025-12-18': '休',
-      '2025-12-19': '休', '2025-12-20': '休', '2025-12-21': '休',
-      '2025-12-22': '9～18', '2025-12-23': '9～18', '2025-12-24': '休', '2025-12-25': '9～17', '2025-12-26': '9～18',
-      '2025-12-27': '休', '2025-12-28': '休',
-      '2025-12-29': '9～18', '2025-12-30': '9～14',
-      '2025-12-31': '休', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休',
-      '2026-01-05': '9～18'
-    }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], workDaysPerWeek: 4, defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
+    schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～18' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], workDaysPerWeek: 4, defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
   },
-  { id: '24', name: '宝本 龍騎', role: 'staff', qualification: '初任者研修', schedule: { '2025-12-01': '10～15', '2025-12-02': '休', '2025-12-03': '10～14', '2025-12-04': '休', '2025-12-05': '休', '2025-12-06': '休', '2025-12-07': '10～14', '2025-12-08': '休', '2025-12-09': '10～14', '2025-12-10': '休', '2025-12-11': '休', '2025-12-12': '10～14', '2025-12-13': '10～14', '2025-12-14': '休', '2025-12-15': '休', '2025-12-16': '休', '2025-12-17': '10～15', '2025-12-18': '10～14', '2025-12-19': '休', '2025-12-20': '10～15', '2025-12-21': '10～14', '2025-12-22': '休', '2025-12-23': '休', '2025-12-24': '休', '2025-12-25': '10～14', '2025-12-26': '休', '2025-12-27': '10～14', '2025-12-28': '休', '2025-12-29': '10～14', '2025-12-30': '10～14', '2025-12-31': '休', '2026-01-01': '10～15', '2026-01-02': '10～15', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '10～15' }, constraints: { defaultShift: '10～14', workDaysPerWeek: 3, fixedTimeOnly: true, breakTime: 0 } },
-  { id: '25', name: '岩崎 亜友美', role: 'staff', qualification: '有料職員', schedule: { '2025-12-01': '8～17', '2025-12-02': '8～17', '2025-12-03': '休', '2025-12-04': '休', '2025-12-05': '休', '2025-12-06': '8～17', '2025-12-07': '休', '2025-12-08': '休', '2025-12-09': '8～17', '2025-12-10': '8～17', '2025-12-11': '休', '2025-12-12': '休', '2025-12-13': '8～17', '2025-12-14': '休', '2025-12-15': '休', '2025-12-16': '8～17', '2025-12-17': '休', '2025-12-18': '8～17', '2025-12-19': '休', '2025-12-20': '8～17', '2025-12-21': '休', '2025-12-22': '休', '2025-12-23': '8～17', '2025-12-24': '休', '2025-12-25': '休', '2025-12-26': '休', '2025-12-27': '8～17', '2025-12-28': '休', '2025-12-29': '8～17', '2025-12-30': '8～17', '2025-12-31': '休', '2026-01-01': '8～17', '2026-01-02': '休', '2026-01-03': '8～17', '2026-01-04': '休', '2026-01-05': '8～17' }, constraints: { offDayOfWeek: [0, 3, 6], defaultShift: '8～17', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '24', name: '宝本 龍騎', role: 'staff', qualification: '初任者研修', schedule: { '2026-01-01': '10～15', '2026-01-02': '10～15', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '10～15' }, constraints: { defaultShift: '10～14', workDaysPerWeek: 3, fixedTimeOnly: true, breakTime: 0 } },
+  { id: '25', name: '岩崎 亜友美', role: 'staff', qualification: '有料職員', schedule: { '2026-01-01': '8～17', '2026-01-02': '休', '2026-01-03': '8～17', '2026-01-04': '休', '2026-01-05': '8～17' }, constraints: { offDayOfWeek: [0, 3, 6], defaultShift: '8～17', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   {
     id: '26', name: '伊藤 美穂', role: 'staff', qualification: '初任者研修',
     // 現在勤務できない状態（全日程空白でロック）
@@ -123,7 +112,7 @@ const STAFF_RAW_DATA = [
     schedule: {},
     constraints: { offDayOfWeek: [0, 1, 3, 5], fixedDayOfWeek: { 2: '11半～17', 4: '11半～17', 6: '11半～17' }, fixedTimeOnly: true, breakTime: 0 }
   },
-  { id: '27', name: '淺野 穂菜美', role: 'staff', qualification: '事務員', schedule: { '2025-12-01': '8～16半', '2025-12-02': '8～16半', '2025-12-03': '8～16半', '2025-12-04': '休', '2025-12-05': '8～16半', '2025-12-06': '休', '2025-12-07': '休', '2025-12-08': '8～16半', '2025-12-09': '8～16半', '2025-12-10': '8～16半', '2025-12-11': '休', '2025-12-12': '8～16半', '2025-12-13': '休', '2025-12-14': '休', '2025-12-15': '8～16半', '2025-12-16': '8～16半', '2025-12-17': '休', '2025-12-18': '休', '2025-12-19': '8～16半', '2025-12-20': '休', '2025-12-21': '休', '2025-12-22': '8～16半', '2025-12-23': '8～16半', '2025-12-24': '休', '2025-12-25': '休', '2025-12-26': '8～16半', '2025-12-27': '休', '2025-12-28': '休', '2025-12-29': '8～16半', '2025-12-30': '8～16半', '2025-12-31': '8～16半', '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '8～16半', '2026-01-04': '8～16半', '2026-01-05': '8～16半' }, constraints: { offHolidays: true, offDayOfWeek: [0, 4, 6], defaultShift: '8～16半', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '27', name: '淺野 穂菜美', role: 'staff', qualification: '事務員', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '8～16半', '2026-01-04': '8～16半', '2026-01-05': '8～16半' }, constraints: { offHolidays: true, offDayOfWeek: [0, 4, 6], defaultShift: '8～16半', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
 ];
 
 // シフトの種類定義
@@ -519,11 +508,11 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 };
 
 // --- コンポーネント本体 ---
-interface DecemberShiftGenerationProps {
+interface JanuaryShiftGenerationProps {
   initialShiftId?: number | null;
 }
 
-export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerationProps = {}) {
+export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGenerationProps = {}) {
   const toast = useToast();
   const [dates] = useState(generateDateRange(START_DATE, END_DATE));
   const [staffList] = useState(STAFF_RAW_DATA);
@@ -645,12 +634,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         return;
       }
 
-      console.log(`[DecemberShiftGeneration] Saving ${entries.length} shift entries...`);
+      console.log(`[JanuaryShiftGeneration] Saving ${entries.length} shift entries...`);
 
       let result;
       if (saveMode === 'overwrite' && loadedShiftId) {
         // 上書き保存: 既存のシフト詳細を削除してから新規保存（同じID）
-        console.log(`[DecemberShiftGeneration] Overwriting shift ID: ${loadedShiftId}`);
+        console.log(`[JanuaryShiftGeneration] Overwriting shift ID: ${loadedShiftId}`);
 
         // まず既存のシフト詳細を削除（deleteByShiftIdが必要、またはサーバー側で対応）
         // 今回は簡易的に、shiftIdを指定してsaveStandaloneで上書き保存
@@ -675,7 +664,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           entries: entries
         });
 
-        console.log(`[DecemberShiftGeneration] Save result:`, result);
+        console.log(`[JanuaryShiftGeneration] Save result:`, result);
         toast.success(`シフトを保存しました (${entries.length}件)`);
 
         // 新規保存の場合、loadedShiftIdを更新
@@ -687,7 +676,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       setIsSaveModalOpen(false);
     } catch (error: any) {
-      console.error('[DecemberShiftGeneration] Save failed:', error);
+      console.error('[JanuaryShiftGeneration] Save failed:', error);
       toast.error("保存に失敗しました", { description: error.message });
     } finally {
       setIsSaving(false);
@@ -725,14 +714,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     const loadInitialShiftData = async () => {
       try {
         setIsLoadingInitialData(true);
-        console.log('[DecemberShiftGeneration] Loading shift data for ID:', initialShiftId);
+        console.log('[JanuaryShiftGeneration] Loading shift data for ID:', initialShiftId);
 
         // シフト詳細を取得
         const shiftData = await trpcClient.shifts.getById.query({ id: initialShiftId });
-        console.log('[DecemberShiftGeneration] Shift data loaded:', shiftData);
+        console.log('[JanuaryShiftGeneration] Shift data loaded:', shiftData);
 
         if (!shiftData || !shiftData.shiftDetails || shiftData.shiftDetails.length === 0) {
-          console.error('[DecemberShiftGeneration] No shift details found');
+          console.error('[JanuaryShiftGeneration] No shift details found');
           toast.error("シフトデータが見つかりませんでした");
           setLoadedShiftId(initialShiftId); // エラーでも再試行を防ぐ
           return;
@@ -741,7 +730,7 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         // シフト名を保存
         setLoadedShiftName(shiftData.name || "");
 
-        console.log('[DecemberShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
+        console.log('[JanuaryShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
 
         // shiftDetails を shifts オブジェクトに変換
         const newShifts: any = {};
@@ -803,14 +792,14 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
           };
         }
 
-        console.log('[DecemberShiftGeneration] Matched:', matchedCount, 'Unmatched employees:', unmatchedEmployees);
+        console.log('[JanuaryShiftGeneration] Matched:', matchedCount, 'Unmatched employees:', unmatchedEmployees);
         setShifts(newShifts);
         // 初期値を保存（元に戻したかどうかの判定に使用）
         setOriginalShifts(JSON.parse(JSON.stringify(newShifts)));
         setLoadedShiftId(initialShiftId); // 読み込み完了をマーク
         toast.success(`シフトデータを読み込みました (${shiftData.name})`);
       } catch (error: any) {
-        console.error("[DecemberShiftGeneration] Failed to load initial shift data:", error);
+        console.error("[JanuaryShiftGeneration] Failed to load initial shift data:", error);
         toast.error("シフトデータの読み込みに失敗しました", { description: error.message });
         setLoadedShiftId(initialShiftId); // エラーでも再試行を防ぐ
       } finally {
