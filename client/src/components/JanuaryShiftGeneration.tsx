@@ -901,7 +901,7 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
         startDate: START_DATE,
         endDate: END_DATE,
         title: `${FACILITY_NAME} 勤務表`,
-        periodString: '2025年12月 〜 2026年1月5日',
+        periodString: '2026年1月1日 〜 2026年1月31日',
       };
 
       await generateShiftPDF([], metaData);
@@ -997,8 +997,8 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
     });
 
     const shiftData = {
-      year: 2025,
-      month: 12,
+      year: 2026,
+      month: 1,
       shifts: shiftsArray
     };
 
@@ -1446,11 +1446,11 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
       staffList.forEach(staff => {
         let specialShiftCount = 0;
 
-        // 正社員の場合、12月の現在の休日数をカウント
+        // 正社員の場合、1月の現在の休日数をカウント
         let currentOffDays = 0;
         if (FULL_TIME_STAFF_IDS.includes(staff.id)) {
           dates.forEach(date => {
-            if (date.getMonth() !== 11) return; // 12月のみ
+            if (date.getMonth() !== 0) return; // 1月のみ（0 = 1月）
             const key = `${staff.id}_${getIsoDate(date)}`;
             const cell = newShifts[key];
             if (cell && (cell.type === 'OFF' || cell.customText === '休')) {
@@ -2681,7 +2681,7 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
                     ? 'bg-gray-100 text-gray-600 cursor-not-allowed border-gray-200'
                     : 'border-gray-300'
                 }`}
-                placeholder="例: 12月シフト_20251122_001"
+                placeholder="例: 1月シフト_20260115_001"
                 autoFocus={!loadedShiftId}
               />
             </div>
