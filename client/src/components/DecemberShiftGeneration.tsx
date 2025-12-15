@@ -312,8 +312,8 @@ const calculateBreakTime = (workHours: number, staffId: string): number => {
       const threshold = rule.threshold ?? 6;
       const duration = rule.duration ?? 1;
 
-      // 平井様（ID: 21）のみ特殊処理: 6時間以上で休憩30分
-      if (staffId === '21') {
+      // 平井様（ID: 16）のみ特殊処理: 6時間以上で休憩30分
+      if (staffId === '16') {
         return workHours >= threshold ? duration : 0;
       }
 
