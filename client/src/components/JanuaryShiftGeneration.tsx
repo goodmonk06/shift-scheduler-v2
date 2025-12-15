@@ -240,8 +240,8 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
     }
 
     if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === '冬' || type === 'DAY' || type === 'EARLY' || type === 'LATE') {
-      // 定型シフトは8時間固定（休憩時間は別途控除）
-      const grossHours = 8;
+      // 定型シフトは9時間勤務・休憩1時間（実労働8時間）
+      const grossHours = 9;
       const breakTime = calculateBreakTime(grossHours, staffId);
       hours += grossHours - breakTime;
     } else {
