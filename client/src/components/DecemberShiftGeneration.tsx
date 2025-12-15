@@ -135,6 +135,7 @@ const SHIFT_TYPES = {
   OFF: { id: 'X', label: '休', text: '休', color: 'text-red-600', bgColor: 'bg-red-100' },
   HOPE: { id: 'H', label: '希', text: '有', color: 'text-orange-800', bgColor: 'bg-orange-200' },
   WINTER: { id: 'W', label: '冬', text: '冬', color: 'text-blue-800', bgColor: 'bg-blue-200' },
+  FREE: { id: 'F', label: 'free', text: 'free', color: 'text-gray-600', bgColor: 'bg-gray-100' },
 };
 
 const SHIFT_PRESETS = [
@@ -145,6 +146,7 @@ const SHIFT_PRESETS = [
   { text: '早', type: 'EARLY' },
   { text: '遅', type: 'LATE' },
   { text: '有', type: 'HOPE' },
+  { text: 'free', type: 'FREE' },
 ];
 
 const TIME_PRESETS = [
@@ -256,7 +258,7 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       return;
     }
 
-    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === '冬' || type === 'DAY' || type === 'EARLY' || type === 'LATE') {
+    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === '冬' || text === 'free' || type === 'DAY' || type === 'EARLY' || type === 'LATE' || type === 'FREE') {
       // 定型シフトは9時間勤務・休憩1時間（実労働8時間）
       const grossHours = 9;
       const breakTime = calculateBreakTime(grossHours, staffId);
@@ -337,8 +339,8 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   if (text === '夜' || type === 'NIGHT') return { start: 16, end: 24 };
   // 「明」は0時～9時勤務
   if (text === '明') return { start: 0, end: 9 };
-  // 休み扱い
-  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修') return null;
+  // 休み扱い（配置判定に含めない）
+  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修' || text === 'free' || type === 'FREE') return null;
 
   // 時間パターンマッチを優先（例: 9～15、8半～13半など）
   const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
