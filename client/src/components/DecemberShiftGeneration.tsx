@@ -1183,6 +1183,16 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   };
 
   const completeGeneration = () => {
+    // AI生成前に既存の管理者ロックを保存（手動でロックしたセルを保護）
+    const existingLocks: Record<string, any> = {};
+    Object.keys(shifts).forEach(key => {
+      const cell = shifts[key];
+      if (cell && cell.isLocked) {
+        existingLocks[key] = { ...cell };
+      }
+    });
+    console.log('[DecemberShiftGeneration] Preserved', Object.keys(existingLocks).length, 'manually locked cells');
+
     const newShifts: any = {};
     const nightCandidates = getNightShiftCandidates(staffList);
 
@@ -1566,6 +1576,12 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
       // 3. 早番をちょうど1人に正規化
       normalizeEarlyShiftPerDay(newShifts, dates);
+
+      // 既存の管理者ロックを復元（手動でロックしたセルを保護）
+      Object.keys(existingLocks).forEach(key => {
+        newShifts[key] = existingLocks[key];
+      });
+      console.log('[DecemberShiftGeneration] Restored', Object.keys(existingLocks).length, 'manually locked cells');
 
       setShifts(newShifts);
       // 初期値を保存（元に戻したかどうかの判定に使用）
