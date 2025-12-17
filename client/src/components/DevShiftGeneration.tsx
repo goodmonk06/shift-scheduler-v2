@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Calendar, Printer, User, Settings, Crown, RefreshCw, X, Save, Clock, Lock, Unlock, ZoomIn, ZoomOut, MousePointer2, AlertTriangle, Sparkles, CheckCircle2, XCircle, Loader2, Undo } from 'lucide-react';
 import { useToast } from "../hooks/useToast";
 
 import { trpcClient } from "../lib/trpc";
@@ -519,6 +519,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
   const [dates] = useState(generateDateRange(START_DATE, END_DATE));
   const [staffList] = useState(STAFF_RAW_DATA);
   const [shifts, setShifts] = useState<any>({});
+  const [previousShifts, setPreviousShifts] = useState<any>(null); // AI生成前の状態を保存（アンドゥ用）
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
   const [loadedShiftId, setLoadedShiftId] = useState<number | null>(null);
@@ -999,6 +1000,10 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
   };
 
   const startFakeAIGeneration = () => {
+    // AI生成前の状態を保存（アンドゥ用）
+    setPreviousShifts(JSON.parse(JSON.stringify(shifts)));
+    console.log('[DevShiftGeneration] Saved current state before AI generation');
+
     setIsGenerating(true);
     setProgress(0);
     setLoadingStage('初期化中...');
@@ -1026,6 +1031,19 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
         return newProgress;
       });
     }, 50);
+  };
+
+  // AI生成を一つ前に戻す
+  const handleUndo = () => {
+    if (!previousShifts) {
+      toast.error('戻せる状態がありません');
+      return;
+    }
+
+    setShifts(previousShifts);
+    setPreviousShifts(null);
+    toast.success('AI生成前の状態に戻しました');
+    console.log('[DevShiftGeneration] Restored previous state');
   };
 
   const normalizeShiftText = (text: string): string => {
@@ -2092,6 +2110,20 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
           >
             <Settings size={14} className="animate-spin-slow text-indigo-600" />
             AI自動生成
+          </button>
+
+          <button
+            onClick={handleUndo}
+            disabled={!previousShifts}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg transition-all shadow-lg hover:shadow-xl text-xs font-extrabold border border-transparent ${
+              previousShifts
+                ? 'bg-orange-500 text-white hover:bg-orange-600 hover:border-orange-300'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+            title={previousShifts ? 'AI生成前の状態に戻す' : '戻せる状態がありません'}
+          >
+            <Undo size={14} />
+            一つ前に戻す
           </button>
 
           <button
