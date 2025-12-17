@@ -303,9 +303,17 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getShiftByYearMonth(input.year, input.month);
       }),
-    list: protectedProcedure.query(async () => {
-      return await db.getAllShifts();
-    }),
+    list: protectedProcedure
+      .input(z.object({ isDevelopment: z.boolean().optional() }).optional())
+      .query(async ({ input }) => {
+        const allShifts = await db.getAllShifts();
+        // isDevelopmentが指定された場合のみフィルタリング
+        if (input?.isDevelopment !== undefined) {
+          return allShifts.filter(s => s.isDevelopment === input.isDevelopment);
+        }
+        // デフォルトは本番シフトのみ（後方互換性）
+        return allShifts.filter(s => !s.isDevelopment);
+      }),
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
@@ -321,6 +329,7 @@ export const appRouter = router({
         parentShiftId: z.number().optional(), // 親シフトID
         leaveRequestDeadline: z.string().optional(), // ISO文字列として受け取る
         additionalRequestDeadline: z.string().optional(), // ISO文字列として受け取る
+        isDevelopment: z.boolean().optional(), // 開発専用シフトフラグ
       }))
       .mutation(async ({ input, ctx }) => {
         return await db.createShift({
@@ -528,6 +537,7 @@ export const appRouter = router({
           editedInActualMode: z.boolean().optional(), // 実際の稼働シフトモードで編集されたかどうか
         })),
         overwriteShiftId: z.number().optional(), // 上書き保存用のシフトID
+        isDevelopment: z.boolean().optional(), // 開発専用シフトフラグ
       }))
       .mutation(async ({ input, ctx }) => {
         let newShiftId: number;
@@ -553,6 +563,7 @@ export const appRouter = router({
             status: "ai_generated", // Treat as AI generated so it can be edited
             generatedBy: "ai",
             userId: ctx.user?.id || null,
+            isDevelopment: input.isDevelopment || false,
             createdAt: new Date(),
             updatedAt: new Date(),
           });

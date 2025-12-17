@@ -30,16 +30,19 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick, onJanuaryClick, 
   const [shifts, setShifts] = useState<ApiShift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'production' | 'development'>('production'); // タブ状態
 
-  // 全シフトを読み込む
+  // 全シフトを読み込む（activeTabが変わったら再読み込み）
   useEffect(() => {
     loadShifts();
-  }, []);
+  }, [activeTab]);
 
   const loadShifts = async () => {
     try {
       setIsLoading(true);
-      const data = await shiftService.getAllShifts();
+      // activeTabに応じてフィルタリング
+      const isDevelopment = activeTab === 'development';
+      const data = await shiftService.getAllShifts(isDevelopment);
       setShifts(data);
     } catch (error) {
       console.error('Failed to load shifts:', error);
@@ -228,6 +231,30 @@ export function ShiftYearlyView({ onEditShift, onDecemberClick, onJanuaryClick, 
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
+      </div>
+
+      {/* タブ切り替え */}
+      <div className="flex items-center gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('production')}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+            activeTab === 'production'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-gray-700'
+          }`}
+        >
+          本番シフト
+        </button>
+        <button
+          onClick={() => setActiveTab('development')}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+            activeTab === 'development'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-gray-700'
+          }`}
+        >
+          開発専用シフト
+        </button>
       </div>
 
       {/* 12ヶ月のグリッド */}

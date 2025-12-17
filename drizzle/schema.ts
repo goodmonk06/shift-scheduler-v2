@@ -182,6 +182,7 @@ export const shifts: any = mysqlTable("shifts", {
   notificationsSent: json("notificationsSent"), // 送信済み通知の記録 {statusChange: [], deadline: [], etc}
   isArchived: boolean("isArchived").default(false).notNull(),
   archivedAt: timestamp("archivedAt"),
+  isDevelopment: boolean("isDevelopment").default(false).notNull(), // 開発専用シフトフラグ（本番と分離）
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

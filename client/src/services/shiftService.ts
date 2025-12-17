@@ -29,8 +29,9 @@ export interface ShiftService {
 
   /**
    * 全シフト一覧を取得
+   * @param isDevelopment 開発専用シフトを取得する場合はtrue、本番シフトを取得する場合はfalse
    */
-  getAllShifts(): Promise<Shift[]>;
+  getAllShifts(isDevelopment?: boolean): Promise<Shift[]>;
 
   /**
    * 新しいシフトを作成
@@ -117,7 +118,8 @@ class ShiftServiceMock implements ShiftService {
     return shifts.find(s => s.id === id) || null;
   }
 
-  async getAllShifts(): Promise<Shift[]> {
+  async getAllShifts(isDevelopment?: boolean): Promise<Shift[]> {
+    // モック実装ではisDevelopmentフィルタリングはスキップ（すべて本番として扱う）
     return this.getStoredShifts();
   }
 
@@ -223,9 +225,9 @@ class ShiftServiceProduction implements ShiftService {
     }
   }
 
-  async getAllShifts(): Promise<Shift[]> {
+  async getAllShifts(isDevelopment?: boolean): Promise<Shift[]> {
     try {
-      const result = await trpcClient.shifts.list.query();
+      const result = await trpcClient.shifts.list.query({ isDevelopment });
       // tRPC client returns data directly, but ensure it's an array
       return Array.isArray(result) ? (result as any) : [];
     } catch (error) {
