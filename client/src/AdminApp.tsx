@@ -29,6 +29,8 @@ import { DecemberShiftGeneration } from "./components/DecemberShiftGeneration";
 import { DecemberShiftSelectionModal } from "./components/DecemberShiftSelectionModal";
 import { JanuaryShiftGeneration } from "./components/JanuaryShiftGeneration";
 import { JanuaryShiftSelectionModal } from "./components/JanuaryShiftSelectionModal";
+import { DevShiftGeneration } from "./components/DevShiftGeneration";
+import { DevShiftSelectionModal } from "./components/DevShiftSelectionModal";
 import { ShiftGeneration } from "./components/ShiftGeneration";
 import { ShiftSelectionModal } from "./components/ShiftSelectionModal";
 import { VacationProvider } from "./contexts/VacationContext";
@@ -46,6 +48,7 @@ type AdminView =
   | "shift-generation"
   | "december-shift-generation"
   | "january-shift-generation"
+  | "dev-shift-generation"
   | "leave-requests"
   | "work-preferences"
   | "change-proposals"
@@ -74,6 +77,12 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
+
+  // 開発専用シフト用
+  const [isDevShiftSelectionModalOpen, setIsDevShiftSelectionModalOpen] = useState(false);
+  const [devShiftYear, setDevShiftYear] = useState<number>(new Date().getFullYear());
+  const [devShiftMonth, setDevShiftMonth] = useState<number>(new Date().getMonth() + 1);
+  const [devShiftSourceId, setDevShiftSourceId] = useState<number | null>(null); // コピー元の本番シフトID
 
   // シフト編集画面へ遷移
   const handleEditShift = (shiftId: string) => {
@@ -129,6 +138,26 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     setAdminView("january-shift-generation");
   };
 
+  // 開発専用シフト：月クリック時（開発タブから）
+  const handleDevShiftClick = (year: number, month: number) => {
+    setDevShiftYear(year);
+    setDevShiftMonth(month);
+    setDevShiftSourceId(null);
+    setIsDevShiftSelectionModalOpen(true);
+  };
+
+  // 開発専用シフト：新規作成
+  const handleDevShiftNew = () => {
+    setDevShiftSourceId(null);
+    setAdminView("dev-shift-generation");
+  };
+
+  // 開発専用シフト：本番データをコピーして作成
+  const handleDevShiftCopy = (sourceShiftId: number) => {
+    setDevShiftSourceId(sourceShiftId);
+    setAdminView("dev-shift-generation");
+  };
+
   // 12月・1月以外の月クリック時（年間ビューから）
   const handleMonthClick = (year: number, month: number, existingShiftId: number | null) => {
     setSelectedYear(year);
@@ -173,7 +202,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       case "facility-events":
         return <FacilityEventManagement />;
       case "shifts":
-        return <ShiftYearlyView onEditShift={handleEditShift} onDecemberClick={handleDecemberClick} onJanuaryClick={handleJanuaryClick} onMonthClick={handleMonthClick} />;
+        return <ShiftYearlyView onEditShift={handleEditShift} onDecemberClick={handleDecemberClick} onJanuaryClick={handleJanuaryClick} onMonthClick={handleMonthClick} onDevShiftClick={handleDevShiftClick} />;
       case "shift-editor":
         console.log('[AdminApp] Rendering shift-editor, editingShiftId:', editingShiftId);
         if (!editingShiftId) {
@@ -189,6 +218,8 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
         return <DecemberShiftGeneration initialShiftId={selectedDecemberShiftId} />;
       case "january-shift-generation":
         return <JanuaryShiftGeneration initialShiftId={selectedJanuaryShiftId} />;
+      case "dev-shift-generation":
+        return <DevShiftGeneration year={devShiftYear} month={devShiftMonth} initialShiftId={devShiftSourceId} />;
       case "leave-requests":
         return <VacationManagement />;
       case "work-preferences":
@@ -426,6 +457,16 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           onSelectNew={handleJanuaryNew}
           onSelectExisting={handleJanuaryExisting}
           onSelectInherit={handleJanuaryInherit}
+        />
+
+        {/* Dev Shift Selection Modal */}
+        <DevShiftSelectionModal
+          isOpen={isDevShiftSelectionModalOpen}
+          onClose={() => setIsDevShiftSelectionModalOpen(false)}
+          year={devShiftYear}
+          month={devShiftMonth}
+          onSelectNew={handleDevShiftNew}
+          onSelectCopy={handleDevShiftCopy}
         />
 
         {/* Shift Selection Modal (12月・1月以外用) */}

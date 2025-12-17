@@ -733,32 +733,28 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
     const loadInitialShiftData = async () => {
       try {
         setIsLoadingInitialData(true);
-        console.log('[JanuaryShiftGeneration] Loading shift data for ID:', initialShiftId);
+        console.log('[DevShiftGeneration] Loading shift data for ID:', initialShiftId);
 
         // シフト詳細を取得
         const shiftData = await trpcClient.shifts.getById.query({ id: initialShiftId });
-        console.log('[JanuaryShiftGeneration] Shift data loaded:', shiftData);
+        console.log('[DevShiftGeneration] Shift data loaded:', shiftData);
 
         if (!shiftData || !shiftData.shiftDetails || shiftData.shiftDetails.length === 0) {
-          console.error('[JanuaryShiftGeneration] No shift details found');
+          console.error('[DevShiftGeneration] No shift details found');
           toast.error("シフトデータが見つかりませんでした");
           setLoadedShiftId(initialShiftId); // エラーでも再試行を防ぐ
           return;
         }
 
-        // 12月データからの引き継ぎモードかどうかをチェック
-        const isInherit = shiftData.month === 12;
-        setIsInheritMode(isInherit);
+        // 開発専用シフト：本番データからのコピーモード
+        const isCopyMode = true; // 常にコピーモード
+        setIsInheritMode(isCopyMode);
 
-        // シフト名を保存（引き継ぎモードの場合はプレフィックスを付与）
-        if (isInherit) {
-          setLoadedShiftName(`(12月からコピー) 2026年1月シフト`);
-          console.log('[JanuaryShiftGeneration] Inherit mode from December shift:', shiftData.name);
-        } else {
-          setLoadedShiftName(shiftData.name || "");
-        }
+        // シフト名を保存（コピーモードの場合はプレフィックスを付与）
+        setLoadedShiftName(`(本番からコピー) ${year}年${month}月シフト`);
+        console.log('[DevShiftGeneration] Copy mode from production shift:', shiftData.name);
 
-        console.log('[JanuaryShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
+        console.log('[DevShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
 
         // shiftDetails を shifts オブジェクトに変換
         const newShifts: any = {};
@@ -784,17 +780,8 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
           matchedCount++;
 
           // 日付をパース (YYYY-MM-DD形式)
-          // 引き継ぎモードの場合、1月分のデータのみを引き継ぐ
-          let dateStr = detail.date;
-          if (isInherit) {
-            const dateParts = detail.date.split('-');
-            // 12月分（2025-12-XX）はスキップ
-            if (dateParts.length === 3 && dateParts[1] === '12') {
-              continue; // 12月のデータは転記しない
-            }
-            // 1月分（2026-01-XX）はそのまま転記
-            // dateStr = detail.date のまま
-          }
+          // 開発専用シフト：すべての日付をコピー
+          const dateStr = detail.date;
           const key = `${staff.id}_${dateStr}`;
 
           // displayTextを優先、なければフォールバック
@@ -831,14 +818,14 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
           };
         }
 
-        console.log('[JanuaryShiftGeneration] Matched:', matchedCount, 'Unmatched employees:', unmatchedEmployees);
+        console.log('[DevShiftGeneration] Matched:', matchedCount, 'Unmatched employees:', unmatchedEmployees);
         setShifts(newShifts);
         // 初期値を保存（元に戻したかどうかの判定に使用）
         setOriginalShifts(JSON.parse(JSON.stringify(newShifts)));
         setLoadedShiftId(initialShiftId); // 読み込み完了をマーク
         toast.success(`シフトデータを読み込みました (${shiftData.name})`);
       } catch (error: any) {
-        console.error("[JanuaryShiftGeneration] Failed to load initial shift data:", error);
+        console.error("[DevShiftGeneration] Failed to load initial shift data:", error);
         toast.error("シフトデータの読み込みに失敗しました", { description: error.message });
         setLoadedShiftId(initialShiftId); // エラーでも再試行を防ぐ
       } finally {
@@ -848,7 +835,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
 
     loadInitialShiftData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialShiftId]);
+  }, [initialShiftId, year, month]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
