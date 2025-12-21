@@ -2653,17 +2653,12 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                     const dateIso = getIsoDate(date);
                     const result = sufficiencyData[dateIso];
                     let bgClass = "bg-emerald-50";
-                    let textClass = "text-emerald-700";
 
+                    // 背景色の決定（信号機式）
                     if (result && result.maxShortage >= 2) {
-                      bgClass = "bg-yellow-200"; // 濃い黄色
-                      textClass = "text-yellow-900 font-bold";
+                      bgClass = "bg-red-100"; // 赤: 深刻（正社員不足 or -2人以上）
                     } else if (result && result.maxShortage >= 1) {
-                      bgClass = "bg-yellow-50"; // 薄い黄色
-                      textClass = "text-yellow-800";
-                    } else if (result && result.maxSurplus >= 2) {
-                      bgClass = "bg-blue-100"; // 余剰が多い場合は青系
-                      textClass = "text-blue-800";
+                      bgClass = "bg-yellow-100"; // 黄: 注意（-1人不足）
                     }
 
                     const hasIssues = result && (
