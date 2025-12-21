@@ -2637,6 +2637,12 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                   {dates.map(date => {
                     const dateIso = getIsoDate(date);
                     const result = sufficiencyData[dateIso];
+
+                    // デバッグ: データ構造を確認
+                    if (result && (result.fullTimeShortages?.length > 0 || result.criticalShortages?.length > 0 || result.minorShortages?.length > 0)) {
+                      console.log('配置判定データ:', dateIso, result);
+                    }
+
                     let bgClass = "bg-emerald-50";
 
                     // 背景色の決定（信号機式）
@@ -2647,9 +2653,9 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                     }
 
                     const hasIssues = result && (
-                      result.fullTimeShortages.length > 0 ||
-                      result.criticalShortages.length > 0 ||
-                      result.minorShortages.length > 0
+                      (result.fullTimeShortages && result.fullTimeShortages.length > 0) ||
+                      (result.criticalShortages && result.criticalShortages.length > 0) ||
+                      (result.minorShortages && result.minorShortages.length > 0)
                     );
 
                     return (
@@ -2657,40 +2663,46 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                         {hasIssues ? (
                           <div className="flex flex-col gap-1 break-words">
                             {/* 正社員不足（最優先・赤） */}
-                            {result.fullTimeShortages.length > 0 && (
-                              <div className="bg-red-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
-                                正社員不足
-                              </div>
+                            {result.fullTimeShortages && result.fullTimeShortages.length > 0 && (
+                              <>
+                                <div className="bg-red-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
+                                  正社員不足
+                                </div>
+                                {result.fullTimeShortages.map((range, i) => (
+                                  <div key={`ft-${i}`} className="text-red-900 font-bold leading-tight break-words">
+                                    {range}
+                                  </div>
+                                ))}
+                              </>
                             )}
-                            {result.fullTimeShortages.map((range, i) => (
-                              <div key={`ft-${i}`} className="text-red-900 font-bold leading-tight break-words">
-                                {range}
-                              </div>
-                            ))}
 
-                            {/* 深刻な人数不足（-2人以上・赤） */}
-                            {result.criticalShortages.length > 0 && (
-                              <div className="bg-orange-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
-                                -2人以上
-                              </div>
+                            {/* 深刻な人数不足（-2人以上・オレンジ） */}
+                            {result.criticalShortages && result.criticalShortages.length > 0 && (
+                              <>
+                                <div className="bg-orange-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                  -2人以上
+                                </div>
+                                {result.criticalShortages.map((range, i) => (
+                                  <div key={`cr-${i}`} className="text-orange-900 font-bold leading-tight break-words">
+                                    {range}
+                                  </div>
+                                ))}
+                              </>
                             )}
-                            {result.criticalShortages.map((range, i) => (
-                              <div key={`cr-${i}`} className="text-orange-900 font-bold leading-tight break-words">
-                                {range}
-                              </div>
-                            ))}
 
-                            {/* 軽度の人数不足（-1人・黄） */}
-                            {result.minorShortages.length > 0 && result.criticalShortages.length === 0 && result.fullTimeShortages.length === 0 && (
-                              <div className="bg-amber-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
-                                -1人
-                              </div>
+                            {/* 軽度の人数不足（-1人・黄） - 条件を削除して常に表示 */}
+                            {result.minorShortages && result.minorShortages.length > 0 && (
+                              <>
+                                <div className="bg-amber-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                  -1人
+                                </div>
+                                {result.minorShortages.map((range, i) => (
+                                  <div key={`mn-${i}`} className="text-amber-900 font-bold leading-tight break-words">
+                                    {range}
+                                  </div>
+                                ))}
+                              </>
                             )}
-                            {result.minorShortages.map((range, i) => (
-                              <div key={`mn-${i}`} className="text-amber-900 font-bold leading-tight break-words">
-                                {range}
-                              </div>
-                            ))}
                           </div>
                         ) : (
                           <div className="flex items-center justify-center h-full">
