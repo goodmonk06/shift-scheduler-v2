@@ -84,6 +84,37 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
   const [devShiftMonth, setDevShiftMonth] = useState<number>(new Date().getMonth() + 1);
   const [devShiftSourceId, setDevShiftSourceId] = useState<number | null>(null); // コピー元の本番シフトID
 
+  // 未保存変更確認用
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] = useState(false);
+  const [pendingView, setPendingView] = useState<AdminView | null>(null);
+
+  // 未保存変更があるかチェックしてから画面遷移
+  const navigateWithCheck = (newView: AdminView) => {
+    if (hasUnsavedChanges) {
+      setPendingView(newView);
+      setIsUnsavedChangesModalOpen(true);
+    } else {
+      setAdminView(newView);
+    }
+  };
+
+  // 未保存変更を破棄して画面遷移
+  const confirmNavigation = () => {
+    if (pendingView) {
+      setHasUnsavedChanges(false);
+      setAdminView(pendingView);
+      setPendingView(null);
+    }
+    setIsUnsavedChangesModalOpen(false);
+  };
+
+  // 画面遷移をキャンセル
+  const cancelNavigation = () => {
+    setPendingView(null);
+    setIsUnsavedChangesModalOpen(false);
+  };
+
   // シフト編集画面へ遷移
   const handleEditShift = (shiftId: string) => {
     console.log('[AdminApp] handleEditShift called with shiftId:', shiftId);
@@ -217,7 +248,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       case "december-shift-generation":
         return <DecemberShiftGeneration initialShiftId={selectedDecemberShiftId} />;
       case "january-shift-generation":
-        return <JanuaryShiftGeneration initialShiftId={selectedJanuaryShiftId} />;
+        return <JanuaryShiftGeneration initialShiftId={selectedJanuaryShiftId} onUnsavedChanges={setHasUnsavedChanges} />;
       case "dev-shift-generation":
         return <DevShiftGeneration year={devShiftYear} month={devShiftMonth} initialShiftId={devShiftSourceId} />;
       case "leave-requests":
@@ -239,10 +270,10 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     }
   };
   
-  // ビュー変更ハンドラー（デバッグ用）
+  // ビュー変更ハンドラー（未保存変更をチェック）
   const handleViewChange = (view: AdminView) => {
     console.log("Changing view to:", view);
-    setAdminView(view);
+    navigateWithCheck(view);
   };
 
   return (
@@ -478,6 +509,33 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           year={selectedYear}
           month={selectedMonth}
         />
+
+        {/* 未保存変更確認モーダル */}
+        {isUnsavedChangesModalOpen && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl border-2 border-gray-200">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900">未保存の変更があります</h2>
+              <p className="text-gray-600 mb-6">
+                シフト作成を保存せずに離れますか？<br />
+                保存していない変更は失われます。
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={cancelNavigation}
+                  className="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all font-semibold text-base"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={confirmNavigation}
+                  className="px-6 py-3 text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all font-semibold text-base shadow-lg hover:shadow-xl"
+                >
+                  破棄して移動
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
       </div>
     </VacationProvider>

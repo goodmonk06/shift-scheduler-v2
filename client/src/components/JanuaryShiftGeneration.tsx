@@ -517,9 +517,10 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 // --- コンポーネント本体 ---
 interface JanuaryShiftGenerationProps {
   initialShiftId?: number | null;
+  onUnsavedChanges?: (hasChanges: boolean) => void;
 }
 
-export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGenerationProps = {}) {
+export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: JanuaryShiftGenerationProps = {}) {
   const toast = useToast();
   const [dates] = useState(generateDateRange(START_DATE, END_DATE));
   const [staffList] = useState(STAFF_RAW_DATA);
@@ -549,9 +550,8 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
   // 検食欄（日付ごと）
   const [inspectionMeals, setInspectionMeals] = useState<Record<string, string>>({});
 
-  // 自動保存関連の状態
+  // 未保存変更フラグ
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<Date | null>(null);
   const [editingMealDate, setEditingMealDate] = useState<string | null>(null);
   const [editingMealValue, setEditingMealValue] = useState<string>('');
 
@@ -692,10 +692,8 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
         }
       }
 
-      // 保存成功時: 未保存フラグをクリアし、自動保存データを削除
+      // 保存成功時: 未保存フラグをクリア
       setHasUnsavedChanges(false);
-      localStorage.removeItem('january_shift_autosave');
-      console.log('[JanuaryShiftGeneration] Cleared autosave data after successful save');
 
       setIsSaveModalOpen(false);
     } catch (error: any) {
@@ -874,78 +872,20 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 自動保存機能: shiftsが変更されたらlocalStorageに保存
+  // シフトデータ変更検知: 未保存フラグを設定
   useEffect(() => {
     // 初回ロード中やデータが空の場合はスキップ
     if (isLoadingInitialData || Object.keys(shifts).length === 0) return;
 
-    // 5秒後に自動保存（デバウンス）
-    const timer = setTimeout(() => {
-      try {
-        const autosaveData = {
-          shifts,
-          customEvents,
-          inspectionMeals,
-          loadedShiftId,
-          loadedShiftName,
-          isInheritMode,
-          timestamp: new Date().toISOString()
-        };
-        localStorage.setItem('january_shift_autosave', JSON.stringify(autosaveData));
-        setLastAutoSaveTime(new Date());
-        setHasUnsavedChanges(true);
-        console.log('[JanuaryShiftGeneration] Auto-saved to localStorage');
-      } catch (error) {
-        console.error('[JanuaryShiftGeneration] Auto-save failed:', error);
-      }
-    }, 5000);
+    setHasUnsavedChanges(true);
+  }, [shifts, customEvents, inspectionMeals, isLoadingInitialData]);
 
-    return () => clearTimeout(timer);
-  }, [shifts, customEvents, inspectionMeals, isLoadingInitialData, loadedShiftId, loadedShiftName, isInheritMode]);
-
-  // コンポーネントマウント時: 自動保存データがあれば復元を提案
+  // 親コンポーネントに未保存変更を通知
   useEffect(() => {
-    // initialShiftIdがある場合は自動保存からの復元はスキップ
-    if (initialShiftId) return;
-
-    try {
-      const autosaveJson = localStorage.getItem('january_shift_autosave');
-      if (!autosaveJson) return;
-
-      const autosaveData = JSON.parse(autosaveJson);
-      const savedTime = new Date(autosaveData.timestamp);
-      const now = new Date();
-      const diffMinutes = (now.getTime() - savedTime.getTime()) / 1000 / 60;
-
-      // 24時間以内の自動保存データのみ復元提案
-      if (diffMinutes < 24 * 60) {
-        const shouldRestore = window.confirm(
-          `未保存のシフトデータがあります（${Math.floor(diffMinutes)}分前）。\n\n復元しますか？`
-        );
-
-        if (shouldRestore) {
-          setShifts(autosaveData.shifts || {});
-          setCustomEvents(autosaveData.customEvents || {});
-          setInspectionMeals(autosaveData.inspectionMeals || {});
-          setLoadedShiftId(autosaveData.loadedShiftId || null);
-          setLoadedShiftName(autosaveData.loadedShiftName || "");
-          setIsInheritMode(autosaveData.isInheritMode || false);
-          setOriginalShifts(JSON.parse(JSON.stringify(autosaveData.shifts || {})));
-          setHasUnsavedChanges(true);
-          toast.success('自動保存データを復元しました');
-          console.log('[JanuaryShiftGeneration] Restored from autosave');
-        } else {
-          // 復元しない場合は自動保存データを削除
-          localStorage.removeItem('january_shift_autosave');
-        }
-      } else {
-        // 24時間以上経過した自動保存データは削除
-        localStorage.removeItem('january_shift_autosave');
-      }
-    } catch (error) {
-      console.error('[JanuaryShiftGeneration] Failed to restore autosave:', error);
+    if (onUnsavedChanges) {
+      onUnsavedChanges(hasUnsavedChanges);
     }
-  }, []); // 初回マウント時のみ実行
+  }, [hasUnsavedChanges, onUnsavedChanges]);
 
   // ページ離脱前の警告
   useEffect(() => {
@@ -2176,12 +2116,6 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
                   </span>
                 )}
                 <span className="text-green-400 font-bold text-base">{loadedShiftName}</span>
-              </p>
-            )}
-            {lastAutoSaveTime && (
-              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                自動保存: {Math.floor((new Date().getTime() - lastAutoSaveTime.getTime()) / 1000 / 60) || '1'}分前
               </p>
             )}
           </div>
