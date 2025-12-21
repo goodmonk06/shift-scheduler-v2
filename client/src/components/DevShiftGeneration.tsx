@@ -2683,7 +2683,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                                   -2人以上
                                 </div>
                                 {result.criticalShortages.map((range, i) => (
-                                  <div key={`cr-${i}`} className="text-orange-900 font-bold leading-tight break-words">
+                                  <div key={`cr-${i}`} className="text-orange-700 font-bold leading-tight break-words text-sm">
                                     {range}
                                   </div>
                                 ))}
@@ -2697,7 +2697,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                                   -1人
                                 </div>
                                 {result.minorShortages.map((range, i) => (
-                                  <div key={`mn-${i}`} className="text-amber-900 font-bold leading-tight break-words">
+                                  <div key={`mn-${i}`} className="text-amber-700 font-bold leading-tight break-words text-sm">
                                     {range}
                                   </div>
                                 ))}
