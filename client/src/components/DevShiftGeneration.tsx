@@ -463,6 +463,7 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     const fullTimeShortages: number[] = []; // 正社員不足のslot番号
     const criticalShortages: number[] = []; // -2人以上不足
     const minorShortages: number[] = []; // -1人不足
+    const surplusSlots: number[] = []; // 余剰人数のslot番号
     let maxShortage = 0;
 
     // 48スロットをチェック（曜日別の必要人数を使用）
@@ -490,6 +491,9 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
           minorShortages.push(slot);
           maxShortage = Math.max(maxShortage, 1);
         }
+      } else if (diff > 0) {
+        // 余剰人数がある時間帯を記録
+        surplusSlots.push(slot);
       }
     }
 
@@ -536,7 +540,8 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       maxShortage,
       fullTimeShortages: groupSlots(fullTimeShortages),
       criticalShortages: groupSlots(criticalShortages),
-      minorShortages: groupSlots(minorShortages)
+      minorShortages: groupSlots(minorShortages),
+      surplusSlots: groupSlots(surplusSlots)
     };
   });
 
@@ -2650,17 +2655,20 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                       bgClass = "bg-red-100"; // 赤: 深刻（正社員不足 or -2人以上）
                     } else if (result && result.maxShortage >= 1) {
                       bgClass = "bg-yellow-100"; // 黄: 注意（-1人不足）
+                    } else if (result && result.surplusSlots && result.surplusSlots.length > 0) {
+                      bgClass = "bg-blue-50"; // 青: 余裕あり
                     }
 
-                    const hasIssues = result && (
+                    const hasInfo = result && (
                       (result.fullTimeShortages && result.fullTimeShortages.length > 0) ||
                       (result.criticalShortages && result.criticalShortages.length > 0) ||
-                      (result.minorShortages && result.minorShortages.length > 0)
+                      (result.minorShortages && result.minorShortages.length > 0) ||
+                      (result.surplusSlots && result.surplusSlots.length > 0)
                     );
 
                     return (
                       <td key={date.toString()} className={`border border-slate-600 text-[10px] align-top p-1.5 w-[90px] min-w-[90px] max-w-[90px] ${bgClass}`}>
-                        {hasIssues ? (
+                        {hasInfo ? (
                           <div className="flex flex-col gap-1 break-words">
                             {/* 正社員不足（最優先・赤） */}
                             {result.fullTimeShortages && result.fullTimeShortages.length > 0 && (
@@ -2680,7 +2688,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                             {result.criticalShortages && result.criticalShortages.length > 0 && (
                               <>
                                 <div className="bg-orange-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
-                                  -2人以上
+                                  2人以上不足
                                 </div>
                                 {result.criticalShortages.map((range, i) => (
                                   <div key={`cr-${i}`} className="text-orange-700 font-bold leading-tight break-words text-sm">
@@ -2694,10 +2702,24 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                             {result.minorShortages && result.minorShortages.length > 0 && (
                               <>
                                 <div className="bg-amber-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
-                                  -1人
+                                  1人不足
                                 </div>
                                 {result.minorShortages.map((range, i) => (
                                   <div key={`mn-${i}`} className="text-amber-700 font-bold leading-tight break-words text-sm">
+                                    {range}
+                                  </div>
+                                ))}
+                              </>
+                            )}
+
+                            {/* 余剰人数（青） */}
+                            {result.surplusSlots && result.surplusSlots.length > 0 && (
+                              <>
+                                <div className="bg-blue-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                  余裕あり
+                                </div>
+                                {result.surplusSlots.map((range, i) => (
+                                  <div key={`sp-${i}`} className="text-blue-700 font-bold leading-tight break-words text-sm">
                                     {range}
                                   </div>
                                 ))}
