@@ -463,51 +463,84 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       }
     });
 
-    const shortageDetails: string[] = [];
-    const surplusDetails: string[] = []; // 余剰を表示（山口さんの要望）
+    // 不足情報を構造化して収集
+    const fullTimeShortages: number[] = []; // 正社員不足のslot番号
+    const criticalShortages: number[] = []; // -2人以上不足
+    const minorShortages: number[] = []; // -1人不足
     let maxShortage = 0;
-    let maxSurplus = 0; // 最大余剰を追跡
 
     // 48スロットをチェック（曜日別の必要人数を使用）
     const dayOfWeek = date.getDay(); // 0=日曜, 1=月曜, ..., 6=土曜
     const requiredForDay = REQUIRED_STAFF_BY_DAY[dayOfWeek];
 
     for (let slot = 0; slot < 48; slot++) {
-      const hour = Math.floor(slot / 2);
-      const minute = (slot % 2) === 0 ? '00' : '30';
-      const timeLabel = `${hour}:${minute}`;
-
       let required = requiredForDay[slot] || 1;
       let current = halfHourCounts[slot];
       let diff = current - required;
 
       // 正社員チェック（9:00～16:00 = slot 18～32）
       if (slot >= 18 && slot < 33) {
-        const fullTimeCount = halfHourFullTimeCounts[slot];
-        if (fullTimeCount < 1) {
-          // より具体的な表示に変更（山口さんの要望）
-          shortageDetails.push(`${timeLabel} 正社員${fullTimeCount}人（1人必要）`);
+        if (halfHourFullTimeCounts[slot] < 1) {
+          fullTimeShortages.push(slot);
           maxShortage = Math.max(maxShortage, 2);
         }
       }
 
       if (diff < 0) {
-        // 人数不足を具体的に表示
-        shortageDetails.push(`${timeLabel} ${diff}人不足`);
-        if (diff <= -2) maxShortage = Math.max(maxShortage, 2);
-        else maxShortage = Math.max(maxShortage, 1);
-      } else if (diff > 0) {
-        // 余剰を表示（山口さんの要望）
-        surplusDetails.push(`${timeLabel} +${diff}人`);
-        maxSurplus = Math.max(maxSurplus, diff);
+        if (diff <= -2) {
+          criticalShortages.push(slot);
+          maxShortage = Math.max(maxShortage, 2);
+        } else {
+          minorShortages.push(slot);
+          maxShortage = Math.max(maxShortage, 1);
+        }
       }
     }
 
+    // 連続する時間帯をグループ化する関数
+    const groupSlots = (slots: number[]): string[] => {
+      if (slots.length === 0) return [];
+      const groups: string[] = [];
+      let rangeStart = slots[0];
+      let rangeEnd = slots[0];
+
+      for (let i = 1; i < slots.length; i++) {
+        if (slots[i] === rangeEnd + 1) {
+          // 連続している
+          rangeEnd = slots[i];
+        } else {
+          // 連続が途切れた
+          groups.push(formatSlotRange(rangeStart, rangeEnd));
+          rangeStart = slots[i];
+          rangeEnd = slots[i];
+        }
+      }
+      // 最後のグループを追加
+      groups.push(formatSlotRange(rangeStart, rangeEnd));
+      return groups;
+    };
+
+    // スロット範囲を時刻文字列に変換
+    const formatSlotRange = (start: number, end: number): string => {
+      const formatTime = (slot: number) => {
+        const hour = Math.floor(slot / 2);
+        const minute = (slot % 2) === 0 ? '00' : '30';
+        return `${hour}:${minute}`;
+      };
+
+      if (start === end) {
+        return formatTime(start);
+      } else {
+        // 終了時刻は次のスロットの開始時刻（30分後）
+        return `${formatTime(start)}~${formatTime(end + 1)}`;
+      }
+    };
+
     results[dateIso] = {
       maxShortage,
-      maxSurplus, // 最大余剰を追加
-      details: shortageDetails,
-      surplusDetails: surplusDetails // 余剰詳細を追加（山口さんの要望）
+      fullTimeShortages: groupSlots(fullTimeShortages),
+      criticalShortages: groupSlots(criticalShortages),
+      minorShortages: groupSlots(minorShortages)
     };
   });
 
@@ -2633,36 +2666,62 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                       textClass = "text-blue-800";
                     }
 
+                    const hasIssues = result && (
+                      (result.fullTimeShortages && result.fullTimeShortages.length > 0) ||
+                      (result.criticalShortages && result.criticalShortages.length > 0) ||
+                      (result.minorShortages && result.minorShortages.length > 0)
+                    );
+
                     return (
-                      <td key={date.toString()} className={`border border-slate-600 text-[9px] align-top p-1 !w-[90px] !min-w-[90px] !max-w-[90px] ${bgClass}`}>
-                        {result && result.details.length > 0 ? (
-                          <div className="flex flex-col gap-0.5">
-                            {result.details.map((d: string, i: number) => (
-                              <span key={i} className="text-red-600 font-bold leading-tight block">{d}</span>
-                            ))}
-                            {/* 余剰も表示（山口さんの要望） */}
-                            {result.surplusDetails && result.surplusDetails.length > 0 && (
-                              <div className="mt-1 border-t border-slate-300 pt-0.5">
-                                {result.surplusDetails.slice(0, 3).map((d: string, i: number) => (
-                                  <span key={i} className="text-blue-600 font-medium leading-tight block">{d}</span>
+                      <td key={date.toString()} className={`border border-slate-600 text-[10px] align-top p-1.5 w-[90px] min-w-[90px] max-w-[90px] ${bgClass}`}>
+                        {hasIssues ? (
+                          <div className="flex flex-col gap-1 break-words">
+                            {/* 正社員不足（最優先・赤） */}
+                            {result.fullTimeShortages && result.fullTimeShortages.length > 0 && (
+                              <>
+                                <div className="bg-red-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
+                                  正社員不足
+                                </div>
+                                {result.fullTimeShortages.map((range, i) => (
+                                  <div key={`ft-${i}`} className="text-red-900 font-bold leading-tight break-words">
+                                    {range}
+                                  </div>
                                 ))}
-                                {result.surplusDetails.length > 3 && (
-                                  <span className="text-blue-500 text-[8px]">他{result.surplusDetails.length - 3}件</span>
-                                )}
-                              </div>
+                              </>
                             )}
-                          </div>
-                        ) : result && result.surplusDetails && result.surplusDetails.length > 0 ? (
-                          <div className="flex flex-col gap-0.5">
-                            {result.surplusDetails.slice(0, 3).map((d: string, i: number) => (
-                              <span key={i} className="text-blue-600 font-medium leading-tight block">{d}</span>
-                            ))}
-                            {result.surplusDetails.length > 3 && (
-                              <span className="text-blue-500 text-[8px]">他{result.surplusDetails.length - 3}件</span>
+
+                            {/* 深刻な人数不足（-2人以上・オレンジ） */}
+                            {result.criticalShortages && result.criticalShortages.length > 0 && (
+                              <>
+                                <div className="bg-orange-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                  -2人以上
+                                </div>
+                                {result.criticalShortages.map((range, i) => (
+                                  <div key={`cr-${i}`} className="text-orange-900 font-bold leading-tight break-words">
+                                    {range}
+                                  </div>
+                                ))}
+                              </>
+                            )}
+
+                            {/* 軽度の人数不足（-1人・黄） */}
+                            {result.minorShortages && result.minorShortages.length > 0 && (
+                              <>
+                                <div className="bg-amber-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                  -1人
+                                </div>
+                                {result.minorShortages.map((range, i) => (
+                                  <div key={`mn-${i}`} className="text-amber-900 font-bold leading-tight break-words">
+                                    {range}
+                                  </div>
+                                ))}
+                              </>
                             )}
                           </div>
                         ) : (
-                          <span className="text-emerald-600 flex justify-center pt-1">OK</span>
+                          <div className="flex items-center justify-center h-full">
+                            <span className="text-emerald-600 font-bold text-sm">✓</span>
+                          </div>
                         )}
                       </td>
                     );
