@@ -464,7 +464,9 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     });
 
     const shortageDetails: string[] = [];
+    const surplusDetails: string[] = []; // 余剰を表示（山口さんの要望）
     let maxShortage = 0;
+    let maxSurplus = 0; // 最大余剰を追跡
 
     // 48スロットをチェック（曜日別の必要人数を使用）
     const dayOfWeek = date.getDay(); // 0=日曜, 1=月曜, ..., 6=土曜
@@ -481,22 +483,31 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 
       // 正社員チェック（9:00～16:00 = slot 18～31）
       if (slot >= 18 && slot < 32) {
-        if (halfHourFullTimeCounts[slot] < 1) {
-          shortageDetails.push(`${timeLabel}:正社員不足`);
+        const fullTimeCount = halfHourFullTimeCounts[slot];
+        if (fullTimeCount < 1) {
+          // より具体的な表示に変更（山口さんの要望）
+          shortageDetails.push(`${timeLabel} 正社員${fullTimeCount}人（1人必要）`);
           maxShortage = Math.max(maxShortage, 2);
         }
       }
 
       if (diff < 0) {
-        shortageDetails.push(`${timeLabel}(${diff})`);
+        // 人数不足を具体的に表示
+        shortageDetails.push(`${timeLabel} ${diff}人不足`);
         if (diff <= -2) maxShortage = Math.max(maxShortage, 2);
         else maxShortage = Math.max(maxShortage, 1);
+      } else if (diff > 0) {
+        // 余剰を表示（山口さんの要望）
+        surplusDetails.push(`${timeLabel} +${diff}人`);
+        maxSurplus = Math.max(maxSurplus, diff);
       }
     }
 
     results[dateIso] = {
       maxShortage,
-      details: shortageDetails
+      maxSurplus, // 最大余剰を追加
+      details: shortageDetails,
+      surplusDetails: surplusDetails // 余剰詳細を追加（山口さんの要望）
     };
   });
 
@@ -537,6 +548,10 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
 
   // 検食欄（日付ごと）
   const [inspectionMeals, setInspectionMeals] = useState<Record<string, string>>({});
+
+  // 自動保存関連の状態
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<Date | null>(null);
   const [editingMealDate, setEditingMealDate] = useState<string | null>(null);
   const [editingMealValue, setEditingMealValue] = useState<string>('');
 
@@ -676,6 +691,11 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
           setIsInheritMode(false);
         }
       }
+
+      // 保存成功時: 未保存フラグをクリアし、自動保存データを削除
+      setHasUnsavedChanges(false);
+      localStorage.removeItem('january_shift_autosave');
+      console.log('[JanuaryShiftGeneration] Cleared autosave data after successful save');
 
       setIsSaveModalOpen(false);
     } catch (error: any) {
@@ -853,6 +873,93 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // 自動保存機能: shiftsが変更されたらlocalStorageに保存
+  useEffect(() => {
+    // 初回ロード中やデータが空の場合はスキップ
+    if (isLoadingInitialData || Object.keys(shifts).length === 0) return;
+
+    // 5秒後に自動保存（デバウンス）
+    const timer = setTimeout(() => {
+      try {
+        const autosaveData = {
+          shifts,
+          customEvents,
+          inspectionMeals,
+          loadedShiftId,
+          loadedShiftName,
+          isInheritMode,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('january_shift_autosave', JSON.stringify(autosaveData));
+        setLastAutoSaveTime(new Date());
+        setHasUnsavedChanges(true);
+        console.log('[JanuaryShiftGeneration] Auto-saved to localStorage');
+      } catch (error) {
+        console.error('[JanuaryShiftGeneration] Auto-save failed:', error);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [shifts, customEvents, inspectionMeals, isLoadingInitialData, loadedShiftId, loadedShiftName, isInheritMode]);
+
+  // コンポーネントマウント時: 自動保存データがあれば復元を提案
+  useEffect(() => {
+    // initialShiftIdがある場合は自動保存からの復元はスキップ
+    if (initialShiftId) return;
+
+    try {
+      const autosaveJson = localStorage.getItem('january_shift_autosave');
+      if (!autosaveJson) return;
+
+      const autosaveData = JSON.parse(autosaveJson);
+      const savedTime = new Date(autosaveData.timestamp);
+      const now = new Date();
+      const diffMinutes = (now.getTime() - savedTime.getTime()) / 1000 / 60;
+
+      // 24時間以内の自動保存データのみ復元提案
+      if (diffMinutes < 24 * 60) {
+        const shouldRestore = window.confirm(
+          `未保存のシフトデータがあります（${Math.floor(diffMinutes)}分前）。\n\n復元しますか？`
+        );
+
+        if (shouldRestore) {
+          setShifts(autosaveData.shifts || {});
+          setCustomEvents(autosaveData.customEvents || {});
+          setInspectionMeals(autosaveData.inspectionMeals || {});
+          setLoadedShiftId(autosaveData.loadedShiftId || null);
+          setLoadedShiftName(autosaveData.loadedShiftName || "");
+          setIsInheritMode(autosaveData.isInheritMode || false);
+          setOriginalShifts(JSON.parse(JSON.stringify(autosaveData.shifts || {})));
+          setHasUnsavedChanges(true);
+          toast.success('自動保存データを復元しました');
+          console.log('[JanuaryShiftGeneration] Restored from autosave');
+        } else {
+          // 復元しない場合は自動保存データを削除
+          localStorage.removeItem('january_shift_autosave');
+        }
+      } else {
+        // 24時間以上経過した自動保存データは削除
+        localStorage.removeItem('january_shift_autosave');
+      }
+    } catch (error) {
+      console.error('[JanuaryShiftGeneration] Failed to restore autosave:', error);
+    }
+  }, []); // 初回マウント時のみ実行
+
+  // ページ離脱前の警告
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Chromeでは空文字列を設定する必要がある
+        return ''; // その他のブラウザ用
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const eventRowHeight = useMemo(() => {
     return 60;
@@ -1741,11 +1848,17 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
       // 元に戻した場合のみfalse、それ以外（クリア含む）はモードに応じて設定
       const shouldMarkEdited = actualOperationMode && !isNightShift && !isRevertedToOriginal;
 
+      // 休みや有給を入力した場合、自動的にロックをかける（山口さんの要望対応）
+      const isHolidayOrLeave = newVal.customText === '休' || newVal.customText === '有' || newVal.customText === '有給';
+      const shouldAutoLock = isHolidayOrLeave;
+
       const updated = {
         ...prev,
         [key]: {
           ...prev[key],
           ...newVal,
+          // 休みや有給の場合は自動的にロック、それ以外は既存のロック状態を維持（明示的に指定されていればそれを優先）
+          isLocked: newVal.isLocked !== undefined ? newVal.isLocked : (shouldAutoLock ? true : prev[key]?.isLocked),
           // 元に戻した場合のみfalse、それ以外はモードに応じて設定
           editedInActualMode: isRevertedToOriginal ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
@@ -2063,6 +2176,12 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
                   </span>
                 )}
                 <span className="text-green-400 font-bold text-base">{loadedShiftName}</span>
+              </p>
+            )}
+            {lastAutoSaveTime && (
+              <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                自動保存: {Math.floor((new Date().getTime() - lastAutoSaveTime.getTime()) / 1000 / 60) || '1'}分前
               </p>
             )}
           </div>
@@ -2575,6 +2694,9 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
                     } else if (result && result.maxShortage >= 1) {
                       bgClass = "bg-yellow-50"; // 薄い黄色
                       textClass = "text-yellow-800";
+                    } else if (result && result.maxSurplus >= 2) {
+                      bgClass = "bg-blue-100"; // 余剰が多い場合は青系
+                      textClass = "text-blue-800";
                     }
 
                     return (
@@ -2584,6 +2706,26 @@ export function JanuaryShiftGeneration({ initialShiftId }: JanuaryShiftGeneratio
                             {result.details.map((d: string, i: number) => (
                               <span key={i} className="text-red-600 font-bold leading-tight block">{d}</span>
                             ))}
+                            {/* 余剰も表示（山口さんの要望） */}
+                            {result.surplusDetails && result.surplusDetails.length > 0 && (
+                              <div className="mt-1 border-t border-slate-300 pt-0.5">
+                                {result.surplusDetails.slice(0, 3).map((d: string, i: number) => (
+                                  <span key={i} className="text-blue-600 font-medium leading-tight block">{d}</span>
+                                ))}
+                                {result.surplusDetails.length > 3 && (
+                                  <span className="text-blue-500 text-[8px]">他{result.surplusDetails.length - 3}件</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : result && result.surplusDetails && result.surplusDetails.length > 0 ? (
+                          <div className="flex flex-col gap-0.5">
+                            {result.surplusDetails.slice(0, 3).map((d: string, i: number) => (
+                              <span key={i} className="text-blue-600 font-medium leading-tight block">{d}</span>
+                            ))}
+                            {result.surplusDetails.length > 3 && (
+                              <span className="text-blue-500 text-[8px]">他{result.surplusDetails.length - 3}件</span>
+                            )}
                           </div>
                         ) : (
                           <span className="text-emerald-600 flex justify-center pt-1">OK</span>
