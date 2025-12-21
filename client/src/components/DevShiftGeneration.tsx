@@ -2687,7 +2687,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                             {/* 深刻な人数不足（-2人以上・オレンジ） */}
                             {result.criticalShortages && result.criticalShortages.length > 0 && (
                               <>
-                                <div className="bg-orange-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                <div className="bg-orange-600 text-slate-900 px-1 py-0.5 rounded text-[9px] font-bold mt-1">
                                   2人以上不足
                                 </div>
                                 {result.criticalShortages.map((range, i) => (
@@ -2701,7 +2701,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                             {/* 軽度の人数不足（-1人・黄） - 条件を削除して常に表示 */}
                             {result.minorShortages && result.minorShortages.length > 0 && (
                               <>
-                                <div className="bg-amber-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                <div className="bg-amber-600 text-slate-900 px-1 py-0.5 rounded text-[9px] font-bold mt-1">
                                   1人不足
                                 </div>
                                 {result.minorShortages.map((range, i) => (
@@ -2715,7 +2715,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                             {/* 余剰人数（青） */}
                             {result.surplusSlots && result.surplusSlots.length > 0 && (
                               <>
-                                <div className="bg-blue-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                <div className="bg-blue-600 text-slate-900 px-1 py-0.5 rounded text-[9px] font-bold mt-1">
                                   余裕あり
                                 </div>
                                 {result.surplusSlots.map((range, i) => (
