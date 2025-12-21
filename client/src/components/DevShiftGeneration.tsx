@@ -459,7 +459,10 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       }
     });
 
-    const shortageDetails: string[] = [];
+    // 不足情報を構造化して収集
+    const fullTimeShortages: number[] = []; // 正社員不足のslot番号
+    const criticalShortages: number[] = []; // -2人以上不足
+    const minorShortages: number[] = []; // -1人不足
     let maxShortage = 0;
 
     // 48スロットをチェック（曜日別の必要人数を使用）
@@ -467,32 +470,73 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     const requiredForDay = REQUIRED_STAFF_BY_DAY[dayOfWeek];
 
     for (let slot = 0; slot < 48; slot++) {
-      const hour = Math.floor(slot / 2);
-      const minute = (slot % 2) === 0 ? '00' : '30';
-      const timeLabel = `${hour}:${minute}`;
-
       let required = requiredForDay[slot] || 1;
       let current = halfHourCounts[slot];
       let diff = current - required;
 
-      // 正社員チェック（9:00～16:00 = slot 18～31）
-      if (slot >= 18 && slot < 32) {
+      // 正社員チェック（9:00～16:00 = slot 18～32）
+      if (slot >= 18 && slot < 33) {
         if (halfHourFullTimeCounts[slot] < 1) {
-          shortageDetails.push(`${timeLabel}:正社員不足`);
+          fullTimeShortages.push(slot);
           maxShortage = Math.max(maxShortage, 2);
         }
       }
 
       if (diff < 0) {
-        shortageDetails.push(`${timeLabel}(${diff})`);
-        if (diff <= -2) maxShortage = Math.max(maxShortage, 2);
-        else maxShortage = Math.max(maxShortage, 1);
+        if (diff <= -2) {
+          criticalShortages.push(slot);
+          maxShortage = Math.max(maxShortage, 2);
+        } else {
+          minorShortages.push(slot);
+          maxShortage = Math.max(maxShortage, 1);
+        }
       }
     }
 
+    // 連続する時間帯をグループ化する関数
+    const groupSlots = (slots: number[]): string[] => {
+      if (slots.length === 0) return [];
+      const groups: string[] = [];
+      let rangeStart = slots[0];
+      let rangeEnd = slots[0];
+
+      for (let i = 1; i < slots.length; i++) {
+        if (slots[i] === rangeEnd + 1) {
+          // 連続している
+          rangeEnd = slots[i];
+        } else {
+          // 連続が途切れた
+          groups.push(formatSlotRange(rangeStart, rangeEnd));
+          rangeStart = slots[i];
+          rangeEnd = slots[i];
+        }
+      }
+      // 最後のグループを追加
+      groups.push(formatSlotRange(rangeStart, rangeEnd));
+      return groups;
+    };
+
+    // スロット範囲を時刻文字列に変換
+    const formatSlotRange = (start: number, end: number): string => {
+      const formatTime = (slot: number) => {
+        const hour = Math.floor(slot / 2);
+        const minute = (slot % 2) === 0 ? '00' : '30';
+        return `${hour}:${minute}`;
+      };
+
+      if (start === end) {
+        return formatTime(start);
+      } else {
+        // 終了時刻は次のスロットの開始時刻（30分後）
+        return `${formatTime(start)}~${formatTime(end + 1)}`;
+      }
+    };
+
     results[dateIso] = {
       maxShortage,
-      details: shortageDetails
+      fullTimeShortages: groupSlots(fullTimeShortages),
+      criticalShortages: groupSlots(criticalShortages),
+      minorShortages: groupSlots(minorShortages)
     };
   });
 
@@ -2587,33 +2631,71 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
               {/* 不足判定フッター */}
               <tfoot className="print:hidden">
                 <tr className="h-12 border-t-4 border-slate-800">
-                  <td className="border border-slate-600 bg-slate-800 text-white font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2}>
+                  <td className="border border-slate-600 bg-indigo-900 text-yellow-300 font-bold px-2 sticky left-0 z-30 shadow-md text-base" colSpan={2}>
                     配置判定
                   </td>
                   {dates.map(date => {
                     const dateIso = getIsoDate(date);
                     const result = sufficiencyData[dateIso];
                     let bgClass = "bg-emerald-50";
-                    let textClass = "text-emerald-700";
 
+                    // 背景色の決定（信号機式）
                     if (result && result.maxShortage >= 2) {
-                      bgClass = "bg-yellow-200"; // 濃い黄色
-                      textClass = "text-yellow-900 font-bold";
+                      bgClass = "bg-red-100"; // 赤: 深刻（正社員不足 or -2人以上）
                     } else if (result && result.maxShortage >= 1) {
-                      bgClass = "bg-yellow-50"; // 薄い黄色
-                      textClass = "text-yellow-800";
+                      bgClass = "bg-yellow-100"; // 黄: 注意（-1人不足）
                     }
 
+                    const hasIssues = result && (
+                      result.fullTimeShortages.length > 0 ||
+                      result.criticalShortages.length > 0 ||
+                      result.minorShortages.length > 0
+                    );
+
                     return (
-                      <td key={date.toString()} className={`border border-slate-600 text-[9px] align-top p-1 !w-[90px] !min-w-[90px] !max-w-[90px] ${bgClass}`}>
-                        {result && result.details.length > 0 ? (
-                          <div className="flex flex-col gap-0.5">
-                            {result.details.map((d: string, i: number) => (
-                              <span key={i} className="text-red-600 font-bold leading-tight block">{d}</span>
+                      <td key={date.toString()} className={`border border-slate-600 text-[10px] align-top p-1.5 !w-[90px] !min-w-[90px] !max-w-[90px] ${bgClass}`}>
+                        {hasIssues ? (
+                          <div className="flex flex-col gap-1">
+                            {/* 正社員不足（最優先・赤） */}
+                            {result.fullTimeShortages.length > 0 && (
+                              <div className="bg-red-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
+                                正社員不足
+                              </div>
+                            )}
+                            {result.fullTimeShortages.map((range, i) => (
+                              <div key={`ft-${i}`} className="text-red-700 font-semibold leading-tight">
+                                {range}
+                              </div>
+                            ))}
+
+                            {/* 深刻な人数不足（-2人以上・赤） */}
+                            {result.criticalShortages.length > 0 && (
+                              <div className="bg-orange-600 text-white px-1 py-0.5 rounded text-[9px] font-bold mt-1">
+                                -2人以上
+                              </div>
+                            )}
+                            {result.criticalShortages.map((range, i) => (
+                              <div key={`cr-${i}`} className="text-orange-700 font-semibold leading-tight">
+                                {range}
+                              </div>
+                            ))}
+
+                            {/* 軽度の人数不足（-1人・黄） */}
+                            {result.minorShortages.length > 0 && result.criticalShortages.length === 0 && result.fullTimeShortages.length === 0 && (
+                              <div className="bg-yellow-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
+                                -1人
+                              </div>
+                            )}
+                            {result.minorShortages.map((range, i) => (
+                              <div key={`mn-${i}`} className="text-yellow-800 font-medium leading-tight">
+                                {range}
+                              </div>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-emerald-600 flex justify-center pt-1">OK</span>
+                          <div className="flex items-center justify-center h-full">
+                            <span className="text-emerald-600 font-bold text-sm">✓</span>
+                          </div>
                         )}
                       </td>
                     );

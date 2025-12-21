@@ -496,8 +496,8 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       let current = halfHourCounts[slot];
       let diff = current - required;
 
-      // 正社員チェック（9:00～16:00 = slot 18～31）
-      if (slot >= 18 && slot < 32) {
+      // 正社員チェック（9:00～16:00 = slot 18～32）
+      if (slot >= 18 && slot < 33) {
         if (halfHourFullTimeCounts[slot] < 1) {
           shortageDetails.push(`${timeLabel}:正社員不足`);
           maxShortage = Math.max(maxShortage, 2);

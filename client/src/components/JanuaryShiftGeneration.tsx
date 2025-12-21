@@ -481,8 +481,8 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       let current = halfHourCounts[slot];
       let diff = current - required;
 
-      // 正社員チェック（9:00～16:00 = slot 18～31）
-      if (slot >= 18 && slot < 32) {
+      // 正社員チェック（9:00～16:00 = slot 18～32）
+      if (slot >= 18 && slot < 33) {
         const fullTimeCount = halfHourFullTimeCounts[slot];
         if (fullTimeCount < 1) {
           // より具体的な表示に変更（山口さんの要望）
