@@ -2653,9 +2653,9 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                     );
 
                     return (
-                      <td key={date.toString()} className={`border border-slate-600 text-[10px] align-top p-1.5 !w-[90px] !min-w-[90px] !max-w-[90px] ${bgClass}`}>
+                      <td key={date.toString()} className={`border border-slate-600 text-[10px] align-top p-1.5 w-[90px] min-w-[90px] max-w-[90px] ${bgClass}`}>
                         {hasIssues ? (
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1 break-words">
                             {/* 正社員不足（最優先・赤） */}
                             {result.fullTimeShortages.length > 0 && (
                               <div className="bg-red-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
@@ -2663,7 +2663,7 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                               </div>
                             )}
                             {result.fullTimeShortages.map((range, i) => (
-                              <div key={`ft-${i}`} className="text-red-700 font-semibold leading-tight">
+                              <div key={`ft-${i}`} className="text-red-900 font-bold leading-tight break-words">
                                 {range}
                               </div>
                             ))}
@@ -2675,19 +2675,19 @@ export function DevShiftGeneration({ year, month, initialShiftId }: DevShiftGene
                               </div>
                             )}
                             {result.criticalShortages.map((range, i) => (
-                              <div key={`cr-${i}`} className="text-orange-700 font-semibold leading-tight">
+                              <div key={`cr-${i}`} className="text-orange-900 font-bold leading-tight break-words">
                                 {range}
                               </div>
                             ))}
 
                             {/* 軽度の人数不足（-1人・黄） */}
                             {result.minorShortages.length > 0 && result.criticalShortages.length === 0 && result.fullTimeShortages.length === 0 && (
-                              <div className="bg-yellow-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
+                              <div className="bg-amber-600 text-white px-1 py-0.5 rounded text-[9px] font-bold">
                                 -1人
                               </div>
                             )}
                             {result.minorShortages.map((range, i) => (
-                              <div key={`mn-${i}`} className="text-yellow-800 font-medium leading-tight">
+                              <div key={`mn-${i}`} className="text-amber-900 font-bold leading-tight break-words">
                                 {range}
                               </div>
                             ))}
