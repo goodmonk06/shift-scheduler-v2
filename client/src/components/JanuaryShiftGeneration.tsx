@@ -2613,7 +2613,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
               {/* 不足判定フッター */}
               <tfoot className="print:hidden">
                 <tr className="h-12 border-t-4 border-slate-800">
-                  <td className="border border-slate-600 bg-slate-800 text-white font-bold px-2 sticky left-0 z-30 shadow-md" colSpan={2}>
+                  <td className="border border-slate-600 bg-indigo-900 text-yellow-300 font-bold px-2 sticky left-0 z-30 shadow-md text-base" colSpan={2}>
                     配置判定
                   </td>
                   {dates.map(date => {
