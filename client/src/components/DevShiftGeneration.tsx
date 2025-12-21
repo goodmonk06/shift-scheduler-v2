@@ -463,7 +463,7 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     const fullTimeShortages: number[] = []; // 正社員不足のslot番号
     const criticalShortages: number[] = []; // -2人以上不足
     const minorShortages: number[] = []; // -1人不足
-    const surplusSlots: number[] = []; // 余剰人数のslot番号
+    const surplusSlots: { slot: number; surplus: number }[] = []; // 余剰人数のslot番号と人数
     let maxShortage = 0;
 
     // 48スロットをチェック（曜日別の必要人数を使用）
@@ -492,8 +492,8 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
           maxShortage = Math.max(maxShortage, 1);
         }
       } else if (diff > 0) {
-        // 余剰人数がある時間帯を記録
-        surplusSlots.push(slot);
+        // 余剰人数がある時間帯を記録（人数も保存）
+        surplusSlots.push({ slot, surplus: diff });
       }
     }
 
@@ -536,12 +536,37 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       }
     };
 
+    // 余剰人数用のグループ化関数（人数も含める）
+    const groupSurplusSlots = (slots: { slot: number; surplus: number }[]): string[] => {
+      if (slots.length === 0) return [];
+      const groups: string[] = [];
+      let rangeStart = slots[0].slot;
+      let rangeEnd = slots[0].slot;
+      let surplusCount = slots[0].surplus;
+
+      for (let i = 1; i < slots.length; i++) {
+        if (slots[i].slot === rangeEnd + 1 && slots[i].surplus === surplusCount) {
+          // 連続していて、余剰人数も同じ
+          rangeEnd = slots[i].slot;
+        } else {
+          // 連続が途切れた、または余剰人数が変わった
+          groups.push(`${formatSlotRange(rangeStart, rangeEnd)} (+${surplusCount}人)`);
+          rangeStart = slots[i].slot;
+          rangeEnd = slots[i].slot;
+          surplusCount = slots[i].surplus;
+        }
+      }
+      // 最後のグループを追加
+      groups.push(`${formatSlotRange(rangeStart, rangeEnd)} (+${surplusCount}人)`);
+      return groups;
+    };
+
     results[dateIso] = {
       maxShortage,
       fullTimeShortages: groupSlots(fullTimeShortages),
       criticalShortages: groupSlots(criticalShortages),
       minorShortages: groupSlots(minorShortages),
-      surplusSlots: groupSlots(surplusSlots)
+      surplusSlots: groupSurplusSlots(surplusSlots)
     };
   });
 
