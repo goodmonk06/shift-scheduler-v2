@@ -403,6 +403,7 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     const halfHourFullTimeCounts = new Array(48).fill(0);
 
     // 前日夜勤の翌日0～9時カウント
+    const nightShiftStaff: string[] = []; // デバッグ用
     if (dateIdx > 0) {
       const prevDate = dates[dateIdx - 1];
       const prevKeySuffix = getIsoDate(prevDate);
@@ -416,6 +417,7 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
             return; // 「明」で0-9時がカウントされるのでスキップ
           }
           // 「明」がない場合のみ、翌日0～9時をカウント
+          nightShiftStaff.push(staff.name);
           for (let slot = 0; slot < 18; slot++) {
             if (staff.id !== CLERK_STAFF_ID) {
               halfHourCounts[slot]++;
@@ -425,8 +427,12 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
         }
       });
     }
+    if (nightShiftStaff.length > 0) {
+      console.log(`[${dateIso}] 前日夜勤による0～9時カウント:`, nightShiftStaff);
+    }
 
     // 当日のシフトカウント
+    const staffCountsDebug: { [slot: number]: string[] } = {}; // デバッグ用：各slotにカウントされたスタッフ名
     staffList.forEach(staff => {
       const cell = shifts[`${staff.id}_${dateIso}`];
       if (!cell) return;
@@ -450,6 +456,9 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
             const isAdminInOfficeHours = ADMIN_STAFF_IDS.includes(staff.id) && slot >= 18 && slot < 32;
             if (!isAdminInOfficeHours) {
               halfHourCounts[slot]++;
+              // デバッグ用に記録
+              if (!staffCountsDebug[slot]) staffCountsDebug[slot] = [];
+              staffCountsDebug[slot].push(`${staff.name}(${cell.customText})`);
             }
           }
           if (FULL_TIME_STAFF_IDS.includes(staff.id)) halfHourFullTimeCounts[slot]++;
@@ -478,6 +487,7 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       // デバッグ: 余剰が大きい場合にログ出力
       if (diff > 5) {
         console.log(`[${dateIso}] slot ${slot} (${Math.floor(slot/2)}:${slot%2===0?'00':'30'}): current=${current}, required=${required}, diff=${diff}`);
+        console.log(`  カウントされたスタッフ:`, staffCountsDebug[slot] || []);
       }
 
       // 正社員チェック（9:00～16:00 = slot 18～32）
