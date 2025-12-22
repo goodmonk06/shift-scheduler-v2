@@ -475,6 +475,11 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       let current = halfHourCounts[slot];
       let diff = current - required;
 
+      // デバッグ: 余剰が大きい場合にログ出力
+      if (diff > 5) {
+        console.log(`[${dateIso}] slot ${slot} (${Math.floor(slot/2)}:${slot%2===0?'00':'30'}): current=${current}, required=${required}, diff=${diff}`);
+      }
+
       // 正社員チェック（9:00～16:00 = slot 18～32）
       if (slot >= 18 && slot < 33) {
         if (halfHourFullTimeCounts[slot] < 1) {
