@@ -189,6 +189,12 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     setAdminView("dev-shift-generation");
   };
 
+  // 開発専用シフト：既存の開発データを開く
+  const handleDevShiftExisting = (shiftId: number) => {
+    setDevShiftSourceId(shiftId);
+    setAdminView("dev-shift-generation");
+  };
+
   // 12月・1月以外の月クリック時（年間ビューから）
   const handleMonthClick = (year: number, month: number, existingShiftId: number | null) => {
     setSelectedYear(year);
@@ -498,6 +504,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
           month={devShiftMonth}
           onSelectNew={handleDevShiftNew}
           onSelectCopy={handleDevShiftCopy}
+          onSelectExisting={handleDevShiftExisting}
         />
 
         {/* Shift Selection Modal (12月・1月以外用) */}
