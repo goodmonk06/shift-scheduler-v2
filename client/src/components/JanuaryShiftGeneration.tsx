@@ -1004,7 +1004,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
   }, [hasUnsavedChanges]);
 
   const eventRowHeight = useMemo(() => {
-    return 60;
+    return 80;
   }, []);
 
   const staffStats = useMemo(() => {
@@ -2479,8 +2479,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         }}
                       >
                         {isEditing ? (
-                          <input
-                            type="text"
+                          <textarea
                             value={editingEventValue}
                             onChange={(e) => setEditingEventValue(e.target.value)}
                             onBlur={() => {
@@ -2488,19 +2487,27 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                               setEditingEventDate(null);
                             }}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
+                              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                // Ctrl+Enter または Cmd+Enter で確定
                                 setCustomEvents(prev => ({ ...prev, [dateStr]: editingEventValue }));
                                 setEditingEventDate(null);
+                                e.preventDefault();
                               } else if (e.key === 'Escape') {
                                 setEditingEventDate(null);
+                              } else if (e.key === 'Tab') {
+                                // Tabキーで確定
+                                setCustomEvents(prev => ({ ...prev, [dateStr]: editingEventValue }));
+                                setEditingEventDate(null);
+                                e.preventDefault();
                               }
                             }}
                             autoFocus
-                            className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-0"
-                            style={{ writingMode: 'horizontal-tb' }}
+                            rows={2}
+                            className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-1 resize-none"
+                            style={{ writingMode: 'horizontal-tb', lineHeight: '1.3' }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center leading-tight">
+                          <div className="w-full h-full flex items-center justify-center leading-tight px-1" style={{ whiteSpace: 'pre-wrap' }}>
                             {eventText || <span className="text-slate-300">+</span>}
                           </div>
                         )}
