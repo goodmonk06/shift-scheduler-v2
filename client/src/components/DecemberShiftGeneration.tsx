@@ -567,9 +567,10 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
 // --- コンポーネント本体 ---
 interface DecemberShiftGenerationProps {
   initialShiftId?: number | null;
+  onUnsavedChanges?: (hasChanges: boolean) => void;
 }
 
-export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerationProps = {}) {
+export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: DecemberShiftGenerationProps = {}) {
   const toast = useToast();
   const [dates] = useState(generateDateRange(START_DATE, END_DATE));
   const [staffList] = useState(STAFF_RAW_DATA);
@@ -599,6 +600,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
   const [inspectionMeals, setInspectionMeals] = useState<Record<string, string>>({});
   const [editingMealDate, setEditingMealDate] = useState<string | null>(null);
   const [editingMealValue, setEditingMealValue] = useState<string>('');
+
+  // 未保存変更フラグ
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
@@ -731,6 +735,9 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
         }
       }
 
+      // 保存成功時: 未保存フラグをクリア
+      setHasUnsavedChanges(false);
+
       setIsSaveModalOpen(false);
     } catch (error: any) {
       console.error('[DecemberShiftGeneration] Save failed:', error);
@@ -837,8 +844,8 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
             customText = `${startStr}～${endHour}`;
           }
 
-          // 希望休・希望勤務時間の場合はロック
-          const isLocked = detail.generatedBy === 'leave_request' || detail.generatedBy === 'work_preference';
+          // 希望休・希望勤務時間でも自動ロックしない（手動ロックのみ）
+          const isLocked = false;
 
           newShifts[key] = {
             type: detail.status === 'off' ? 'OFF' : 'WORK',
@@ -879,6 +886,35 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // シフトデータが変更されたら未保存フラグを立てる
+  useEffect(() => {
+    // 初回ロード中やデータが空の場合はスキップ
+    if (isLoadingInitialData || Object.keys(shifts).length === 0) return;
+
+    setHasUnsavedChanges(true);
+  }, [shifts, customEvents, inspectionMeals, isLoadingInitialData]);
+
+  // 親コンポーネントに未保存変更を通知
+  useEffect(() => {
+    if (onUnsavedChanges) {
+      onUnsavedChanges(hasUnsavedChanges);
+    }
+  }, [hasUnsavedChanges, onUnsavedChanges]);
+
+  // ページ離脱前の警告
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Chromeでは空文字列を設定する必要がある
+        return ''; // その他のブラウザ用
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const eventRowHeight = useMemo(() => {
     return 60;
@@ -1254,24 +1290,24 @@ export function DecemberShiftGeneration({ initialShiftId }: DecemberShiftGenerat
 
           if (staff.schedule && staff.schedule[dateStr]) {
             const req = staff.schedule[dateStr];
-            val = { type: 'DAY', customText: normalizeShiftText(req), isLocked: true };
-            if (req === '休') val = { type: 'OFF', customText: '休', isLocked: true };
-            else if (req === '有給' || req === '有') val = { type: 'HOPE', customText: '有', isLocked: true };
-            else if (req === '冬' || req === '冬休み') val = { type: 'WINTER', customText: '冬', isLocked: true };
-            else if (req === '夜' || req === '夜勤') val = { type: 'NIGHT', customText: '夜', isLocked: true };
-            else if (req === '明' || req === '明け') val = { type: 'EARLY', customText: '明', isLocked: true };
-            else if (req === '早' || req === '早番') val = { type: 'EARLY', customText: '早', isLocked: true };
-            else if (req === '遅' || req === '遅番') val = { type: 'LATE', customText: '遅', isLocked: true };
+            val = { type: 'DAY', customText: normalizeShiftText(req), isLocked: false };
+            if (req === '休') val = { type: 'OFF', customText: '休', isLocked: false };
+            else if (req === '有給' || req === '有') val = { type: 'HOPE', customText: '有', isLocked: false };
+            else if (req === '冬' || req === '冬休み') val = { type: 'WINTER', customText: '冬', isLocked: false };
+            else if (req === '夜' || req === '夜勤') val = { type: 'NIGHT', customText: '夜', isLocked: false };
+            else if (req === '明' || req === '明け') val = { type: 'EARLY', customText: '明', isLocked: false };
+            else if (req === '早' || req === '早番') val = { type: 'EARLY', customText: '早', isLocked: false };
+            else if (req === '遅' || req === '遅番') val = { type: 'LATE', customText: '遅', isLocked: false };
           }
           else if (staff.note && (staff.note.includes('休職') || staff.note.includes('スポット勤務'))) {
-            val = { type: 'OFF', customText: staff.note.includes('休職') ? '休職' : '', isLocked: true };
+            val = { type: 'OFF', customText: staff.note.includes('休職') ? '休職' : '', isLocked: false };
           }
           else {
             // 条件付き自動入力
             if ((cons.offDayOfWeek && cons.offDayOfWeek.includes(dayOfWeek)) || (cons.offHolidays && isHolidayFlag)) {
-              val = { type: 'OFF', customText: '休', isLocked: true };
+              val = { type: 'OFF', customText: '休', isLocked: false };
             } else if (cons.fixedDayOfWeek && cons.fixedDayOfWeek[dayOfWeek]) {
-              val = { type: 'DAY', customText: normalizeShiftText(cons.fixedDayOfWeek[dayOfWeek]), isLocked: true };
+              val = { type: 'DAY', customText: normalizeShiftText(cons.fixedDayOfWeek[dayOfWeek]), isLocked: false };
             }
           }
 

@@ -862,8 +862,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
             customText = `${startStr}～${endHour}`;
           }
 
-          // 希望休・希望勤務時間の場合はロック
-          const isLocked = detail.generatedBy === 'leave_request' || detail.generatedBy === 'work_preference';
+          // 希望休・希望勤務時間でも自動ロックしない（手動ロックのみ）
+          const isLocked = false;
 
           newShifts[key] = {
             type: detail.status === 'off' ? 'OFF' : 'WORK',
@@ -1308,24 +1308,24 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
 
           if (staff.schedule && staff.schedule[dateStr]) {
             const req = staff.schedule[dateStr];
-            val = { type: 'DAY', customText: normalizeShiftText(req), isLocked: true };
-            if (req === '休') val = { type: 'OFF', customText: '休', isLocked: true };
-            else if (req === '有給' || req === '有') val = { type: 'HOPE', customText: '有', isLocked: true };
-            else if (req === '冬' || req === '冬休み') val = { type: 'WINTER', customText: '冬', isLocked: true };
-            else if (req === '夜' || req === '夜勤') val = { type: 'NIGHT', customText: '夜', isLocked: true };
-            else if (req === '明' || req === '明け') val = { type: 'EARLY', customText: '明', isLocked: true };
-            else if (req === '早' || req === '早番') val = { type: 'EARLY', customText: '早', isLocked: true };
-            else if (req === '遅' || req === '遅番') val = { type: 'LATE', customText: '遅', isLocked: true };
+            val = { type: 'DAY', customText: normalizeShiftText(req), isLocked: false };
+            if (req === '休') val = { type: 'OFF', customText: '休', isLocked: false };
+            else if (req === '有給' || req === '有') val = { type: 'HOPE', customText: '有', isLocked: false };
+            else if (req === '冬' || req === '冬休み') val = { type: 'WINTER', customText: '冬', isLocked: false };
+            else if (req === '夜' || req === '夜勤') val = { type: 'NIGHT', customText: '夜', isLocked: false };
+            else if (req === '明' || req === '明け') val = { type: 'EARLY', customText: '明', isLocked: false };
+            else if (req === '早' || req === '早番') val = { type: 'EARLY', customText: '早', isLocked: false };
+            else if (req === '遅' || req === '遅番') val = { type: 'LATE', customText: '遅', isLocked: false };
           }
           else if (staff.note && (staff.note.includes('休職') || staff.note.includes('スポット勤務'))) {
-            val = { type: 'OFF', customText: staff.note.includes('休職') ? '休職' : '', isLocked: true };
+            val = { type: 'OFF', customText: staff.note.includes('休職') ? '休職' : '', isLocked: false };
           }
           else {
             // 条件付き自動入力
             if ((cons.offDayOfWeek && cons.offDayOfWeek.includes(dayOfWeek)) || (cons.offHolidays && isHolidayFlag)) {
-              val = { type: 'OFF', customText: '休', isLocked: true };
+              val = { type: 'OFF', customText: '休', isLocked: false };
             } else if (cons.fixedDayOfWeek && cons.fixedDayOfWeek[dayOfWeek]) {
-              val = { type: 'DAY', customText: normalizeShiftText(cons.fixedDayOfWeek[dayOfWeek]), isLocked: true };
+              val = { type: 'DAY', customText: normalizeShiftText(cons.fixedDayOfWeek[dayOfWeek]), isLocked: false };
             }
           }
 
@@ -1821,16 +1821,15 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
       // 元に戻した場合のみfalse、それ以外（クリア含む）はモードに応じて設定
       const shouldMarkEdited = actualOperationMode && !isNightShift && !isRevertedToOriginal;
 
-      // 休みや有給を入力した場合、自動的にロックをかける（山口さんの要望対応）
-      const isHolidayOrLeave = newVal.customText === '休' || newVal.customText === '有' || newVal.customText === '有給';
-      const shouldAutoLock = isHolidayOrLeave;
+      // 自動ロック機能を無効化（手動ロックのみ使用）
+      const shouldAutoLock = false;
 
       const updated = {
         ...prev,
         [key]: {
           ...prev[key],
           ...newVal,
-          // 休みや有給の場合は自動的にロック、それ以外は既存のロック状態を維持（明示的に指定されていればそれを優先）
+          // 自動ロックは無効、明示的に指定されている場合はそれを優先、それ以外は既存のロック状態を維持
           isLocked: newVal.isLocked !== undefined ? newVal.isLocked : (shouldAutoLock ? true : prev[key]?.isLocked),
           // 元に戻した場合のみfalse、それ以外はモードに応じて設定
           editedInActualMode: isRevertedToOriginal ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)

@@ -88,6 +88,7 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] = useState(false);
   const [pendingView, setPendingView] = useState<AdminView | null>(null);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
   // 未保存変更があるかチェックしてから画面遷移
   const navigateWithCheck = (newView: AdminView) => {
@@ -99,19 +100,27 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
     }
   };
 
-  // 未保存変更を破棄して画面遷移
+  // 未保存変更を破棄して画面遷移またはアクション実行
   const confirmNavigation = () => {
+    setHasUnsavedChanges(false);
+
     if (pendingView) {
-      setHasUnsavedChanges(false);
       setAdminView(pendingView);
       setPendingView(null);
     }
+
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+
     setIsUnsavedChangesModalOpen(false);
   };
 
   // 画面遷移をキャンセル
   const cancelNavigation = () => {
     setPendingView(null);
+    setPendingAction(null);
     setIsUnsavedChangesModalOpen(false);
   };
 
@@ -131,7 +140,12 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
 
   // 12月シフト生成画面へ遷移（年間ビューから）
   const handleDecemberClick = () => {
-    setIsDecemberSelectionModalOpen(true);
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => setIsDecemberSelectionModalOpen(true));
+      setIsUnsavedChangesModalOpen(true);
+    } else {
+      setIsDecemberSelectionModalOpen(true);
+    }
   };
 
   // 12月シフト：新規作成
@@ -148,7 +162,12 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
 
   // 1月シフト生成画面へ遷移（年間ビューから）
   const handleJanuaryClick = () => {
-    setIsJanuarySelectionModalOpen(true);
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => setIsJanuarySelectionModalOpen(true));
+      setIsUnsavedChangesModalOpen(true);
+    } else {
+      setIsJanuarySelectionModalOpen(true);
+    }
   };
 
   // 1月シフト：新規作成
@@ -179,20 +198,44 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
 
   // 開発専用シフト：新規作成
   const handleDevShiftNew = () => {
-    setDevShiftSourceId(null);
-    setAdminView("dev-shift-generation");
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setDevShiftSourceId(null);
+        setAdminView("dev-shift-generation");
+      });
+      setIsUnsavedChangesModalOpen(true);
+    } else {
+      setDevShiftSourceId(null);
+      setAdminView("dev-shift-generation");
+    }
   };
 
   // 開発専用シフト：本番データをコピーして作成
   const handleDevShiftCopy = (sourceShiftId: number) => {
-    setDevShiftSourceId(sourceShiftId);
-    setAdminView("dev-shift-generation");
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setDevShiftSourceId(sourceShiftId);
+        setAdminView("dev-shift-generation");
+      });
+      setIsUnsavedChangesModalOpen(true);
+    } else {
+      setDevShiftSourceId(sourceShiftId);
+      setAdminView("dev-shift-generation");
+    }
   };
 
   // 開発専用シフト：既存の開発データを開く
   const handleDevShiftExisting = (shiftId: number) => {
-    setDevShiftSourceId(shiftId);
-    setAdminView("dev-shift-generation");
+    if (hasUnsavedChanges) {
+      setPendingAction(() => () => {
+        setDevShiftSourceId(shiftId);
+        setAdminView("dev-shift-generation");
+      });
+      setIsUnsavedChangesModalOpen(true);
+    } else {
+      setDevShiftSourceId(shiftId);
+      setAdminView("dev-shift-generation");
+    }
   };
 
   // 12月・1月以外の月クリック時（年間ビューから）
@@ -252,11 +295,11 @@ export function AdminApp({ hasNotifications = false, onNotificationsToggle, onLo
       case "shift-generation":
         return <ShiftGeneration year={selectedYear} month={selectedMonth} initialShiftId={selectedShiftId} onBack={handleBackFromShiftGeneration} />;
       case "december-shift-generation":
-        return <DecemberShiftGeneration initialShiftId={selectedDecemberShiftId} />;
+        return <DecemberShiftGeneration initialShiftId={selectedDecemberShiftId} onUnsavedChanges={setHasUnsavedChanges} />;
       case "january-shift-generation":
         return <JanuaryShiftGeneration initialShiftId={selectedJanuaryShiftId} onUnsavedChanges={setHasUnsavedChanges} />;
       case "dev-shift-generation":
-        return <DevShiftGeneration year={devShiftYear} month={devShiftMonth} initialShiftId={devShiftSourceId} />;
+        return <DevShiftGeneration year={devShiftYear} month={devShiftMonth} initialShiftId={devShiftSourceId} onUnsavedChanges={setHasUnsavedChanges} />;
       case "leave-requests":
         return <VacationManagement />;
       case "work-preferences":
