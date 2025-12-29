@@ -1073,6 +1073,9 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
   // 日本語とスタイルを完璧に保持
   // ====================================================================
   const handlePrint = async () => {
+    // 元のdisplay値を保存するためのMap
+    const originalDisplayValues = new Map<HTMLElement, string>();
+
     try {
       const gridWrapper = document.getElementById('grid-wrapper');
       if (!gridWrapper) {
@@ -1083,10 +1086,14 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
       // PDF出力用のスタイルを一時的に適用
       gridWrapper.classList.add('pdf-export-mode');
 
-      // 統計列を一時的に非表示
+      // 統計列を一時的に非表示（元のdisplay値を保存）
       const statsColumns = document.querySelectorAll('.print\\:hidden');
       statsColumns.forEach(col => {
-        (col as HTMLElement).style.display = 'none';
+        const htmlCol = col as HTMLElement;
+        // 元のdisplay値を保存
+        originalDisplayValues.set(htmlCol, htmlCol.style.display || '');
+        // 非表示に設定
+        htmlCol.style.display = 'none';
       });
 
       // 少し待ってからキャプチャ（スタイル適用を待つ）
@@ -1104,8 +1111,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
 
       // 元に戻す
       gridWrapper.classList.remove('pdf-export-mode');
-      statsColumns.forEach(col => {
-        (col as HTMLElement).style.display = '';
+      originalDisplayValues.forEach((originalValue, element) => {
+        element.style.display = originalValue;
       });
 
       toast.success('PDFを出力しました');
@@ -1117,9 +1124,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
       const gridWrapper = document.getElementById('grid-wrapper');
       if (gridWrapper) {
         gridWrapper.classList.remove('pdf-export-mode');
-        const statsColumns = document.querySelectorAll('.print\\:hidden');
-        statsColumns.forEach(col => {
-          (col as HTMLElement).style.display = '';
+        originalDisplayValues.forEach((originalValue, element) => {
+          element.style.display = originalValue;
         });
       }
     }
