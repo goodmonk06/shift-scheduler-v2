@@ -96,19 +96,21 @@ const STAFF_RAW_DATA = [
   { id: '19', name: '足立 豊子', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '休', '2026-01-02': '有給', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '9～17', workDaysPerMonth: 18, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   { id: '20', name: '関田 あゆみ', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '9～12', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], fixedDayOfWeek: { 1: '9～15', 2: '9～15', 4: '9～15', 3: '9～16', 5: '9～16' }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   { id: '21', name: '長山 真梨奈', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '9～12半', '2026-01-03': '9～12半', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], defaultShift: '9～13半', fixedTimeOnly: true, breakTime: 0 } },
-  { id: '22', name: '近藤 由美子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { workDaysPerWeek: 1, defaultShift: '9～13', fixedTimeOnly: true, breakTime: 0 } },
+  { id: '22', name: '近藤 由美子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { workDaysPerWeek: 1, defaultShift: '9～13', fixedTimeOnly: true, breakTime: 0 }, isArchived: true },
   {
     id: '23', name: '大堀SHIRLEY TAN', role: 'staff', qualification: '初任者研修',
     schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～18' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], workDaysPerWeek: 4, defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
   },
   { id: '24', name: '宝本 龍騎', role: 'staff', qualification: '初任者研修', schedule: { '2026-01-01': '10～15', '2026-01-02': '10～15', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '10～15' }, constraints: { defaultShift: '10～14', workDaysPerWeek: 3, fixedTimeOnly: true, breakTime: 0 } },
+  { id: '28', name: '宮崎 伸子', role: 'staff', qualification: 'ヘルパー2級', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   { id: '25', name: '岩崎 亜友美', role: 'staff', qualification: '有料職員', schedule: { '2026-01-01': '8～17', '2026-01-02': '休', '2026-01-03': '8～17', '2026-01-04': '休', '2026-01-05': '8～17' }, constraints: { offDayOfWeek: [0, 3, 6], defaultShift: '8～17', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   {
     id: '26', name: '伊藤 美穂', role: 'staff', qualification: '初任者研修',
     // 現在勤務できない状態（全日程空白でロック）
     note: 'スポット勤務',
     schedule: {},
-    constraints: { offDayOfWeek: [0, 1, 3, 5], fixedDayOfWeek: { 2: '11半～17', 4: '11半～17', 6: '11半～17' }, fixedTimeOnly: true, breakTime: 0 }
+    constraints: { offDayOfWeek: [0, 1, 3, 5], fixedDayOfWeek: { 2: '11半～17', 4: '11半～17', 6: '11半～17' }, fixedTimeOnly: true, breakTime: 0 },
+    isArchived: true
   },
   { id: '27', name: '淺野 穂菜美', role: 'staff', qualification: '事務員', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '8～16半', '2026-01-04': '8～16半', '2026-01-05': '8～16半' }, constraints: { offHolidays: true, offDayOfWeek: [0, 4, 6], defaultShift: '8～16半', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
 ];
@@ -607,7 +609,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
   }, [year, month]);
 
   const [dates] = useState(generateDateRange(START_DATE, END_DATE));
-  const [staffList] = useState(STAFF_RAW_DATA);
+  const [staffList] = useState(STAFF_RAW_DATA.filter(staff => !staff.isArchived));
   const [shifts, setShifts] = useState<any>({});
   const [previousShifts, setPreviousShifts] = useState<any>(null); // AI生成前の状態を保存（アンドゥ用）
   const [isGenerating, setIsGenerating] = useState(false);

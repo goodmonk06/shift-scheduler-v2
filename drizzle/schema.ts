@@ -69,6 +69,8 @@ export const employees = mysqlTable("employees", {
   notificationEnabled: boolean("notificationEnabled").default(true).notNull(), // 通知を受け取るか
   notificationEmail: varchar("notificationEmail", { length: 320 }), // 通知用メールアドレス
   lineUserId: varchar("lineUserId", { length: 100 }), // LINE通知用ID
+  isArchived: boolean("isArchived").default(false).notNull(), // アーカイブ済みフラグ（論理削除）
+  archivedAt: timestamp("archivedAt"), // アーカイブ日時
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
