@@ -558,7 +558,30 @@ interface JanuaryShiftGenerationProps {
 export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: JanuaryShiftGenerationProps = {}) {
   const toast = useToast();
   const [dates] = useState(generateDateRange(START_DATE, END_DATE));
-  const [staffList] = useState(STAFF_RAW_DATA.filter(staff => !staff.isArchived));
+  // 職員リストの並び替え機能（localStorageに保存）
+  const [staffList, setStaffList] = useState(() => {
+    const filteredData = STAFF_RAW_DATA.filter(staff => !staff.isArchived);
+
+    // localStorageから保存済みの順序を取得
+    const savedOrder = localStorage.getItem('januaryStaffOrder');
+    if (savedOrder) {
+      try {
+        const orderIds = JSON.parse(savedOrder);
+        // 保存された順序に従って並び替え
+        const ordered = orderIds
+          .map((id: string) => filteredData.find(s => s.id === id))
+          .filter(Boolean);
+
+        // 新しく追加された職員を末尾に追加
+        const newStaff = filteredData.filter(s => !orderIds.includes(s.id));
+        return [...ordered, ...newStaff];
+      } catch (e) {
+        console.error('Failed to load staff order:', e);
+      }
+    }
+
+    return filteredData;
+  });
   const [shifts, setShifts] = useState<any>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
@@ -589,6 +612,38 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editingMealDate, setEditingMealDate] = useState<string | null>(null);
   const [editingMealValue, setEditingMealValue] = useState<string>('');
+
+  // 職員の順序を保存する関数
+  const saveStaffOrder = (newStaffList: any[]) => {
+    const orderIds = newStaffList.map(s => s.id);
+    localStorage.setItem('januaryStaffOrder', JSON.stringify(orderIds));
+  };
+
+  // 職員を上に移動
+  const moveStaffUp = (index: number) => {
+    if (index === 0) return; // 既に一番上
+    const newList = [...staffList];
+    [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]];
+    setStaffList(newList);
+    saveStaffOrder(newList);
+  };
+
+  // 職員を下に移動
+  const moveStaffDown = (index: number) => {
+    if (index === staffList.length - 1) return; // 既に一番下
+    const newList = [...staffList];
+    [newList[index], newList[index + 1]] = [newList[index + 1], newList[index]];
+    setStaffList(newList);
+    saveStaffOrder(newList);
+  };
+
+  // 職員の順序をリセット
+  const resetStaffOrder = () => {
+    const originalOrder = STAFF_RAW_DATA.filter(staff => !staff.isArchived);
+    setStaffList(originalOrder);
+    localStorage.removeItem('januaryStaffOrder');
+    toast.success('職員の順序をリセットしました');
+  };
 
   // AI Check state
   const [isChecking, setIsChecking] = useState(false);
@@ -2196,6 +2251,15 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
           </button>
 
           <button
+            onClick={resetStaffOrder}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border bg-slate-800 text-slate-300 border-slate-700 hover:bg-blue-900 hover:text-white hover:border-blue-700"
+            title="職員の表示順序を元に戻す"
+          >
+            <RefreshCw size={14} />
+            順序リセット
+          </button>
+
+          <button
             onClick={() => setEditLockEnabled(!editLockEnabled)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${editLockEnabled
               ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-750 hover:text-white'
@@ -2474,7 +2538,27 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-12 transition-colors">
                       {/* 氏名列 */}
                       <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px]">
-                        {staff.name}
+                        <div className="flex items-center gap-1">
+                          <div className="flex flex-col print:hidden">
+                            <button
+                              onClick={() => moveStaffUp(index)}
+                              disabled={index === 0}
+                              className={`text-xs px-1 ${index === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+                              title="上へ移動"
+                            >
+                              ▲
+                            </button>
+                            <button
+                              onClick={() => moveStaffDown(index)}
+                              disabled={index === staffList.length - 1}
+                              className={`text-xs px-1 ${index === staffList.length - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+                              title="下へ移動"
+                            >
+                              ▼
+                            </button>
+                          </div>
+                          <span>{staff.name}</span>
+                        </div>
                       </td>
                       {/* 資格列 */}
                       <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white border-r-2 border-r-slate-700 w-24 min-w-[130px]">
