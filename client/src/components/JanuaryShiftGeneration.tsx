@@ -697,7 +697,9 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
           month: 1,
           name: saveName,
           entries: entries,
-          overwriteShiftId: loadedShiftId  // サーバー側で対応が必要
+          overwriteShiftId: loadedShiftId,  // サーバー側で対応が必要
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
 
         toast.success(`シフトを上書き保存しました (${entries.length}件)`);
@@ -710,7 +712,9 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
           year: 2026,
           month: 1,
           name: saveName,
-          entries: entries
+          entries: entries,
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
 
         console.log(`[JanuaryShiftGeneration] Save result:`, result);
@@ -799,6 +803,14 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
           console.log('[JanuaryShiftGeneration] Inherit mode from December shift:', shiftData.name);
         } else {
           setLoadedShiftName(shiftData.name || "");
+        }
+
+        // 行事予定と検食を復元
+        if (shiftData.customEvents) {
+          setCustomEvents(shiftData.customEvents);
+        }
+        if (shiftData.inspectionMeals) {
+          setInspectionMeals(shiftData.inspectionMeals);
         }
 
         console.log('[JanuaryShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');

@@ -750,7 +750,9 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           name: saveName,
           entries: entries,
           overwriteShiftId: loadedShiftId,  // サーバー側で対応が必要
-          isDevelopment: true  // 開発専用シフト
+          isDevelopment: true,  // 開発専用シフト
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
 
         toast.success(`シフトを上書き保存しました (${entries.length}件)`);
@@ -764,7 +766,9 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           month,
           name: saveName,
           entries: entries,
-          isDevelopment: true  // 開発専用シフト
+          isDevelopment: true,  // 開発専用シフト
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
 
         console.log(`[JanuaryShiftGeneration] Save result:`, result);
@@ -857,6 +861,14 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           // 本番データからコピーする場合はプレフィックスを付与
           setLoadedShiftName(`(本番からコピー) ${year}年${month}月シフト`);
           console.log('[DevShiftGeneration] Copy mode from production shift:', shiftData.name);
+        }
+
+        // 行事予定と検食を復元
+        if (shiftData.customEvents) {
+          setCustomEvents(shiftData.customEvents);
+        }
+        if (shiftData.inspectionMeals) {
+          setInspectionMeals(shiftData.inspectionMeals);
         }
 
         console.log('[DevShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');

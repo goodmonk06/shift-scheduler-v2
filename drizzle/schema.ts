@@ -183,6 +183,8 @@ export const shifts: any = mysqlTable("shifts", {
   isArchived: boolean("isArchived").default(false).notNull(),
   archivedAt: timestamp("archivedAt"),
   isDevelopment: boolean("isDevelopment").default(false).notNull(), // 開発専用シフトフラグ（本番と分離）
+  customEvents: json("customEvents").$type<Record<string, string>>(), // 行事予定（日付→イベント名）
+  inspectionMeals: json("inspectionMeals").$type<Record<string, string>>(), // 検食（日付→担当者名）
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

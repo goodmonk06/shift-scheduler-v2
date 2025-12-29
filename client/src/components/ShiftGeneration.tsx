@@ -748,6 +748,14 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
 
         setLoadedShiftName(shiftData.name || "");
 
+        // 行事予定と検食を復元
+        if (shiftData.customEvents) {
+          setCustomEvents(shiftData.customEvents);
+        }
+        if (shiftData.inspectionMeals) {
+          setInspectionMeals(shiftData.inspectionMeals);
+        }
+
         const newShifts: any = {};
         let matchedCount = 0;
 
@@ -896,7 +904,9 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
           month: month,
           name: saveName,
           entries: entries,
-          overwriteShiftId: loadedShiftId
+          overwriteShiftId: loadedShiftId,
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
         toast.success(`シフトを上書き保存しました (${entries.length}件)`);
       } else {
@@ -904,7 +914,9 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
           year: year,
           month: month,
           name: saveName,
-          entries: entries
+          entries: entries,
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
         toast.success(`シフトを保存しました (${entries.length}件)`);
 

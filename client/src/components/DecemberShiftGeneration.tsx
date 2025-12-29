@@ -712,7 +712,9 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
           month: 12,
           name: saveName,
           entries: entries,
-          overwriteShiftId: loadedShiftId  // サーバー側で対応が必要
+          overwriteShiftId: loadedShiftId,  // サーバー側で対応が必要
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
 
         toast.success(`シフトを上書き保存しました (${entries.length}件)`);
@@ -722,7 +724,9 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
           year: 2025,
           month: 12,
           name: saveName,
-          entries: entries
+          entries: entries,
+          customEvents: customEvents,
+          inspectionMeals: inspectionMeals,
         });
 
         console.log(`[DecemberShiftGeneration] Save result:`, result);
@@ -793,6 +797,14 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
 
         // シフト名を保存
         setLoadedShiftName(shiftData.name || "");
+
+        // 行事予定と検食を復元
+        if (shiftData.customEvents) {
+          setCustomEvents(shiftData.customEvents);
+        }
+        if (shiftData.inspectionMeals) {
+          setInspectionMeals(shiftData.inspectionMeals);
+        }
 
         console.log('[DecemberShiftGeneration] Processing', shiftData.shiftDetails.length, 'shift details');
 

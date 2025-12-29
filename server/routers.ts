@@ -538,6 +538,8 @@ export const appRouter = router({
         })),
         overwriteShiftId: z.number().optional(), // 上書き保存用のシフトID
         isDevelopment: z.boolean().optional(), // 開発専用シフトフラグ
+        customEvents: z.record(z.string()).optional(), // 行事予定（日付→イベント名）
+        inspectionMeals: z.record(z.string()).optional(), // 検食（日付→担当者名）
       }))
       .mutation(async ({ input, ctx }) => {
         let newShiftId: number;
@@ -547,9 +549,11 @@ export const appRouter = router({
           console.log(`[saveStandalone] Overwriting shift ID: ${input.overwriteShiftId}`);
           await db.deleteShiftDetailsByShiftId(input.overwriteShiftId);
 
-          // シフト名を更新
+          // シフト名と行事予定・検食を更新
           await db.updateShift(input.overwriteShiftId, {
             name: input.name,
+            customEvents: input.customEvents,
+            inspectionMeals: input.inspectionMeals,
             updatedAt: new Date(),
           });
 
@@ -564,6 +568,8 @@ export const appRouter = router({
             generatedBy: "ai",
             userId: ctx.user?.id || null,
             isDevelopment: input.isDevelopment || false,
+            customEvents: input.customEvents || {},
+            inspectionMeals: input.inspectionMeals || {},
             createdAt: new Date(),
             updatedAt: new Date(),
           });
