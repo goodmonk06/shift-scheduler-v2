@@ -2470,11 +2470,11 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
                           styles.color = '#000000';
                           styles.backgroundColor = isLockedAndActive ? '#ffffff' : '#ffffff';
                         }
-                        else if (cellData.customText === '早') {
+                        else if (cellData.customText === '早' || cellData.customText.startsWith('8')) {
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#6ee7b7' : '#86efac'; // Green 300（濃く）
                         }
-                        else if (cellData.customText === '遅' || cellData.customText.startsWith('11') || cellData.customText.startsWith('18')) {
+                        else if (cellData.customText === '遅' || cellData.customText.startsWith('11') || cellData.customText.startsWith('16') || cellData.customText.startsWith('18')) {
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#fb923c' : '#fdba74'; // Orange 300（濃く）
                         }
