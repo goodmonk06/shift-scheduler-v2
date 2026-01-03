@@ -21,7 +21,7 @@ import { useToast } from "../hooks/useToast";
 interface EmployeeStats {
   employeeId: number;
   employeeName: string;
-  positionGroupId: number | null;
+  positionGroupName: string;
   workDays: number;
 }
 
@@ -248,7 +248,7 @@ export function Statistics() {
                   <TableCell>{stat.employeeName}</TableCell>
                   <TableCell className="text-muted-foreground">{stat.employeeId}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {stat.positionGroupId || "-"}
+                    {stat.positionGroupName}
                   </TableCell>
                   <TableCell className="text-right">{stat.workDays}日</TableCell>
                 </TableRow>

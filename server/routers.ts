@@ -1968,23 +1968,33 @@ export const appRouter = router({
         const shiftDetails = await db.getShiftDetailsByShiftId(targetShift.id);
         const employees = await db.getAllEmployees();
         const timeSlots = await db.getAllWorkTimeSlots();
+        const positionGroups = await db.getAllPositionGroups();
 
         // 職員ごとの統計を計算
         const employeeStatsMap = new Map<number, {
           employeeId: number;
           employeeName: string;
-          positionGroupId: number | null;
+          positionGroupName: string;
           workDays: number;
         }>();
 
         for (const detail of shiftDetails) {
-          if (detail.status === 'working' && detail.timeSlotId) {
+          // 勤務としてカウントする条件を緩和：
+          // - status が 'off' 以外
+          // - または (startTime と endTime が存在)
+          // - または timeSlotId が存在
+          const isWorkDay = detail.status !== 'off' ||
+                           (detail.startTime && detail.endTime) ||
+                           detail.timeSlotId !== null;
+
+          if (isWorkDay) {
             const employee = employees.find(e => e.id === detail.employeeId);
             if (employee) {
+              const positionGroup = positionGroups.find(pg => pg.id === employee.positionGroupId);
               const stats = employeeStatsMap.get(detail.employeeId) || {
                 employeeId: detail.employeeId,
                 employeeName: employee.name,
-                positionGroupId: employee.positionGroupId,
+                positionGroupName: positionGroup?.name || '-',
                 workDays: 0,
               };
               stats.workDays++;
