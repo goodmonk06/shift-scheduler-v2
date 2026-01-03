@@ -538,8 +538,8 @@ export const appRouter = router({
         })),
         overwriteShiftId: z.number().optional(), // 上書き保存用のシフトID
         isDevelopment: z.boolean().optional(), // 開発専用シフトフラグ
-        customEvents: z.record(z.string()).optional(), // 行事予定（日付→イベント名）
-        inspectionMeals: z.record(z.string()).optional(), // 検食（日付→担当者名）
+        customEvents: z.record(z.string(), z.string()).optional(), // 行事予定（日付→イベント名）
+        inspectionMeals: z.record(z.string(), z.string()).optional(), // 検食（日付→担当者名）
       }))
       .mutation(async ({ input, ctx }) => {
         let newShiftId: number;
