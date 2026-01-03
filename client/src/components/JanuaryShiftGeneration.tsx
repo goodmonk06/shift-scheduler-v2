@@ -2712,7 +2712,6 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                       <td
                         key={dateStr}
                         className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-white cursor-pointer hover:bg-blue-50 print:cursor-default"
-                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                         onClick={() => {
                           if (!isEditing) {
                             setEditingMealDate(dateStr);
