@@ -912,8 +912,13 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
             customText = `${startStr}～${endHour}`;
           }
 
-          // 希望休・希望勤務時間でも自動ロックしない（手動ロックのみ）
-          const isLocked = false;
+          // generatedByからロック状態を判定
+          const isLocked = detail.generatedBy === 'leave_request' || detail.generatedBy === 'work_preference';
+
+          // デバッグ: ロックされたセルをログ出力
+          if (isLocked) {
+            console.log('[DecemberShiftGeneration] Locked cell found:', { key, generatedBy: detail.generatedBy, customText, isLocked });
+          }
 
           newShifts[key] = {
             type: detail.status === 'off' ? 'OFF' : 'WORK',
@@ -925,6 +930,11 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
         }
 
         console.log('[DecemberShiftGeneration] Matched:', matchedCount, 'Unmatched employees:', unmatchedEmployees);
+
+        // ロックされたセルの合計数を出力
+        const lockedCount = Object.values(newShifts).filter((s: any) => s.isLocked).length;
+        console.log('[DecemberShiftGeneration] Locked cells count:', lockedCount);
+
         setShifts(newShifts);
         // 初期値を保存（元に戻したかどうかの判定に使用）
         setOriginalShifts(JSON.parse(JSON.stringify(newShifts)));
@@ -2553,6 +2563,17 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
 
                         const isLocked = cellData.isLocked;
                         const isLockedAndActive = isLocked && editLockEnabled;
+
+                        // デバッグ: 最初の数セルだけログ出力（パフォーマンス考慮）
+                        if (isLocked && staff.id === staffList[0]?.id && date === dates[0]) {
+                          console.log('[DecemberShiftGeneration] Render locked cell:', {
+                            key,
+                            isLocked,
+                            editLockEnabled,
+                            isLockedAndActive,
+                            customText: cellData.customText
+                          });
+                        }
 
                         let textColor = 'text-slate-900';
 
