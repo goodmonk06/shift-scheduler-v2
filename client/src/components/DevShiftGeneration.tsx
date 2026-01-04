@@ -1902,7 +1902,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           ...prev[key],
           type,
           customText,
-          isLocked: false,
+          // ロック状態を保持（既存の値を維持）
+          isLocked: prev[key]?.isLocked || false,
           // 元に戻した場合のみfalse、それ以外はモードに応じて設定
           editedInActualMode: isRevertedToOriginal ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
@@ -1974,6 +1975,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
         [key]: {
           ...prev[key],
           ...newVal,
+          // ロック状態を保持（newValに含まれていない場合は既存の値を維持）
+          isLocked: newVal.isLocked !== undefined ? newVal.isLocked : (prev[key]?.isLocked || false),
           // 元に戻した場合のみfalse、それ以外はモードに応じて設定
           editedInActualMode: isRevertedToOriginal ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }

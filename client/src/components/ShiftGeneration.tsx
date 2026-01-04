@@ -1036,9 +1036,11 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
       const updated = {
         ...prev,
         [key]: {
+          ...prev[key],
           type,
           customText: text,
-          isLocked: false,
+          // ロック状態を保持（既存の値を維持）
+          isLocked: prev[key]?.isLocked || false,
           editedInActualMode: isRevertedToOriginal ? false : (actualOperationMode && !isNightShift)
         }
       };
@@ -1107,6 +1109,8 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
         [key]: {
           ...prev[key],
           ...newVal,
+          // ロック状態を保持（newValに含まれていない場合は既存の値を維持）
+          isLocked: newVal.isLocked !== undefined ? newVal.isLocked : (prev[key]?.isLocked || false),
           editedInActualMode: isRevertedToOriginal ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
       };
