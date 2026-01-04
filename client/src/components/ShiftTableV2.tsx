@@ -242,7 +242,7 @@ export function ShiftTableV2({
           {(cell?.isLocked || (cell?.source === 'HOPE' && cell?.isHope)) && (
             <div className={cn(
               "absolute top-0.5 left-0.5 transition-opacity",
-              filterSettings.showLockIcon ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              filterSettings.showLockIcon ? "opacity-100" : "opacity-40 group-hover:opacity-100"
             )}>
               <Lock className="w-3 h-3 text-yellow-600" />
             </div>

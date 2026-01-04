@@ -134,7 +134,7 @@ const SHIFT_TYPES = {
   EARLY: { id: 'E', label: '早', text: '早', color: 'text-gray-900', bgColor: 'bg-sky-200' },
   LATE: { id: 'L', label: '遅', text: '遅', color: 'text-gray-900', bgColor: 'bg-green-200' },
   OFF: { id: 'X', label: '休', text: '休', color: 'text-red-600', bgColor: 'bg-red-100' },
-  HOPE: { id: 'H', label: '希', text: '有', color: 'text-orange-800', bgColor: 'bg-orange-200' },
+  HOPE: { id: 'H', label: '希', text: '有', color: 'text-red-600', bgColor: 'bg-white' },
   WINTER: { id: 'W', label: '冬', text: '冬', color: 'text-blue-800', bgColor: 'bg-blue-200' },
   FREE: { id: 'F', label: 'free', text: 'free', color: 'text-gray-600', bgColor: 'bg-gray-100' },
 };
@@ -2682,6 +2682,7 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
                       <td
                         key={dateStr}
                         className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-white cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                         onClick={() => {
                           if (!isEditing) {
                             setEditingMealDate(dateStr);
@@ -2708,7 +2709,7 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
                             }}
                             autoFocus
                             className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-0"
-                            style={{ writingMode: 'horizontal-tb' }}
+                            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center leading-tight">

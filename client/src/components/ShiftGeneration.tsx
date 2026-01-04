@@ -40,7 +40,7 @@ const SHIFT_TYPES = {
   EARLY: { id: 'E', label: '早', text: '早', color: 'text-gray-900', bgColor: 'bg-sky-200' },
   LATE: { id: 'L', label: '遅', text: '遅', color: 'text-gray-900', bgColor: 'bg-green-200' },
   OFF: { id: 'X', label: '休', text: '休', color: 'text-red-600', bgColor: 'bg-red-100' },
-  HOPE: { id: 'H', label: '希', text: '有', color: 'text-orange-800', bgColor: 'bg-orange-200' },
+  HOPE: { id: 'H', label: '希', text: '有', color: 'text-red-600', bgColor: 'bg-white' },
   WINTER: { id: 'W', label: '冬', text: '冬', color: 'text-blue-800', bgColor: 'bg-blue-200' },
 };
 
@@ -792,9 +792,16 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
             isLocked: isLocked,
             editedInActualMode: detail.editedInActualMode || false,
           };
+
+          // デバッグ: ロックされたセルをログ出力
+          if (isLocked) {
+            console.log('[ShiftGeneration] Locked cell found:', { key, generatedBy: detail.generatedBy, customText, isLocked });
+          }
         }
 
         console.log('[ShiftGeneration] Matched:', matchedCount);
+        const lockedCount = Object.values(newShifts).filter((s: any) => s.isLocked).length;
+        console.log('[ShiftGeneration] Locked cells count:', lockedCount);
         setShifts(newShifts);
         setOriginalShifts(JSON.parse(JSON.stringify(newShifts)));
         setLoadedShiftId(initialShiftId);
@@ -1600,6 +1607,17 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
                         const isLocked = cellData.isLocked;
                         const isLockedAndActive = isLocked && editLockEnabled;
 
+                        // デバッグ: 最初の数セルだけログ出力（パフォーマンス考慮）
+                        if (isLocked && staff.id === staffList[0]?.id && date === dates[0]) {
+                          console.log('[ShiftGeneration] Render locked cell:', {
+                            key,
+                            isLocked,
+                            editLockEnabled,
+                            isLockedAndActive,
+                            customText: cellData.customText
+                          });
+                        }
+
                         const lockPatternClass = isLockedAndActive
                           ? 'bg-[repeating-linear-gradient(45deg,#f8fafc,#f8fafc_5px,#f1f5f9_5px,#f1f5f9_10px)]'
                           : '';
@@ -1739,6 +1757,7 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
                       <td
                         key={dateStr}
                         className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-white cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                         onClick={() => {
                           if (!isEditing) {
                             setEditingMealDate(dateStr);
@@ -1765,7 +1784,7 @@ export function ShiftGeneration({ year, month, initialShiftId, onBack }: ShiftGe
                             }}
                             autoFocus
                             className="w-full h-full text-[9px] text-center border-none outline-none bg-blue-100 p-0"
-                            style={{ writingMode: 'horizontal-tb' }}
+                            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center leading-tight">
