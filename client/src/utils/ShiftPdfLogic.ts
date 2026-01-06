@@ -63,6 +63,16 @@ export const generatePDFFromHTML = async (
     // 1. PDF用スタイルを動的に注入
     pdfStyle = document.createElement('style');
     pdfStyle.innerHTML = `
+      /* テーブル外枠を太く */
+      .pdf-export-mode > table {
+        border: 4px solid black !important;
+      }
+
+      /* ヘッダー行の罫線を太く */
+      .pdf-export-mode thead th {
+        border: 2px solid #374151 !important;
+      }
+
       /* セル内のdivを完全にフラット化 */
       .pdf-export-mode td > div,
       .pdf-export-mode td > div > *,
@@ -88,19 +98,23 @@ export const generatePDFFromHTML = async (
         background-color: transparent !important;
       }
 
-      /* 資格列を表示 */
+      /* 資格列を表示（幅80pxに縮小） */
       .pdf-export-mode th:nth-child(2),
       .pdf-export-mode td:nth-child(2) {
         display: table-cell !important;
-        width: auto !important;
-        min-width: 100px !important;
+        width: 80px !important;
+        min-width: 80px !important;
+        max-width: 80px !important;
+        padding: 2px !important;
       }
 
-      /* 名前列の幅確保 */
+      /* 名前列の幅確保・左寄せ・中央揃え */
       .pdf-export-mode th:nth-child(1),
       .pdf-export-mode td:nth-child(1) {
         min-width: 150px !important;
         white-space: nowrap !important;
+        text-align: left !important;
+        vertical-align: middle !important;
       }
     `;
     document.head.appendChild(pdfStyle);
