@@ -69,8 +69,9 @@ export const generatePDFFromHTML = async (
         border: 4px solid black !important;
       }
 
-      /* すべてのヘッダーセルの罫線を太く */
-      .pdf-export-mode thead tr th {
+      /* 氏名・資格ヘッダーの罫線を太く */
+      .pdf-export-mode thead tr th:nth-child(1),
+      .pdf-export-mode thead tr th:nth-child(2) {
         border: 2px solid #374151 !important;
       }
 
