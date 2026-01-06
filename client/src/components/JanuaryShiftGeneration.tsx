@@ -1839,8 +1839,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
           ...prev[key],
           type,
           customText,
-          // ロック状態を保持（既存の値を維持）
-          isLocked: prev[key]?.isLocked || false,
+          // クリア時はロックも解除、それ以外は既存の値を維持
+          isLocked: customText === '' ? false : (prev[key]?.isLocked || false),
           // 元に戻した場合のみfalse、それ以外はモードに応じて設定
           editedInActualMode: isRevertedToOriginal ? false : (shouldMarkEdited ? true : prev[key]?.editedInActualMode)
         }
@@ -2620,8 +2620,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           styles.backgroundColor = isLockedAndActive ? '#fef7fb' : '#ffffff'; // ほぼ白のピンク : 白
                         }
                         else if (cellData.customText === '有' || cellData.customText === '有給') {
-                          styles.color = '#9a3412'; // オレンジ文字（濃く）
-                          styles.backgroundColor = '#fed7aa'; // オレンジ背景（オレンジ200）
+                          styles.color = '#dc2626';
+                          styles.backgroundColor = '#ffffff';
                         }
                         else if (cellData.customText === '夜') {
                           styles.color = '#ffffff';
@@ -2642,9 +2642,9 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         }
                         else if (cellData.customText === '冬') {
                           styles.color = '#1e40af';
-                          styles.backgroundColor = isLockedAndActive ? '#bfdbfe' : '#dbeafe';
+                          styles.backgroundColor = '#ffffff';
                         }
-                        else if (cellData.customText === '日A' || cellData.customText === '8～17' || cellData.customText === '8-17') {
+                        else if (cellData.customText === '日A' || cellData.customText === '8～17' || cellData.customText === '8-17' || cellData.customText.startsWith('8')) {
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#bae6fd' : '#e0f2fe'; // Sky 100 (薄い水色系)
                         }
@@ -2887,7 +2887,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
           <span className="text-slate-900 bg-blue-200 px-1.5 py-0.5 rounded border border-blue-300 font-bold">夜</span>
           <span className="text-slate-900 bg-green-200 px-1.5 py-0.5 rounded border border-green-200 font-bold">早</span>
           <span className="text-slate-900 bg-orange-200 px-1.5 py-0.5 rounded border border-orange-200 font-bold">遅</span>
-          <span className="text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded border border-orange-200 font-bold">有</span>
+          <span className="text-red-600 px-1.5 py-0.5 font-bold">有</span>
           <span className="text-slate-900 bg-sky-100 px-1.5 py-0.5 rounded border border-sky-100 font-bold">日A</span>
           <span className="text-slate-900 bg-pink-100 px-1.5 py-0.5 rounded border border-pink-100 font-bold">日B</span>
         </div>
