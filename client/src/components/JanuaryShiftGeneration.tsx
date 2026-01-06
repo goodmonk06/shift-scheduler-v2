@@ -2465,7 +2465,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                 </h1>
               </div>
 
-            <table className="min-w-max text-center border-collapse border border-slate-900 text-lg print:text-[8px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
+            <table className="min-w-max text-center border-collapse border border-slate-900 text-lg print:text-[8px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed print:border-4 print:border-black">
               <thead>
                 <tr className="bg-slate-50 print:bg-transparent" style={{ height: `${eventRowHeight}px` }}>
                   <th className="border border-slate-600 font-bold bg-white text-slate-700 w-30 min-w-[280px]" colSpan={2}>
@@ -2530,15 +2530,15 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
 
                 <tr className="bg-slate-100 print:bg-transparent h-12 sticky top-0 z-20 shadow-md">
                   {/* 左上の「氏名」セル */}
-                  <th className="border border-slate-600 p-1 w-30 min-w-[150px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-30 shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700">氏名</th>
+                  <th className="border border-slate-600 p-1 w-30 min-w-[150px] bg-white print:bg-white font-bold text-slate-800 sticky left-0 top-0 z-30 shadow-lg border-r border-b-2 border-r-slate-600 border-b-slate-700 print:border-2 print:border-gray-700">氏名</th>
                   {/* 資格列 */}
-                  <th className="border border-slate-600 p-1 w-24 min-w-[130px] bg-white print:bg-white font-bold text-slate-800 sticky left-[150px] top-0 z-30 shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700">資格</th>
+                  <th className="border border-slate-600 p-1 w-24 min-w-[130px] bg-white print:bg-white font-bold text-slate-800 sticky left-[150px] top-0 z-30 shadow-lg border-r-2 border-b-2 border-r-slate-700 border-b-slate-700 print:w-16 print:min-w-[80px] print:p-0.5 print:border-2 print:border-gray-700">資格</th>
 
                   {dates.map(date => {
                     const day = date.getDay();
                     const style = getDayStyle(day);
                     return (
-                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-20" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-20 print:border-2 print:border-gray-700" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -2561,7 +2561,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   return (
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-12 transition-colors">
                       {/* 氏名列 */}
-                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px]">
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px] print:text-left print:align-middle">
                         <div className="flex items-center gap-1">
                           <div className="flex flex-col print:hidden">
                             <button
@@ -2585,7 +2585,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         </div>
                       </td>
                       {/* 資格列 */}
-                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white border-r-2 border-r-slate-700 w-24 min-w-[130px]">
+                      <td className="border border-slate-600 px-2 text-left text-xs whitespace-nowrap text-slate-700 bg-white border-r-2 border-r-slate-700 w-24 min-w-[130px] print:w-16 print:min-w-[80px] print:px-1">
                         {staff.qualification}
                       </td>
                       {dates.map(date => {
@@ -2733,7 +2733,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                     return (
                       <td
                         key={dateStr}
-                        className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-white cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-white cursor-pointer hover:bg-blue-50 print:cursor-default print:align-middle print:h-auto print:min-h-[60px] print:overflow-visible"
                         style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                         onClick={() => {
                           if (!isEditing) {
@@ -2764,8 +2764,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center leading-tight">
-                            {mealText || <span className="text-slate-300">+</span>}
+                          <div className="w-full h-full flex items-center justify-center leading-tight print:flex print:items-center print:justify-center">
+                            {(mealText ? mealText.substring(0, 4) : '') || <span className="text-slate-300">+</span>}
                           </div>
                         )}
                       </td>
