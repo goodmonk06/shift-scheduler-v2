@@ -63,15 +63,15 @@ export const generatePDFFromHTML = async (
     // 1. PDF用スタイルを動的に注入
     pdfStyle = document.createElement('style');
     pdfStyle.innerHTML = `
-      /* テーブル外枠を太く - box-shadowで実現 */
+      /* テーブル全体のスタイル調整 */
       .pdf-export-mode table {
         box-shadow: inset 0 0 0 4px black !important;
+        border: 4px solid black !important;
       }
 
-      /* ヘッダー行の罫線を太く */
-      .pdf-export-mode thead th {
-        border-width: 2px !important;
-        border-color: #374151 !important;
+      /* すべてのヘッダーセルの罫線を太く */
+      .pdf-export-mode thead tr th {
+        border: 2px solid #374151 !important;
       }
 
       /* セル内のdivを完全にフラット化 */
@@ -108,12 +108,18 @@ export const generatePDFFromHTML = async (
       }
 
       /* 名前列の幅確保・左寄せ・中央揃え */
-      .pdf-export-mode th:nth-child(1),
-      .pdf-export-mode td:nth-child(1) {
+      .pdf-export-mode thead th:nth-child(1),
+      .pdf-export-mode tbody td:nth-child(1) {
         min-width: 150px !important;
         white-space: nowrap !important;
         text-align: left !important;
         vertical-align: middle !important;
+      }
+
+      /* 名前列内のdivも左寄せ */
+      .pdf-export-mode tbody td:nth-child(1) > div {
+        justify-content: flex-start !important;
+        text-align: left !important;
       }
 
       /* 名前列内のボタンなどを非表示 */
