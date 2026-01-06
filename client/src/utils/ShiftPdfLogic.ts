@@ -63,16 +63,20 @@ export const generatePDFFromHTML = async (
     // 1. PDF用スタイルを動的に注入
     pdfStyle = document.createElement('style');
     pdfStyle.innerHTML = `
-      /* テーブル全体のスタイル調整 */
-      .pdf-export-mode table {
-        box-shadow: inset 0 0 0 4px black !important;
-        border: 4px solid black !important;
-      }
-
       /* 氏名・資格ヘッダーの罫線を太く */
       .pdf-export-mode thead tr th:nth-child(1),
       .pdf-export-mode thead tr th:nth-child(2) {
         border: 2px solid #374151 !important;
+      }
+
+      /* 氏名・資格列の左側と右側の罫線を太く */
+      .pdf-export-mode tbody td:nth-child(1) {
+        border-left: 2px solid #374151 !important;
+        border-right: 2px solid #374151 !important;
+      }
+
+      .pdf-export-mode tbody td:nth-child(2) {
+        border-right: 2px solid #374151 !important;
       }
 
       /* セル内のdivを完全にフラット化 */
