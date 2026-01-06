@@ -63,16 +63,15 @@ export const generatePDFFromHTML = async (
     // 1. PDF用スタイルを動的に注入
     pdfStyle = document.createElement('style');
     pdfStyle.innerHTML = `
-      /* テーブル外枠を太く - outlineを使用 */
+      /* テーブル外枠を太く - box-shadowで実現 */
       .pdf-export-mode table {
-        outline: 4px solid black !important;
-        outline-offset: -2px !important;
-        border: 4px solid black !important;
+        box-shadow: inset 0 0 0 4px black !important;
       }
 
       /* ヘッダー行の罫線を太く */
       .pdf-export-mode thead th {
-        border: 2px solid #374151 !important;
+        border-width: 2px !important;
+        border-color: #374151 !important;
       }
 
       /* セル内のdivを完全にフラット化 */
@@ -100,31 +99,26 @@ export const generatePDFFromHTML = async (
         background-color: transparent !important;
       }
 
-      /* 資格列を表示（幅80pxに縮小） */
-      .pdf-export-mode thead th:nth-child(2),
-      .pdf-export-mode tbody td:nth-child(2) {
+      /* 資格列を表示（幅を少し狭く） */
+      .pdf-export-mode th:nth-child(2),
+      .pdf-export-mode td:nth-child(2) {
         display: table-cell !important;
-        width: 80px !important;
-        min-width: 80px !important;
+        width: auto !important;
         max-width: 80px !important;
-        padding: 2px !important;
-        font-size: 7px !important;
       }
 
       /* 名前列の幅確保・左寄せ・中央揃え */
-      .pdf-export-mode thead th:nth-child(1),
-      .pdf-export-mode tbody td:nth-child(1) {
+      .pdf-export-mode th:nth-child(1),
+      .pdf-export-mode td:nth-child(1) {
         min-width: 150px !important;
-        max-width: 150px !important;
         white-space: nowrap !important;
         text-align: left !important;
         vertical-align: middle !important;
-        padding-left: 8px !important;
       }
 
       /* 名前列内のボタンなどを非表示 */
       .pdf-export-mode tbody td:nth-child(1) button,
-      .pdf-export-mode tbody td:nth-child(1) .print\\:hidden {
+      .pdf-export-mode tbody td:nth-child(1) div.print\\:hidden {
         display: none !important;
       }
     `;
