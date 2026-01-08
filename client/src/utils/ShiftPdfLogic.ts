@@ -112,16 +112,25 @@ export const generatePDFFromHTML = async (
         max-width: 80px !important;
       }
 
-      /* シフト内容セル（3列目以降）のフォントサイズを大きく太く */
-      .pdf-export-mode tbody td:nth-child(n+3) {
-        font-size: 14px !important;
-        font-weight: 700 !important;
+      /* テーブル全体のprint:text-[8px]を上書き */
+      .pdf-export-mode table {
+        font-size: 10px !important;
       }
 
-      /* シフトセル内のspanのscale縮小を無効化 */
+      /* シフト内容セル（3列目以降）のフォントサイズを大きく太く、枠いっぱいに */
+      .pdf-export-mode tbody td:nth-child(n+3) {
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        padding: 1px !important;
+        line-height: 1 !important;
+      }
+
+      /* シフトセル内のdivとspanのscale縮小を無効化、枠いっぱいに表示 */
+      .pdf-export-mode tbody td:nth-child(n+3) div,
       .pdf-export-mode tbody td:nth-child(n+3) span {
         transform: none !important;
-        font-size: inherit !important;
+        font-size: 16px !important;
+        line-height: 1 !important;
       }
 
       /* 名前列の幅確保・左寄せ・中央揃え */
