@@ -112,6 +112,12 @@ export const generatePDFFromHTML = async (
         max-width: 80px !important;
       }
 
+      /* シフト内容セル（3列目以降）のフォントサイズを大きく太く */
+      .pdf-export-mode tbody td:nth-child(n+3) {
+        font-size: 14px !important;
+        font-weight: 700 !important;
+      }
+
       /* 名前列の幅確保・左寄せ・中央揃え */
       .pdf-export-mode thead th:nth-child(1),
       .pdf-export-mode tbody td:nth-child(1) {
