@@ -118,6 +118,12 @@ export const generatePDFFromHTML = async (
         font-weight: 700 !important;
       }
 
+      /* シフトセル内のspanのscale縮小を無効化 */
+      .pdf-export-mode tbody td:nth-child(n+3) span {
+        transform: none !important;
+        font-size: inherit !important;
+      }
+
       /* 名前列の幅確保・左寄せ・中央揃え */
       .pdf-export-mode thead th:nth-child(1),
       .pdf-export-mode tbody td:nth-child(1) {
