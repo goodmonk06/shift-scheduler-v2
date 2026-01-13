@@ -2397,7 +2397,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                       saveShiftChange({ type: 'DAY', customText: displayText });
                       toast.success('時間枠を追加して入力しました');
                     }}
-                    className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-bold hover:bg-emerald-600 transition-all shadow-md"
+                    style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+                    className="w-full py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition-all shadow-md"
                   >
                     この時間を追加して入力
                   </button>
