@@ -179,9 +179,13 @@ const saveCustomTimes = (shiftId: number | undefined, employeeId: string, times:
 };
 
 const formatTimeDisplay = (startTime: string, endTime: string, breakMinutes: number): string => {
-  const start = startTime.split(':')[0];
-  const end = endTime.split(':')[0];
-  return `${parseInt(start)}～${parseInt(end)}`;
+  const [startHour, startMin] = startTime.split(':');
+  const [endHour, endMin] = endTime.split(':');
+
+  const startDisplay = startMin === '30' ? `${parseInt(startHour)}半` : parseInt(startHour);
+  const endDisplay = endMin === '30' ? `${parseInt(endHour)}半` : parseInt(endHour);
+
+  return `${startDisplay}～${endDisplay}`;
 };
 
 // --- ヘルパー関数 ---
