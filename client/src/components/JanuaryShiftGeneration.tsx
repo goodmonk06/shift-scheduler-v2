@@ -2168,11 +2168,6 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
               left: adjustedLeft,
             }}
           >
-            <div className={`absolute w-4 h-4 bg-white border-indigo-300 transform rotate-45 ${
-              showOnLeft
-                ? '-right-2 border-r-2 border-t-2'
-                : '-left-2 border-l-2 border-b-2'
-            }`} style={{ top: `${arrowOffset}px` }}></div>
           <div className="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-3">
             <div className="flex items-center gap-2">
               <div className="bg-indigo-100 p-2 rounded-lg">
