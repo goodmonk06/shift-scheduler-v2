@@ -2212,7 +2212,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
             </div>
 
             {/* 時間指定（動的） */}
-            <div>
+            <div className="relative">
               <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">時間指定（この職員専用）</label>
               {(() => {
                 const currentStaffTimes = customTimesMap[popoverState.staffId] || [];
@@ -2224,7 +2224,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   );
                 }
                 return (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-2 pb-3">
                     {currentStaffTimes.map((slot, idx) => {
                       const isSelected = popoverState.currentValue.customText === slot.displayText;
                       return (
