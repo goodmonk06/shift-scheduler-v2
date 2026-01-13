@@ -2225,35 +2225,40 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                 }
                 return (
                   <div className="grid grid-cols-3 gap-2">
-                    {currentStaffTimes.map((slot, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => saveShiftChange({ type: 'DAY', customText: slot.displayText })}
-                        className={`text-xs py-2 px-1 rounded-lg font-bold transition-all border-2 whitespace-nowrap relative group ${
-                          popoverState.currentValue.customText === slot.displayText
-                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
-                            : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'
-                        }`}
-                      >
-                        <span className="block">{slot.displayText}</span>
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // この時間枠を削除
-                            const newTimes = currentStaffTimes.filter((_, i) => i !== idx);
-                            saveCustomTimes(loadedShiftId || undefined, popoverState.staffId, newTimes);
-                            setCustomTimesMap(prev => ({
-                              ...prev,
-                              [popoverState.staffId]: newTimes
-                            }));
-                            toast.success('時間枠を削除しました');
-                          }}
-                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-600"
+                    {currentStaffTimes.map((slot, idx) => {
+                      const isSelected = popoverState.currentValue.customText === slot.displayText;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => saveShiftChange({ type: 'DAY', customText: slot.displayText })}
+                          style={
+                            isSelected
+                              ? { backgroundColor: '#10b981', borderColor: '#10b981', color: '#ffffff' }
+                              : { backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#334155' }
+                          }
+                          className="text-xs py-2 px-1 rounded-lg font-bold transition-all border-2 whitespace-nowrap relative group hover:border-emerald-400"
                         >
-                          ×
-                        </span>
-                      </button>
-                    ))}
+                          <span className="block">{slot.displayText}</span>
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // この時間枠を削除
+                              const newTimes = currentStaffTimes.filter((_, i) => i !== idx);
+                              saveCustomTimes(loadedShiftId || undefined, popoverState.staffId, newTimes);
+                              setCustomTimesMap(prev => ({
+                                ...prev,
+                                [popoverState.staffId]: newTimes
+                              }));
+                              toast.success('時間枠を削除しました');
+                            }}
+                            style={{ backgroundColor: '#ef4444', color: '#ffffff' }}
+                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-600"
+                          >
+                            ×
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 );
               })()}
@@ -2402,6 +2407,17 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   >
                     この時間を追加して入力
                   </button>
+
+                  {/* クリアボタン */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
+                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#fecaca' }}
+                      className="px-6 py-2 border-2 rounded-lg text-sm font-bold hover:opacity-80 transition-all"
+                    >
+                      クリア
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -2436,7 +2452,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   <div className="flex justify-center">
                     <button
                       onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
-                      className="px-6 py-2 border-2 border-red-300 bg-red-50 rounded-lg text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-400 transition-all"
+                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#fecaca' }}
+                      className="px-6 py-2 border-2 rounded-lg text-sm font-bold hover:opacity-80 transition-all"
                     >
                       クリア
                     </button>
