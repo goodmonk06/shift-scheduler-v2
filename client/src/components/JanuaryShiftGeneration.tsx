@@ -2350,11 +2350,12 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         <button
                           key={minutes}
                           onClick={() => setPickerBreakMinutes(minutes as 0 | 30 | 60)}
-                          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all border-2 ${
+                          style={
                             pickerBreakMinutes === minutes
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
-                              : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:bg-emerald-50'
-                          }`}
+                              ? { backgroundColor: '#10b981', color: '#ffffff', borderColor: '#10b981' }
+                              : { backgroundColor: '#ffffff', color: '#334155', borderColor: '#cbd5e1' }
+                          }
+                          className="flex-1 py-2 rounded-lg text-sm font-bold transition-all border-2 hover:border-emerald-400"
                         >
                           {minutes === 0 ? '無し' : minutes === 30 ? '30分' : '1時間'}
                         </button>
