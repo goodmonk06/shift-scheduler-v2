@@ -181,10 +181,7 @@ const saveCustomTimes = (shiftId: number | undefined, employeeId: string, times:
 const formatTimeDisplay = (startTime: string, endTime: string, breakMinutes: number): string => {
   const start = startTime.split(':')[0];
   const end = endTime.split(':')[0];
-  const base = `${parseInt(start)}～${parseInt(end)}`;
-  if (breakMinutes === 30) return `${base}(休30)`;
-  if (breakMinutes === 60) return `${base}(休1h)`;
-  return base;
+  return `${parseInt(start)}～${parseInt(end)}`;
 };
 
 // --- ヘルパー関数 ---
@@ -2355,8 +2352,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           onClick={() => setPickerBreakMinutes(minutes as 0 | 30 | 60)}
                           className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all border-2 ${
                             pickerBreakMinutes === minutes
-                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
-                              : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50'
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
+                              : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:bg-emerald-50'
                           }`}
                         >
                           {minutes === 0 ? '無し' : minutes === 30 ? '30分' : '1時間'}
