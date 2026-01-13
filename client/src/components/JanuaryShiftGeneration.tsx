@@ -2264,24 +2264,26 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
               <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">カスタム入力</label>
 
               {/* タブ */}
-              <div className="flex gap-2 mb-3 border-b-2 border-slate-200">
+              <div className="flex gap-2 mb-3 bg-slate-100 p-1 rounded-lg">
                 <button
                   onClick={() => setCustomInputTab('time')}
-                  className={`px-4 py-2 text-sm font-bold transition-all ${
+                  style={
                     customInputTab === 'time'
-                      ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-[2px]'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                      ? { backgroundColor: '#ffffff', color: '#4f46e5', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                      : { backgroundColor: 'transparent', color: '#64748b' }
+                  }
+                  className="flex-1 px-4 py-2 text-sm font-bold rounded-md transition-all"
                 >
                   時間指定
                 </button>
                 <button
                   onClick={() => setCustomInputTab('free')}
-                  className={`px-4 py-2 text-sm font-bold transition-all ${
+                  style={
                     customInputTab === 'free'
-                      ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-[2px]'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                      ? { backgroundColor: '#ffffff', color: '#4f46e5', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }
+                      : { backgroundColor: 'transparent', color: '#64748b' }
+                  }
+                  className="flex-1 px-4 py-2 text-sm font-bold rounded-md transition-all"
                 >
                   フリー入力
                 </button>
