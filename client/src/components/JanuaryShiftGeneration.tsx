@@ -140,11 +140,52 @@ const SHIFT_PRESETS = [
   { text: 'free', type: 'FREE' },
 ];
 
-const TIME_PRESETS = [
-  '8～14', '8～15', '8～16', '9～15', '9～16', '9～17'
-];
+// TIME_PRESETSは動的に各職員のLocalStorageから取得するため削除
 
 const WORK_PATTERNS = ['7～16', '8～17', '9～18', '11～20'];
+
+// --- カスタム時間枠の型定義 ---
+interface CustomTimeSlot {
+  displayText: string;      // "8～14(休30)"
+  startTime: string;        // "08:00"
+  endTime: string;          // "14:00"
+  breakMinutes: 0 | 30 | 60; // 休憩時間（分）
+}
+
+// --- LocalStorage ヘルパー関数 ---
+const getCustomTimesKey = (shiftId: number | undefined, employeeId: string): string => {
+  return `customTimes_${shiftId || 'temp'}_${employeeId}`;
+};
+
+const loadCustomTimes = (shiftId: number | undefined, employeeId: string): CustomTimeSlot[] => {
+  try {
+    const key = getCustomTimesKey(shiftId, employeeId);
+    const stored = localStorage.getItem(key);
+    if (!stored) return [];
+    return JSON.parse(stored) as CustomTimeSlot[];
+  } catch (e) {
+    console.error('Failed to load custom times:', e);
+    return [];
+  }
+};
+
+const saveCustomTimes = (shiftId: number | undefined, employeeId: string, times: CustomTimeSlot[]): void => {
+  try {
+    const key = getCustomTimesKey(shiftId, employeeId);
+    localStorage.setItem(key, JSON.stringify(times));
+  } catch (e) {
+    console.error('Failed to save custom times:', e);
+  }
+};
+
+const formatTimeDisplay = (startTime: string, endTime: string, breakMinutes: number): string => {
+  const start = startTime.split(':')[0];
+  const end = endTime.split(':')[0];
+  const base = `${parseInt(start)}～${parseInt(end)}`;
+  if (breakMinutes === 30) return `${base}(休30)`;
+  if (breakMinutes === 60) return `${base}(休1h)`;
+  return base;
+};
 
 // --- ヘルパー関数 ---
 const generateDateRange = (start: Date, end: Date): Date[] => {
@@ -664,7 +705,16 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
     currentValue: null
   });
 
+  // カスタム時間枠のstate
+  const [customTimesMap, setCustomTimesMap] = useState<Record<string, CustomTimeSlot[]>>({});
 
+  // リール型タイムピッカーのstate
+  const [customInputTab, setCustomInputTab] = useState<'time' | 'free'>('time'); // タブ選択
+  const [pickerStartHour, setPickerStartHour] = useState('09');
+  const [pickerStartMinute, setPickerStartMinute] = useState('00');
+  const [pickerEndHour, setPickerEndHour] = useState('18');
+  const [pickerEndMinute, setPickerEndMinute] = useState('00');
+  const [pickerBreakMinutes, setPickerBreakMinutes] = useState<0 | 30 | 60>(0);
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -1788,6 +1838,21 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
     const rect = e.currentTarget.getBoundingClientRect();
     const dateStr = getIsoDate(date);
 
+    // この職員のカスタム時間をLocalStorageからロード
+    const customTimes = loadCustomTimes(loadedShiftId || undefined, staff.id);
+    setCustomTimesMap(prev => ({
+      ...prev,
+      [staff.id]: customTimes
+    }));
+
+    // リール型タイムピッカーを初期値にリセット
+    setCustomInputTab('time');
+    setPickerStartHour('09');
+    setPickerStartMinute('00');
+    setPickerEndHour('18');
+    setPickerEndMinute('00');
+    setPickerBreakMinutes(0);
+
     setPopoverState({
       isOpen: true,
       staffId: staff.id,
@@ -2149,59 +2214,236 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
               </div>
             </div>
 
+            {/* 時間指定（動的） */}
             <div>
-              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">時間指定</label>
-              <div className="grid grid-cols-3 gap-2">
-                {TIME_PRESETS.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => saveShiftChange({ type: 'DAY', customText: t })}
-                    className={`text-xs py-2 px-2 rounded-lg font-bold transition-all border-2 whitespace-nowrap ${popoverState.currentValue.customText === t
-                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
-                      : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">時間指定（この職員専用）</label>
+              {(() => {
+                const currentStaffTimes = customTimesMap[popoverState.staffId] || [];
+                if (currentStaffTimes.length === 0) {
+                  return (
+                    <div className="text-sm text-slate-400 italic py-4 text-center border-2 border-dashed border-slate-200 rounded-lg">
+                      カスタム入力で時間を追加してください
+                    </div>
+                  );
+                }
+                return (
+                  <div className="grid grid-cols-3 gap-2">
+                    {currentStaffTimes.map((slot, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => saveShiftChange({ type: 'DAY', customText: slot.displayText })}
+                        className={`text-xs py-2 px-1 rounded-lg font-bold transition-all border-2 whitespace-nowrap relative group ${
+                          popoverState.currentValue.customText === slot.displayText
+                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
+                            : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'
+                        }`}
+                      >
+                        <span className="block">{slot.displayText}</span>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // この時間枠を削除
+                            const newTimes = currentStaffTimes.filter((_, i) => i !== idx);
+                            saveCustomTimes(loadedShiftId || undefined, popoverState.staffId, newTimes);
+                            setCustomTimesMap(prev => ({
+                              ...prev,
+                              [popoverState.staffId]: newTimes
+                            }));
+                            toast.success('時間枠を削除しました');
+                          }}
+                          className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-red-600"
+                        >
+                          ×
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
+            {/* カスタム入力（タブ切り替え） */}
             <div>
               <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">カスタム入力</label>
-              <div className="flex gap-2 mb-3">
-                <div className="relative flex-1">
-                  <input
-                    id="custom-shift-input"
-                    type="text"
-                    className="w-full border-2 border-slate-300 rounded-lg pl-3 pr-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
-                    placeholder="入力..."
-                    defaultValue={popoverState.currentValue.customText}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveShiftChange({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
+
+              {/* タブ */}
+              <div className="flex gap-2 mb-3 border-b-2 border-slate-200">
+                <button
+                  onClick={() => setCustomInputTab('time')}
+                  className={`px-4 py-2 text-sm font-bold transition-all ${
+                    customInputTab === 'time'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-[2px]'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  時間指定
+                </button>
+                <button
+                  onClick={() => setCustomInputTab('free')}
+                  className={`px-4 py-2 text-sm font-bold transition-all ${
+                    customInputTab === 'free'
+                      ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-[2px]'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  フリー入力
+                </button>
+              </div>
+
+              {/* 時間指定モード */}
+              {customInputTab === 'time' && (
+                <div className="space-y-3">
+                  {/* リール型タイムピッカー */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <label className="text-xs text-slate-600 font-semibold mb-1 block">開始時刻</label>
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={pickerStartHour}
+                          onChange={(e) => setPickerStartHour(e.target.value)}
+                          className="border-2 border-slate-300 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => i).map(h => (
+                            <option key={h} value={String(h).padStart(2, '0')}>{String(h).padStart(2, '0')}</option>
+                          ))}
+                        </select>
+                        <span className="font-bold">:</span>
+                        <select
+                          value={pickerStartMinute}
+                          onChange={(e) => setPickerStartMinute(e.target.value)}
+                          className="border-2 border-slate-300 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                        >
+                          {['00', '15', '30', '45'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-600 font-semibold mb-1 block">終了時刻</label>
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={pickerEndHour}
+                          onChange={(e) => setPickerEndHour(e.target.value)}
+                          className="border-2 border-slate-300 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                        >
+                          {Array.from({ length: 24 }, (_, i) => i).map(h => (
+                            <option key={h} value={String(h).padStart(2, '0')}>{String(h).padStart(2, '0')}</option>
+                          ))}
+                        </select>
+                        <span className="font-bold">:</span>
+                        <select
+                          value={pickerEndMinute}
+                          onChange={(e) => setPickerEndMinute(e.target.value)}
+                          className="border-2 border-slate-300 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                        >
+                          {['00', '15', '30', '45'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 休憩時間選択 */}
+                  <div>
+                    <label className="text-xs text-slate-600 font-semibold mb-1 block">休憩時間</label>
+                    <div className="flex gap-2">
+                      {[0, 30, 60].map(minutes => (
+                        <button
+                          key={minutes}
+                          onClick={() => setPickerBreakMinutes(minutes as 0 | 30 | 60)}
+                          className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all border-2 ${
+                            pickerBreakMinutes === minutes
+                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                              : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50'
+                          }`}
+                        >
+                          {minutes === 0 ? '無し' : minutes === 30 ? '30分' : '1時間'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* プレビュー */}
+                  <div className="bg-slate-50 border-2 border-slate-200 rounded-lg p-2 text-center">
+                    <span className="text-xs text-slate-500 font-semibold">プレビュー: </span>
+                    <span className="text-sm font-bold text-slate-800">
+                      {formatTimeDisplay(`${pickerStartHour}:${pickerStartMinute}`, `${pickerEndHour}:${pickerEndMinute}`, pickerBreakMinutes)}
+                    </span>
+                  </div>
+
+                  {/* 追加ボタン */}
+                  <button
+                    onClick={() => {
+                      const startTime = `${pickerStartHour}:${pickerStartMinute}`;
+                      const endTime = `${pickerEndHour}:${pickerEndMinute}`;
+                      const displayText = formatTimeDisplay(startTime, endTime, pickerBreakMinutes);
+
+                      // 新しい時間枠を追加
+                      const currentTimes = customTimesMap[popoverState.staffId] || [];
+                      const newSlot: CustomTimeSlot = {
+                        displayText,
+                        startTime,
+                        endTime,
+                        breakMinutes: pickerBreakMinutes
+                      };
+                      const newTimes = [...currentTimes, newSlot];
+                      saveCustomTimes(loadedShiftId || undefined, popoverState.staffId, newTimes);
+                      setCustomTimesMap(prev => ({
+                        ...prev,
+                        [popoverState.staffId]: newTimes
+                      }));
+
+                      // 同時にセルに入力して閉じる
+                      saveShiftChange({ type: 'DAY', customText: displayText });
+                      toast.success('時間枠を追加して入力しました');
                     }}
-                  />
+                    className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-bold hover:bg-emerald-600 transition-all shadow-md"
+                  >
+                    この時間を追加して入力
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    const input = document.getElementById('custom-shift-input') as HTMLInputElement;
-                    if (input && input.value) {
-                      saveShiftChange({ type: 'DAY', customText: input.value });
-                    }
-                  }}
-                  className="px-4 py-2.5 border-2 border-emerald-500 bg-emerald-50 rounded-lg text-sm font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-600 transition-all"
-                >
-                  カスタム保存
-                </button>
-              </div>
-              <div className="flex justify-center">
-                <button
-                  onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
-                  className="px-6 py-2 border-2 border-red-300 bg-red-50 rounded-lg text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-400 transition-all"
-                >
-                  クリア
-                </button>
-              </div>
+              )}
+
+              {/* フリー入力モード */}
+              {customInputTab === 'free' && (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        id="custom-shift-input"
+                        type="text"
+                        className="w-full border-2 border-slate-300 rounded-lg pl-3 pr-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                        placeholder="入力..."
+                        defaultValue={popoverState.currentValue.customText}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveShiftChange({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
+                        }}
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const input = document.getElementById('custom-shift-input') as HTMLInputElement;
+                        if (input && input.value) {
+                          saveShiftChange({ type: 'DAY', customText: input.value });
+                        }
+                      }}
+                      className="px-4 py-2.5 border-2 border-emerald-500 bg-emerald-50 rounded-lg text-sm font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-600 transition-all"
+                    >
+                      保存
+                    </button>
+                  </div>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
+                      className="px-6 py-2 border-2 border-red-300 bg-red-50 rounded-lg text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-400 transition-all"
+                    >
+                      クリア
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
