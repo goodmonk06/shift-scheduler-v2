@@ -2228,10 +2228,10 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           onClick={() => saveShiftChange({ type: 'DAY', customText: slot.displayText })}
                           style={
                             isSelected
-                              ? { backgroundColor: '#10b981', borderColor: '#10b981', color: '#ffffff' }
+                              ? { backgroundColor: '#6366f1', borderColor: '#6366f1', color: '#ffffff' }
                               : { backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#334155' }
                           }
-                          className="text-xs py-2 px-1 rounded-lg font-bold transition-all border-2 whitespace-nowrap relative group hover:border-emerald-400"
+                          className="text-xs py-2 px-1 rounded-lg font-bold transition-all border-2 whitespace-nowrap relative group hover:border-indigo-400"
                         >
                           <span className="block">{slot.displayText}</span>
                           <span
@@ -2354,10 +2354,10 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           onClick={() => setPickerBreakMinutes(minutes as 0 | 30 | 60)}
                           style={
                             pickerBreakMinutes === minutes
-                              ? { backgroundColor: '#10b981', color: '#ffffff', borderColor: '#10b981' }
+                              ? { backgroundColor: '#6366f1', color: '#ffffff', borderColor: '#6366f1' }
                               : { backgroundColor: '#ffffff', color: '#334155', borderColor: '#cbd5e1' }
                           }
-                          className="flex-1 py-2 rounded-lg text-sm font-bold transition-all border-2 hover:border-emerald-400"
+                          className="flex-1 py-2 rounded-lg text-sm font-bold transition-all border-2 hover:border-indigo-400"
                         >
                           {minutes === 0 ? '無し' : minutes === 30 ? '30分' : '1時間'}
                         </button>
@@ -2399,7 +2399,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                       saveShiftChange({ type: 'DAY', customText: displayText });
                       toast.success('時間枠を追加して入力しました');
                     }}
-                    style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+                    style={{ backgroundColor: '#6366f1', color: '#ffffff' }}
                     className="w-full py-2.5 rounded-lg text-sm font-bold hover:opacity-90 transition-all shadow-md"
                   >
                     この時間を追加して入力
@@ -2441,7 +2441,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           saveShiftChange({ type: 'DAY', customText: input.value });
                         }
                       }}
-                      className="px-4 py-2.5 border-2 border-emerald-500 bg-emerald-50 rounded-lg text-sm font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-600 transition-all"
+                      className="px-4 py-2.5 border-2 border-indigo-500 bg-indigo-50 rounded-lg text-sm font-bold text-indigo-700 hover:bg-indigo-100 hover:border-indigo-600 transition-all"
                     >
                       保存
                     </button>
