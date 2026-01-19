@@ -2195,13 +2195,13 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
 
         return (
           <div
-            className="shift-popover absolute z-50 bg-white border-2 border-indigo-300 shadow-2xl rounded-2xl p-7 w-[420px] animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
+            className="shift-popover absolute z-50 bg-white border-[3px] border-indigo-400 shadow-2xl rounded-2xl p-7 w-[420px] animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-200"
             style={{
               top: adjustedTop,
               left: adjustedLeft,
             }}
           >
-          <div className="flex justify-between items-center mb-5 border-b-2 border-slate-200 pb-4">
+          <div className="flex justify-between items-center mb-5 border-b-[3px] border-slate-300 pb-4">
             <div className="flex items-center gap-3">
               <div className="bg-indigo-100 p-3 rounded-xl">
                 <Clock size={24} className="text-indigo-600" />
@@ -2226,11 +2226,11 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   <button
                     key={p.text}
                     onClick={() => saveShiftChange({ type: p.type, customText: p.text })}
-                    className={`text-base py-3.5 rounded-xl font-bold transition-all border-2 ${popoverState.currentValue.customText === p.text
+                    className={`text-base py-3.5 rounded-xl font-bold transition-all border-[3px] ${popoverState.currentValue.customText === p.text
                       ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
                       : p.text === '休'
-                        ? 'bg-white border-slate-300 text-red-600 hover:border-red-400 hover:text-red-700 hover:bg-red-50'
-                        : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'
+                        ? 'bg-white border-slate-400 text-red-600 hover:border-red-400 hover:text-red-700 hover:bg-red-50'
+                        : 'bg-white border-slate-400 text-slate-700 hover:border-indigo-500 hover:text-indigo-600 hover:bg-indigo-50'
                       }`}
                   >
                     {p.text}
@@ -2246,7 +2246,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                 const currentStaffTimes = customTimesMap[popoverState.staffId] || [];
                 if (currentStaffTimes.length === 0) {
                   return (
-                    <div className="text-base text-slate-400 italic py-5 text-center border-2 border-dashed border-slate-200 rounded-xl">
+                    <div className="text-base text-slate-500 italic py-5 text-center border-[3px] border-dashed border-slate-400 rounded-xl">
                       カスタム入力で時間を追加してください
                     </div>
                   );
@@ -2262,9 +2262,9 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           style={
                             isSelected
                               ? { backgroundColor: '#6366f1', borderColor: '#6366f1', color: '#ffffff' }
-                              : { backgroundColor: '#ffffff', borderColor: '#cbd5e1', color: '#334155' }
+                              : { backgroundColor: '#ffffff', borderColor: '#94a3b8', color: '#334155' }
                           }
-                          className="text-sm py-3 px-2 rounded-xl font-bold transition-all border-2 whitespace-nowrap relative group hover:border-indigo-400"
+                          className="text-sm py-3 px-2 rounded-xl font-bold transition-all border-[3px] whitespace-nowrap relative group hover:border-indigo-500"
                         >
                           <span className="block">{slot.displayText}</span>
                           <span
@@ -2297,7 +2297,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
               <label className="text-sm uppercase tracking-wider font-bold text-slate-600 mb-3 block">カスタム入力</label>
 
               {/* タブ */}
-              <div className="flex gap-2 mb-4 bg-slate-100 p-1.5 rounded-xl">
+              <div className="flex gap-2 mb-4 bg-slate-200 p-1.5 rounded-xl border-[3px] border-slate-300">
                 <button
                   onClick={() => setCustomInputTab('time')}
                   style={
@@ -2333,7 +2333,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         <select
                           value={pickerStartHour}
                           onChange={(e) => setPickerStartHour(e.target.value)}
-                          className="border-2 border-slate-300 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="border-[3px] border-slate-400 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                         >
                           {Array.from({ length: 24 }, (_, i) => i).map(h => (
                             <option key={h} value={String(h).padStart(2, '0')}>{String(h).padStart(2, '0')}</option>
@@ -2343,7 +2343,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         <select
                           value={pickerStartMinute}
                           onChange={(e) => setPickerStartMinute(e.target.value)}
-                          className="border-2 border-slate-300 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="border-[3px] border-slate-400 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                         >
                           {['00', '15', '30', '45'].map(m => (
                             <option key={m} value={m}>{m}</option>
@@ -2357,7 +2357,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         <select
                           value={pickerEndHour}
                           onChange={(e) => setPickerEndHour(e.target.value)}
-                          className="border-2 border-slate-300 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="border-[3px] border-slate-400 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                         >
                           {Array.from({ length: 24 }, (_, i) => i).map(h => (
                             <option key={h} value={String(h).padStart(2, '0')}>{String(h).padStart(2, '0')}</option>
@@ -2367,7 +2367,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         <select
                           value={pickerEndMinute}
                           onChange={(e) => setPickerEndMinute(e.target.value)}
-                          className="border-2 border-slate-300 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="border-[3px] border-slate-400 rounded-xl px-3 py-2.5 text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                         >
                           {['00', '15', '30', '45'].map(m => (
                             <option key={m} value={m}>{m}</option>
@@ -2388,9 +2388,9 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           style={
                             pickerBreakMinutes === minutes
                               ? { backgroundColor: '#6366f1', color: '#ffffff', borderColor: '#6366f1' }
-                              : { backgroundColor: '#ffffff', color: '#334155', borderColor: '#cbd5e1' }
+                              : { backgroundColor: '#ffffff', color: '#334155', borderColor: '#94a3b8' }
                           }
-                          className="flex-1 py-3 rounded-xl text-base font-bold transition-all border-2 hover:border-indigo-400"
+                          className="flex-1 py-3 rounded-xl text-base font-bold transition-all border-[3px] hover:border-indigo-500"
                         >
                           {minutes === 0 ? '無し' : minutes === 30 ? '30分' : '1時間'}
                         </button>
@@ -2399,7 +2399,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   </div>
 
                   {/* プレビュー */}
-                  <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-3 text-center">
+                  <div className="bg-slate-50 border-[3px] border-slate-300 rounded-xl p-3 text-center">
                     <span className="text-sm text-slate-500 font-semibold">プレビュー: </span>
                     <span className="text-lg font-bold text-slate-800">
                       {formatTimeDisplay(`${pickerStartHour}:${pickerStartMinute}`, `${pickerEndHour}:${pickerEndMinute}`, pickerBreakMinutes)}
@@ -2442,8 +2442,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   <div className="flex justify-center">
                     <button
                       onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
-                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#fecaca' }}
-                      className="px-8 py-3 border-2 rounded-xl text-base font-bold hover:opacity-80 transition-all"
+                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#f87171' }}
+                      className="px-8 py-3 border-[3px] rounded-xl text-base font-bold hover:opacity-80 transition-all"
                     >
                       クリア
                     </button>
@@ -2459,7 +2459,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                       <input
                         id="custom-shift-input"
                         type="text"
-                        className="w-full border-2 border-slate-300 rounded-xl pl-4 pr-4 py-3.5 text-base font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                        className="w-full border-[3px] border-slate-400 rounded-xl pl-4 pr-4 py-3.5 text-base font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
                         placeholder="入力..."
                         defaultValue={popoverState.currentValue.customText}
                         onKeyDown={(e) => {
@@ -2474,7 +2474,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                           saveShiftChange({ type: 'DAY', customText: input.value });
                         }
                       }}
-                      className="px-6 py-3.5 border-2 border-indigo-500 bg-indigo-50 rounded-xl text-base font-bold text-indigo-700 hover:bg-indigo-100 hover:border-indigo-600 transition-all"
+                      className="px-6 py-3.5 border-[3px] border-indigo-500 bg-indigo-50 rounded-xl text-base font-bold text-indigo-700 hover:bg-indigo-100 hover:border-indigo-600 transition-all"
                     >
                       保存
                     </button>
@@ -2482,8 +2482,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   <div className="flex justify-center">
                     <button
                       onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
-                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#fecaca' }}
-                      className="px-8 py-3 border-2 rounded-xl text-base font-bold hover:opacity-80 transition-all"
+                      style={{ backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#f87171' }}
+                      className="px-8 py-3 border-[3px] rounded-xl text-base font-bold hover:opacity-80 transition-all"
                     >
                       クリア
                     </button>
