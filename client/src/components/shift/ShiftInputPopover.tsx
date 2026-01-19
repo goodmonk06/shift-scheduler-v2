@@ -116,9 +116,8 @@ export function ShiftInputPopover({
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-3">
         <div className="flex items-center gap-2">
-          <div className="bg-indigo-100 p-2 rounded-lg relative">
+          <div className="bg-indigo-100 p-2 rounded-lg">
             <Clock size={18} className="text-indigo-600" />
-            <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[8px] px-1 rounded font-bold">v2</span>
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-slate-800 text-base leading-tight">
