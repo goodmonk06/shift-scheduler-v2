@@ -263,7 +263,8 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       paidHolidays++;
       return;
     }
-    if (text === '休' || text === '休職' || type === 'OFF') {
+    // 冬季休暖も休日としてカウント
+    if (text === '休' || text === '休職' || text === '冬' || type === 'OFF' || type === 'WINTER') {
       holidays++;
       return;
     }
@@ -285,28 +286,44 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       return;
     }
 
-    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === '冬' || text === 'free' || type === 'DAY' || type === 'EARLY' || type === 'LATE' || type === 'FREE') {
+    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === 'free' || type === 'DAY' || type === 'EARLY' || type === 'LATE' || type === 'FREE') {
       // 定型シフトは9時間勤務・休憩1時間（実労働8時間）
       const grossHours = 9;
       const breakTime = calculateBreakTime(grossHours, staffId);
       hours += grossHours - breakTime;
     } else {
-      const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
-      if (match) {
-        let start = parseInt(match[1]);
-        if (text.includes(match[1] + '半')) start += 0.5;
-        let end = parseInt(match[2]);
-        if (text.includes(match[2] + '半')) end += 0.5;
-
-        let grossHours = end - start;
+      // HH:MM～HH:MM 形式を先にチェック
+      const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
+      if (timeMatch) {
+        const startHour = parseInt(timeMatch[1]);
+        const startMin = parseInt(timeMatch[2]);
+        const endHour = parseInt(timeMatch[3]);
+        const endMin = parseInt(timeMatch[4]);
+        const start = startHour + startMin / 60;
+        const end = endHour + endMin / 60;
+        const grossHours = end - start;
         const breakTime = calculateBreakTime(grossHours, staffId);
         const netHours = grossHours - breakTime;
         hours += netHours > 0 ? netHours : 0;
       } else {
-        // マッチしない場合は8時間とする
-        const grossHours = 8;
-        const breakTime = calculateBreakTime(grossHours, staffId);
-        hours += grossHours - breakTime;
+        // 8～14 や 8半～14 形式
+        const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
+        if (match) {
+          let start = parseInt(match[1]);
+          if (match[2] === '半') start += 0.5;
+          let end = parseInt(match[3]);
+          if (match[4] === '半') end += 0.5;
+
+          const grossHours = end - start;
+          const breakTime = calculateBreakTime(grossHours, staffId);
+          const netHours = grossHours - breakTime;
+          hours += netHours > 0 ? netHours : 0;
+        } else {
+          // マッチしない場合は8時間とする
+          const grossHours = 8;
+          const breakTime = calculateBreakTime(grossHours, staffId);
+          hours += grossHours - breakTime;
+        }
       }
     }
   });
@@ -369,13 +386,25 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   // 休み扱い（配置判定に含めない）
   if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修' || text === 'free' || type === 'FREE') return null;
 
-  // 時間パターンマッチを優先（例: 9～15、8半～13半など）
-  const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
+  // HH:MM～HH:MM 形式を先にチェック
+  const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
+  if (timeMatch) {
+    const startHour = parseInt(timeMatch[1]);
+    const startMin = parseInt(timeMatch[2]);
+    const endHour = parseInt(timeMatch[3]);
+    const endMin = parseInt(timeMatch[4]);
+    const start = startHour + startMin / 60;
+    const end = endHour + endMin / 60;
+    return { start, end };
+  }
+
+  // 時間パターンマッチ（例: 9～15、8半～13半など）
+  const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
   if (match) {
     let start = parseInt(match[1]);
-    if (text.includes(match[1] + '半')) start += 0.5;
-    let end = parseInt(match[2]);
-    if (text.includes(match[2] + '半')) end += 0.5;
+    if (match[2] === '半') start += 0.5;
+    let end = parseInt(match[3]);
+    if (match[4] === '半') end += 0.5;
     return { start, end };
   }
 

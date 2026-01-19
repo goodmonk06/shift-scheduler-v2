@@ -5,6 +5,11 @@ import { useToast } from "../hooks/useToast";
 import { trpcClient } from "../lib/trpc";
 import { generateShiftPDF } from "../utils/ShiftPdfLogic";
 
+// 共通シフト入力ポップオーバー
+import { ShiftInputPopover, DEFAULT_SHIFT_PRESETS } from './shift/ShiftInputPopover';
+import type { CustomTimeSlot } from './shift/ShiftPopoverTypes';
+import { loadCustomTimes } from './shift/shiftPopoverUtils';
+
 // --- 設定定数 ---
 const START_DATE = new Date(2025, 11, 1); // 2025年12月1日
 const END_DATE = new Date(2026, 0, 5);    // 2026年1月5日
@@ -150,10 +155,6 @@ const SHIFT_PRESETS = [
   { text: 'free', type: 'FREE' },
 ];
 
-const TIME_PRESETS = [
-  '8～14', '8～15', '8～16', '9～15', '9～16', '9～17'
-];
-
 const WORK_PATTERNS = ['7～16', '8～17', '9～18', '11～20'];
 
 // --- ヘルパー関数 ---
@@ -237,7 +238,8 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       paidHolidays++;
       return;
     }
-    if (text === '休' || text === '休職' || type === 'OFF') {
+    // 冬季休暖も休日としてカウント
+    if (text === '休' || text === '休職' || text === '冬' || type === 'OFF' || type === 'WINTER') {
       holidays++;
       return;
     }
@@ -259,28 +261,44 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       return;
     }
 
-    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === '冬' || text === 'free' || type === 'DAY' || type === 'EARLY' || type === 'LATE' || type === 'FREE') {
+    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === 'free' || type === 'DAY' || type === 'EARLY' || type === 'LATE' || type === 'FREE') {
       // 定型シフトは9時間勤務・休憩1時間（実労働8時間）
       const grossHours = 9;
       const breakTime = calculateBreakTime(grossHours, staffId);
       hours += grossHours - breakTime;
     } else {
-      const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
-      if (match) {
-        let start = parseInt(match[1]);
-        if (text.includes(match[1] + '半')) start += 0.5;
-        let end = parseInt(match[2]);
-        if (text.includes(match[2] + '半')) end += 0.5;
-
-        let grossHours = end - start;
+      // HH:MM～HH:MM 形式を先にチェック
+      const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
+      if (timeMatch) {
+        const startHour = parseInt(timeMatch[1]);
+        const startMin = parseInt(timeMatch[2]);
+        const endHour = parseInt(timeMatch[3]);
+        const endMin = parseInt(timeMatch[4]);
+        const start = startHour + startMin / 60;
+        const end = endHour + endMin / 60;
+        const grossHours = end - start;
         const breakTime = calculateBreakTime(grossHours, staffId);
         const netHours = grossHours - breakTime;
         hours += netHours > 0 ? netHours : 0;
       } else {
-        // マッチしない場合は8時間とする
-        const grossHours = 8;
-        const breakTime = calculateBreakTime(grossHours, staffId);
-        hours += grossHours - breakTime;
+        // 8～14 や 8半～14 形式
+        const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
+        if (match) {
+          let start = parseInt(match[1]);
+          if (match[2] === '半') start += 0.5;
+          let end = parseInt(match[3]);
+          if (match[4] === '半') end += 0.5;
+
+          const grossHours = end - start;
+          const breakTime = calculateBreakTime(grossHours, staffId);
+          const netHours = grossHours - breakTime;
+          hours += netHours > 0 ? netHours : 0;
+        } else {
+          // マッチしない場合は8時間とする
+          const grossHours = 8;
+          const breakTime = calculateBreakTime(grossHours, staffId);
+          hours += grossHours - breakTime;
+        }
       }
     }
   });
@@ -343,13 +361,25 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   // 休み扱い（配置判定に含めない）
   if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修' || text === 'free' || type === 'FREE') return null;
 
-  // 時間パターンマッチを優先（例: 9～15、8半～13半など）
-  const match = text.match(/(\d+)(?:半)?～(\d+)(?:半)?/);
+  // HH:MM～HH:MM 形式を先にチェック
+  const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
+  if (timeMatch) {
+    const startHour = parseInt(timeMatch[1]);
+    const startMin = parseInt(timeMatch[2]);
+    const endHour = parseInt(timeMatch[3]);
+    const endMin = parseInt(timeMatch[4]);
+    const start = startHour + startMin / 60;
+    const end = endHour + endMin / 60;
+    return { start, end };
+  }
+
+  // 時間パターンマッチ（例: 9～15、8半～13半など）
+  const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
   if (match) {
     let start = parseInt(match[1]);
-    if (text.includes(match[1] + '半')) start += 0.5;
-    let end = parseInt(match[2]);
-    if (text.includes(match[2] + '半')) end += 0.5;
+    if (match[2] === '半') start += 0.5;
+    let end = parseInt(match[3]);
+    if (match[4] === '半') end += 0.5;
     return { start, end };
   }
 
@@ -647,7 +677,8 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
     currentValue: null
   });
 
-
+  // カスタム時間枠のstate（職員IDをキーとして管理）
+  const [customTimesMap, setCustomTimesMap] = useState<Record<string, CustomTimeSlot[]>>({});
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -1769,6 +1800,15 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
     const rect = e.currentTarget.getBoundingClientRect();
     const dateStr = getIsoDate(date);
 
+    // この職員のカスタム時間をLocalStorageからロード
+    const savedTimes = loadCustomTimes(loadedShiftId || undefined, staff.id);
+    if (savedTimes.length > 0) {
+      setCustomTimesMap(prev => ({
+        ...prev,
+        [staff.id]: savedTimes
+      }));
+    }
+
     setPopoverState({
       isOpen: true,
       staffId: staff.id,
@@ -2053,138 +2093,19 @@ export function DecemberShiftGeneration({ initialShiftId, onUnsavedChanges }: De
         </div>
       )}
 
-      {popoverState.isOpen && popoverState.targetRect && popoverState.date && (() => {
-        const POPOVER_HEIGHT = 450; // ポップアップの推定高さ
-        const POPOVER_WIDTH = 320; // w-80 = 320px
-
-        // セルの右側に配置（12px余白）
-        const popoverLeft = popoverState.targetRect.right + window.scrollX + 12;
-
-        // 画面からはみ出る場合は左側に表示
-        const showOnLeft = (popoverState.targetRect.right + POPOVER_WIDTH + 12) > window.innerWidth;
-        const adjustedLeft = showOnLeft
-          ? popoverState.targetRect.left + window.scrollX - POPOVER_WIDTH - 12
-          : popoverLeft;
-
-        // セルの垂直中央に合わせる
-        const cellCenterY = popoverState.targetRect.top + popoverState.targetRect.height / 2;
-        const popoverTop = cellCenterY + window.scrollY - POPOVER_HEIGHT / 2;
-
-        // 画面からはみ出さないように調整
-        const adjustedTop = Math.max(10, Math.min(popoverTop, window.scrollY + window.innerHeight - POPOVER_HEIGHT - 10));
-
-        // 三角形の位置を計算（ポップアップの上端からの距離）
-        const arrowOffset = Math.max(20, Math.min(cellCenterY - (adjustedTop - window.scrollY), POPOVER_HEIGHT - 20));
-
-        return (
-          <div
-            className="shift-popover absolute z-50 bg-white border-2 border-indigo-300 shadow-2xl rounded-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-150 ring-4 ring-indigo-100"
-            style={{
-              top: adjustedTop,
-              left: adjustedLeft,
-            }}
-          >
-            <div className={`absolute w-4 h-4 bg-white border-indigo-300 transform rotate-45 ${
-              showOnLeft
-                ? '-right-2 border-r-2 border-t-2'
-                : '-left-2 border-l-2 border-b-2'
-            }`} style={{ top: `${arrowOffset}px` }}></div>
-          <div className="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-3">
-            <div className="flex items-center gap-2">
-              <div className="bg-indigo-100 p-2 rounded-lg">
-                <Clock size={18} className="text-indigo-600" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-slate-800 text-base leading-tight">
-                  {popoverState.date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', weekday: 'short' })}
-                </span>
-                <span className="text-sm text-slate-600 font-medium">{popoverState.staffName}</span>
-              </div>
-            </div>
-            <button onClick={closePopover} className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-colors">
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="space-y-5">
-            <div>
-              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">基本シフト</label>
-              <div className="grid grid-cols-4 gap-2">
-                {SHIFT_PRESETS.map(p => (
-                  <button
-                    key={p.text}
-                    onClick={() => saveShiftChange({ type: p.type, customText: p.text })}
-                    className={`text-sm py-2.5 rounded-lg font-bold transition-all border-2 ${popoverState.currentValue.customText === p.text
-                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-200'
-                      : p.text === '休'
-                        ? 'bg-white border-slate-300 text-red-600 hover:border-red-400 hover:text-red-700 hover:bg-red-50'
-                        : 'bg-white border-slate-300 text-slate-700 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50'
-                      }`}
-                  >
-                    {p.text}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">時間指定</label>
-              <div className="grid grid-cols-3 gap-2">
-                {TIME_PRESETS.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => saveShiftChange({ type: 'DAY', customText: t })}
-                    className={`text-xs py-2 px-2 rounded-lg font-bold transition-all border-2 whitespace-nowrap ${popoverState.currentValue.customText === t
-                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-200'
-                      : 'bg-white border-slate-300 text-slate-700 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2.5 block">カスタム入力</label>
-              <div className="flex gap-2 mb-3">
-                <div className="relative flex-1">
-                  <input
-                    id="custom-shift-input"
-                    type="text"
-                    className="w-full border-2 border-slate-300 rounded-lg pl-3 pr-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
-                    placeholder="入力..."
-                    defaultValue={popoverState.currentValue.customText}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveShiftChange({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
-                    }}
-                  />
-                </div>
-                <button
-                  onClick={() => {
-                    const input = document.getElementById('custom-shift-input') as HTMLInputElement;
-                    if (input && input.value) {
-                      saveShiftChange({ type: 'DAY', customText: input.value });
-                    }
-                  }}
-                  className="px-4 py-2.5 border-2 border-emerald-500 bg-emerald-50 rounded-lg text-sm font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-600 transition-all"
-                >
-                  カスタム保存
-                </button>
-              </div>
-              <div className="flex justify-center">
-                <button
-                  onClick={() => saveShiftChange({ type: 'OFF', customText: '' })}
-                  className="px-6 py-2 border-2 border-red-300 bg-red-50 rounded-lg text-sm font-bold text-red-600 hover:bg-red-100 hover:border-red-400 transition-all"
-                >
-                  クリア
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        );
-      })()}
+      {/* 共通シフト入力ポップオーバー */}
+      <ShiftInputPopover
+        popoverState={popoverState}
+        onClose={closePopover}
+        onSaveShift={saveShiftChange}
+        shiftPresets={DEFAULT_SHIFT_PRESETS}
+        customTimesMap={customTimesMap}
+        onUpdateCustomTimes={(staffId, times) => {
+          setCustomTimesMap(prev => ({ ...prev, [staffId]: times }));
+        }}
+        loadedShiftId={loadedShiftId}
+        toast={toast}
+      />
 
       <header className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-30 print:hidden shadow-lg flex-none h-20">
         <div className="flex items-center gap-4">
