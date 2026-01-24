@@ -250,85 +250,120 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
   let holidays = 0;
   let paidHolidays = 0;
 
-  // 1月のすべての日付を集計
+  // すべての日付を集計
   dates.forEach(date => {
     const key = `${staffId}_${getIsoDate(date)}`;
     const cell = shifts[key];
     if (!cell) return;
 
-    const text = cell.customText;
+    const text = cell.customText || '';
     const type = cell.type;
 
-    if (text === '有' || text === '有給') {
-      paidHolidays++;
-      return;
-    }
-    // 冬季休暖も休日としてカウント
-    if (text === '休' || text === '休職' || text === '冬' || type === 'OFF' || type === 'WINTER') {
-      holidays++;
-      return;
-    }
+    // 空白セルはスキップ
     if (text === '') {
       return;
     }
 
-    // 有給・休み・空白以外はすべて勤務日数にカウント（明けも含む）
-    days++;
-
-    if (text === '夜' || type === 'NIGHT') {
-      nightCount++;
-      hours += 15;  // 休憩2時間を引いた15時間
+    // 有給判定: "有"を含む文字列（有、有給、有/健康など）は有給扱い
+    if (text.includes('有')) {
+      paidHolidays++;
       return;
     }
 
-    // 明けは勤務日数にカウント済みだが、時間計算は夜勤に含まれているのでスキップ
+    // 休日判定: 休、休職、冬（冬休み）
+    if (text === '休' || text === '休職' || text === '冬' || type === 'OFF' || type === 'WINTER') {
+      holidays++;
+      return;
+    }
+
+    // ここから勤務日の処理 --------------------------------
+
+    // 勤務日数にカウント（明けも含む）
+    days++;
+
+    // 夜勤: 17時間勤務 - 2時間休憩 = 15時間
+    if (text === '夜' || type === 'NIGHT') {
+      nightCount++;
+      hours += 15;
+      return;
+    }
+
+    // 明け: 勤務日数のみカウント、時間は夜勤に含まれているのでスキップ
     if (text === '明') {
       return;
     }
 
-    if (text === '日' || text === '日A' || text === '日B' || text === '早' || text === '遅' || text === 'free' || type === 'DAY' || type === 'EARLY' || type === 'LATE' || type === 'FREE') {
-      // 定型シフトは9時間勤務・休憩1時間（実労働8時間）
+    // 基本シフトの時間計算
+    // 日・日A・日B: 9:00-18:00 (9時間 - 休憩1時間 = 8時間)
+    if (text === '日' || text === '日A' || text === '日B' || type === 'DAY') {
       const grossHours = 9;
       const breakTime = calculateBreakTime(grossHours, staffId);
       hours += grossHours - breakTime;
-    } else {
-      // HH:MM～HH:MM 形式を先にチェック
-      const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
-      if (timeMatch) {
-        const startHour = parseInt(timeMatch[1]);
-        const startMin = parseInt(timeMatch[2]);
-        const endHour = parseInt(timeMatch[3]);
-        const endMin = parseInt(timeMatch[4]);
-        const start = startHour + startMin / 60;
-        const end = endHour + endMin / 60;
-        const grossHours = end - start;
-        const breakTime = calculateBreakTime(grossHours, staffId);
-        const netHours = grossHours - breakTime;
-        hours += netHours > 0 ? netHours : 0;
-      } else {
-        // 8～14 や 8半～14 形式
-        const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
-        if (match) {
-          let start = parseInt(match[1]);
-          if (match[2] === '半') start += 0.5;
-          let end = parseInt(match[3]);
-          if (match[4] === '半') end += 0.5;
-
-          const grossHours = end - start;
-          const breakTime = calculateBreakTime(grossHours, staffId);
-          const netHours = grossHours - breakTime;
-          hours += netHours > 0 ? netHours : 0;
-        } else {
-          // マッチしない場合は8時間とする
-          const grossHours = 8;
-          const breakTime = calculateBreakTime(grossHours, staffId);
-          hours += grossHours - breakTime;
-        }
-      }
+      return;
     }
+
+    // 早番: 7:00-16:00 (9時間 - 休憩1時間 = 8時間)
+    if (text === '早' || type === 'EARLY') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return;
+    }
+
+    // 遅番: 11:00-20:00 (9時間 - 休憩1時間 = 8時間)
+    if (text === '遅' || type === 'LATE') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return;
+    }
+
+    // free: 勤務日数のみカウント、時間は0
+    if (text === 'free' || type === 'FREE') {
+      return;
+    }
+
+    // カスタム時間入力の処理 --------------------------------
+
+    // HH:MM～HH:MM 形式（例: 09:00～18:00）
+    const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
+    if (timeMatch) {
+      const startHour = parseInt(timeMatch[1]);
+      const startMin = parseInt(timeMatch[2]);
+      const endHour = parseInt(timeMatch[3]);
+      const endMin = parseInt(timeMatch[4]);
+      const start = startHour + startMin / 60;
+      const end = endHour + endMin / 60;
+      const grossHours = end - start;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      const netHours = grossHours - breakTime;
+      hours += netHours > 0 ? netHours : 0;
+      return;
+    }
+
+    // N～M や N半～M半 形式（例: 8～14, 8半～13半）
+    const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
+    if (match) {
+      let start = parseInt(match[1]);
+      if (match[2] === '半') start += 0.5;
+      let end = parseInt(match[3]);
+      if (match[4] === '半') end += 0.5;
+
+      const grossHours = end - start;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      const netHours = grossHours - breakTime;
+      hours += netHours > 0 ? netHours : 0;
+      return;
+    }
+
+    // どのパターンにもマッチしない場合は8時間とする
+    const grossHours = 8;
+    const breakTime = calculateBreakTime(grossHours, staffId);
+    hours += grossHours - breakTime;
   });
 
-  return { days, hours, nightCount, holidays, paidHolidays };
+  // 時間は小数点第1位で丸める
+  return { days, hours: Math.round(hours * 10) / 10, nightCount, holidays, paidHolidays };
 };
 
 const getSurname = (fullname: string): string => {
