@@ -504,6 +504,15 @@ const getDisplayText = (text: string, type: string) => {
   return formatLabel(text);
 };
 
+// 時間帯ブロック定義
+const TIME_BLOCKS = [
+  { id: 'early', label: '早朝', startSlot: 14, endSlot: 18, startTime: '7時', endTime: '9時' },      // 7:00-9:00
+  { id: 'morning', label: '午前', startSlot: 18, endSlot: 24, startTime: '9時', endTime: '12時' },   // 9:00-12:00
+  { id: 'afternoon', label: '午後', startSlot: 26, endSlot: 32, startTime: '13時', endTime: '16時' }, // 13:00-16:00
+  { id: 'evening', label: '夕方', startSlot: 32, endSlot: 40, startTime: '16時', endTime: '20時' },  // 16:00-20:00
+  { id: 'night', label: '夜勤', startSlot: 40, endSlot: 48, startTime: '20時', endTime: '翌9時' },   // 20:00-翌9:00
+];
+
 const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any => {
   const results: any = {};
 
@@ -644,11 +653,56 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       }
     };
 
+    // 時間帯ブロック別の集計
+    const timeBlocks: { [key: string]: { actual: number; required: number; status: 'ok' | 'shortage' | 'critical'; diff: number } } = {};
+
+    for (const block of TIME_BLOCKS) {
+      // ブロック内の最小人数（実際）と最大必要人数を計算
+      let minActual = Infinity;
+      let maxRequired = 0;
+
+      for (let slot = block.startSlot; slot < block.endSlot; slot++) {
+        const actual = halfHourCounts[slot] || 0;
+        const required = requiredForDay[slot] || 1;
+        minActual = Math.min(minActual, actual);
+        maxRequired = Math.max(maxRequired, required);
+      }
+
+      if (minActual === Infinity) minActual = 0;
+
+      const diff = minActual - maxRequired;
+      let status: 'ok' | 'shortage' | 'critical' = 'ok';
+      if (diff <= -2) {
+        status = 'critical';
+      } else if (diff < 0) {
+        status = 'shortage';
+      }
+
+      timeBlocks[block.id] = {
+        actual: minActual,
+        required: maxRequired,
+        status,
+        diff
+      };
+    }
+
+    // 正社員配置チェック（9:00-16:00）
+    let hasFullTime = true;
+    for (let slot = 18; slot < 32; slot++) {
+      if (halfHourFullTimeCounts[slot] < 1) {
+        hasFullTime = false;
+        break;
+      }
+    }
+
     results[dateIso] = {
       maxShortage,
       fullTimeShortages: groupSlots(fullTimeShortages),
       criticalShortages: groupSlots(criticalShortages),
-      minorShortages: groupSlots(minorShortages)
+      minorShortages: groupSlots(minorShortages),
+      // 新しい時間帯ブロックデータ
+      timeBlocks,
+      hasFullTime
     };
   });
 
@@ -2877,13 +2931,73 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   {dates.map(date => {
                     const day = date.getDay();
                     const style = getDayStyle(day);
+                    const dateIso = getIsoDate(date);
+                    const sufficiency = sufficiencyData[dateIso];
+                    const timeBlocks = sufficiency?.timeBlocks || {};
+                    const hasFullTime = sufficiency?.hasFullTime ?? true;
+
+                    // カラーバー用のステータス色を取得
+                    const getBlockColor = (status: string) => {
+                      switch (status) {
+                        case 'critical': return 'bg-red-500';
+                        case 'shortage': return 'bg-yellow-400';
+                        default: return 'bg-emerald-400';
+                      }
+                    };
+
                     return (
-                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-20 print:border-2 print:border-gray-700" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-20 print:border-2 print:border-gray-700 group relative" style={{ ...style, borderBottomWidth: '2px' }}>
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
                             {['日', '月', '火', '水', '木', '金', '土'][day]}
                           </span>
+                          {/* カラーバー（配置判定） */}
+                          <div className="flex gap-[1px] justify-center mt-1 print:hidden">
+                            {TIME_BLOCKS.map(block => {
+                              const blockData = timeBlocks[block.id];
+                              const color = blockData ? getBlockColor(blockData.status) : 'bg-gray-300';
+                              return (
+                                <div
+                                  key={block.id}
+                                  className={`w-2 h-2 rounded-sm ${color}`}
+                                  title={`${block.label}: ${blockData?.actual || 0}/${blockData?.required || 0}人`}
+                                />
+                              );
+                            })}
+                          </div>
+                          {/* 正社員マーク */}
+                          {!hasFullTime && (
+                            <div className="text-[8px] text-red-600 font-bold print:hidden">正×</div>
+                          )}
+                        </div>
+                        {/* ホバー時の詳細ツールチップ */}
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl z-50 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 print:hidden pointer-events-none">
+                          <div className="font-bold mb-2 text-center border-b border-slate-600 pb-1">
+                            {date.getMonth() + 1}/{date.getDate()}({['日', '月', '火', '水', '木', '金', '土'][day]}) 配置状況
+                          </div>
+                          <div className="space-y-1">
+                            {TIME_BLOCKS.map(block => {
+                              const blockData = timeBlocks[block.id];
+                              const statusIcon = blockData?.status === 'critical' ? '🔴' : blockData?.status === 'shortage' ? '🟡' : '🟢';
+                              const diffText = blockData && blockData.diff !== 0 ? `(${blockData.diff > 0 ? '+' : ''}${blockData.diff})` : '';
+                              return (
+                                <div key={block.id} className="flex justify-between items-center">
+                                  <span className="text-slate-300">{block.label}</span>
+                                  <span>
+                                    {statusIcon} {blockData?.actual || 0}/{blockData?.required || 0}人
+                                    <span className={blockData?.diff && blockData.diff < 0 ? 'text-red-400' : 'text-emerald-400'}>{diffText}</span>
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-2 pt-1 border-t border-slate-600 flex justify-between">
+                            <span className="text-slate-300">正社員(9-16時)</span>
+                            <span>{hasFullTime ? '🟢 OK' : '🔴 不足'}</span>
+                          </div>
+                          {/* ツールチップの矢印 */}
+                          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                         </div>
                       </th>
                     );
