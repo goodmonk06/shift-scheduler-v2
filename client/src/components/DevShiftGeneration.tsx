@@ -2715,14 +2715,17 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                           <div style={{ fontWeight: 'bold', marginBottom: '8px', textAlign: 'center', borderBottom: '1px solid #475569', paddingBottom: '4px' }}>
                             {date.getMonth() + 1}/{date.getDate()}({['日', '月', '火', '水', '木', '金', '土'][day]}) 配置状況
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {TIME_BLOCKS.map(block => {
                               const blockData = timeBlocks[block.id];
                               const statusIcon = blockData?.status === 'critical' ? '🔴' : blockData?.status === 'shortage' ? '🟡' : '🟢';
                               const diffText = blockData && blockData.diff !== 0 ? `(${blockData.diff > 0 ? '+' : ''}${blockData.diff})` : '';
                               return (
                                 <div key={block.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ color: '#cbd5e1' }}>{block.label}</span>
+                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '11px' }}>{block.label}</span>
+                                    <span style={{ color: '#94a3b8', fontSize: '10px' }}>{block.startTime}～{block.endTime}</span>
+                                  </div>
                                   <span>
                                     {statusIcon} {blockData?.actual || 0}/{blockData?.required || 0}人
                                     <span style={{ color: blockData?.diff && blockData.diff < 0 ? '#f87171' : '#34d399' }}>{diffText}</span>
