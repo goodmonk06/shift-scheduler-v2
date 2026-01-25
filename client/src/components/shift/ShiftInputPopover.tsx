@@ -36,17 +36,101 @@ export function ShiftInputPopover({
   const [pickerEndMinute, setPickerEndMinute] = useState('00');
   const [pickerBreakMinutes, setPickerBreakMinutes] = useState<0 | 30 | 60>(0);
 
-  // ポップオーバーが開いたときにピッカーをリセット
+  // 現在のセルの値を表示用に解析する関数
+  const parseCurrentValue = (customText: string | undefined, staffTimes: CustomTimeSlot[]): {
+    startHour: string;
+    startMinute: string;
+    endHour: string;
+    endMinute: string;
+    breakMinutes: 0 | 30 | 60;
+    isTimeFormat: boolean;
+  } => {
+    // デフォルト値
+    const defaults = {
+      startHour: '09',
+      startMinute: '00',
+      endHour: '18',
+      endMinute: '00',
+      breakMinutes: 0 as 0 | 30 | 60,
+      isTimeFormat: false
+    };
+
+    if (!customText) return defaults;
+
+    // 1. まずカスタム時間枠のリストから完全一致を探す（休憩時間情報を取得するため）
+    const matchedSlot = staffTimes.find(slot => slot.displayText === customText);
+    if (matchedSlot) {
+      const [startH, startM] = matchedSlot.startTime.split(':');
+      const [endH, endM] = matchedSlot.endTime.split(':');
+      return {
+        startHour: startH,
+        startMinute: startM,
+        endHour: endH,
+        endMinute: endM,
+        breakMinutes: matchedSlot.breakMinutes,
+        isTimeFormat: true
+      };
+    }
+
+    // 2. HH:MM～HH:MM 形式（例: 09:00～18:00）
+    const fullTimeMatch = customText.match(/(\d+):(\d+)～(\d+):(\d+)/);
+    if (fullTimeMatch) {
+      return {
+        startHour: fullTimeMatch[1].padStart(2, '0'),
+        startMinute: fullTimeMatch[2],
+        endHour: fullTimeMatch[3].padStart(2, '0'),
+        endMinute: fullTimeMatch[4],
+        breakMinutes: 0,
+        isTimeFormat: true
+      };
+    }
+
+    // 3. N～M や N半～M半 形式（例: 8～14, 8半～13半, 9～15）
+    const simpleMatch = customText.match(/(\d+)(半)?～(\d+)(半)?/);
+    if (simpleMatch) {
+      const startH = simpleMatch[1].padStart(2, '0');
+      const startM = simpleMatch[2] === '半' ? '30' : '00';
+      const endH = simpleMatch[3].padStart(2, '0');
+      const endM = simpleMatch[4] === '半' ? '30' : '00';
+      return {
+        startHour: startH,
+        startMinute: startM,
+        endHour: endH,
+        endMinute: endM,
+        breakMinutes: 0,
+        isTimeFormat: true
+      };
+    }
+
+    // 4. 基本シフト（日、日A、早、遅など）の場合はデフォルト時間を設定
+    if (customText === '日' || customText === '日A' || customText === '日B') {
+      return { ...defaults, startHour: '09', endHour: '18', isTimeFormat: false };
+    }
+    if (customText === '早') {
+      return { ...defaults, startHour: '07', endHour: '16', isTimeFormat: false };
+    }
+    if (customText === '遅') {
+      return { ...defaults, startHour: '11', endHour: '20', isTimeFormat: false };
+    }
+
+    return defaults;
+  };
+
+  // ポップオーバーが開いたときに、現在の値をピッカーに反映
   useEffect(() => {
     if (popoverState.isOpen) {
-      setPickerStartHour('09');
-      setPickerStartMinute('00');
-      setPickerEndHour('18');
-      setPickerEndMinute('00');
-      setPickerBreakMinutes(0);
+      const currentStaffTimes = customTimesMap[popoverState.staffId || ''] || [];
+      const currentText = popoverState.currentValue?.customText;
+      const parsed = parseCurrentValue(currentText, currentStaffTimes);
+
+      setPickerStartHour(parsed.startHour);
+      setPickerStartMinute(parsed.startMinute);
+      setPickerEndHour(parsed.endHour);
+      setPickerEndMinute(parsed.endMinute);
+      setPickerBreakMinutes(parsed.breakMinutes);
       setCustomInputTab('time');
     }
-  }, [popoverState.isOpen, popoverState.staffId]);
+  }, [popoverState.isOpen, popoverState.staffId, popoverState.currentValue?.customText, customTimesMap]);
 
   // 表示判定
   if (!popoverState.isOpen || !popoverState.targetRect || !popoverState.date) {
@@ -114,7 +198,7 @@ export function ShiftInputPopover({
       }}
     >
       {/* ヘッダー */}
-      <div className="flex justify-between items-center mb-4 border-b-2 border-slate-200 pb-3">
+      <div className="flex justify-between items-center mb-3 border-b-2 border-slate-200 pb-3">
         <div className="flex items-center gap-2">
           <div className="bg-indigo-100 p-2 rounded-lg">
             <Clock size={18} className="text-indigo-600" />
@@ -130,6 +214,31 @@ export function ShiftInputPopover({
           <X size={20} />
         </button>
       </div>
+
+      {/* 現在の値表示 */}
+      {popoverState.currentValue?.customText && (
+        <div className="mb-4 p-3 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">現在の設定</div>
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-bold text-indigo-600">{popoverState.currentValue.customText}</span>
+            {(() => {
+              const parsed = parseCurrentValue(popoverState.currentValue.customText, currentStaffTimes);
+              if (parsed.isTimeFormat) {
+                const startTime = `${parsed.startHour}:${parsed.startMinute}`;
+                const endTime = `${parsed.endHour}:${parsed.endMinute}`;
+                const breakText = parsed.breakMinutes === 0 ? '休憩なし' : `休憩${parsed.breakMinutes}分`;
+                return (
+                  <div className="text-right">
+                    <div className="text-sm text-slate-600">{startTime}～{endTime}</div>
+                    <div className="text-xs text-slate-400">{breakText}</div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-5">
         {/* 基本シフトプリセット */}
