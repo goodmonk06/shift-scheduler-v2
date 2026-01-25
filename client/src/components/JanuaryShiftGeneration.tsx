@@ -2946,7 +2946,28 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                     };
 
                     return (
-                      <th key={date.toString()} className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-20 print:border-2 print:border-gray-700 group relative" style={{ ...style, borderBottomWidth: '2px' }}>
+                      <th
+                        key={date.toString()}
+                        className="border border-slate-600 !w-[90px] !min-w-[90px] !max-w-[90px] sticky top-0 z-20 print:border-2 print:border-gray-700 relative"
+                        style={{ ...style, borderBottomWidth: '2px', cursor: 'pointer' }}
+                        onMouseEnter={(e) => {
+                          const tooltip = document.getElementById(`tooltip-${dateIso}`);
+                          if (tooltip) {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            tooltip.style.left = `${rect.left + rect.width / 2}px`;
+                            tooltip.style.top = `${rect.bottom + 8}px`;
+                            tooltip.style.opacity = '1';
+                            tooltip.style.visibility = 'visible';
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          const tooltip = document.getElementById(`tooltip-${dateIso}`);
+                          if (tooltip) {
+                            tooltip.style.opacity = '0';
+                            tooltip.style.visibility = 'hidden';
+                          }
+                        }}
+                      >
                         <div className="flex flex-col justify-center h-full">
                           <span className="text-sm font-bold font-mono">{date.getDate()}</span>
                           <span className="text-[10px] font-bold opacity-70">
@@ -2977,33 +2998,52 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                             <div className="text-[8px] text-red-600 font-bold print:hidden">正×</div>
                           )}
                         </div>
-                        {/* ホバー時の詳細ツールチップ */}
-                        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl z-50 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 print:hidden pointer-events-none">
-                          <div className="font-bold mb-2 text-center border-b border-slate-600 pb-1">
+                        {/* ホバー時の詳細ツールチップ（CSS hoverで表示） */}
+                        <div
+                          className="print:hidden"
+                          style={{
+                            position: 'fixed',
+                            left: '50%',
+                            top: '120px',
+                            transform: 'translateX(-50%)',
+                            backgroundColor: '#1e293b',
+                            color: 'white',
+                            fontSize: '12px',
+                            borderRadius: '8px',
+                            padding: '12px',
+                            boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                            zIndex: 9999,
+                            width: '200px',
+                            opacity: 0,
+                            visibility: 'hidden',
+                            transition: 'opacity 0.2s, visibility 0.2s',
+                            pointerEvents: 'none'
+                          }}
+                          id={`tooltip-${dateIso}`}
+                        >
+                          <div style={{ fontWeight: 'bold', marginBottom: '8px', textAlign: 'center', borderBottom: '1px solid #475569', paddingBottom: '4px' }}>
                             {date.getMonth() + 1}/{date.getDate()}({['日', '月', '火', '水', '木', '金', '土'][day]}) 配置状況
                           </div>
-                          <div className="space-y-1">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {TIME_BLOCKS.map(block => {
                               const blockData = timeBlocks[block.id];
                               const statusIcon = blockData?.status === 'critical' ? '🔴' : blockData?.status === 'shortage' ? '🟡' : '🟢';
                               const diffText = blockData && blockData.diff !== 0 ? `(${blockData.diff > 0 ? '+' : ''}${blockData.diff})` : '';
                               return (
-                                <div key={block.id} className="flex justify-between items-center">
-                                  <span className="text-slate-300">{block.label}</span>
+                                <div key={block.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ color: '#cbd5e1' }}>{block.label}</span>
                                   <span>
                                     {statusIcon} {blockData?.actual || 0}/{blockData?.required || 0}人
-                                    <span className={blockData?.diff && blockData.diff < 0 ? 'text-red-400' : 'text-emerald-400'}>{diffText}</span>
+                                    <span style={{ color: blockData?.diff && blockData.diff < 0 ? '#f87171' : '#34d399' }}>{diffText}</span>
                                   </span>
                                 </div>
                               );
                             })}
                           </div>
-                          <div className="mt-2 pt-1 border-t border-slate-600 flex justify-between">
-                            <span className="text-slate-300">正社員(9-16時)</span>
+                          <div style={{ marginTop: '8px', paddingTop: '4px', borderTop: '1px solid #475569', display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#cbd5e1' }}>正社員(9-16時)</span>
                             <span>{hasFullTime ? '🟢 OK' : '🔴 不足'}</span>
                           </div>
-                          {/* ツールチップの矢印 */}
-                          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
                         </div>
                       </th>
                     );
