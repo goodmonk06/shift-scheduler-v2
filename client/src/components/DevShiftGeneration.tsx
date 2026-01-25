@@ -282,8 +282,6 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       const grossHours = end - start;
       const breakTime = calculateBreakTime(grossHours, staffId);
       const netHours = grossHours - breakTime;
-      // デバッグログ
-      console.log(`[時間計算] staffId=${staffId}, text="${text}", gross=${grossHours}h, break=${breakTime}h, net=${netHours}h`);
       hours += netHours > 0 ? netHours : 0;
       return;
     }
@@ -2032,7 +2030,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
       dateStr: dateStr,
       staffName: staff.name,
       targetRect: rect,
-      currentValue: currentVal
+      currentValue: currentVal,
+      staffBreakTimeRule: staff.constraints?.breakTime || null
     });
     setContextMenu(null);
   };

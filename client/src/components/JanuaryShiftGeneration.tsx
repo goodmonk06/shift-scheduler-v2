@@ -2021,7 +2021,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
       dateStr: dateStr,
       staffName: staff.name,
       targetRect: rect,
-      currentValue: currentVal
+      currentValue: currentVal,
+      staffBreakTimeRule: staff.constraints?.breakTime || null
     });
     setContextMenu(null);
   };

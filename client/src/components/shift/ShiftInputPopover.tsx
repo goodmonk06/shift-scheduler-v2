@@ -36,6 +36,29 @@ export function ShiftInputPopover({
   const [pickerEndMinute, setPickerEndMinute] = useState('00');
   const [pickerBreakMinutes, setPickerBreakMinutes] = useState<0 | 30 | 60>(0);
 
+  // 職員の休憩ルールに基づいて休憩時間を計算
+  const calculateStaffBreakTime = (workHours: number): number => {
+    const rule = popoverState.staffBreakTimeRule;
+
+    if (rule === undefined || rule === null) {
+      // デフォルトルール: 6時間超なら1時間
+      return workHours > 6 ? 1 : 0;
+    }
+
+    if (typeof rule === 'number') {
+      // 固定時間
+      return rule;
+    }
+
+    if (typeof rule === 'object') {
+      const threshold = rule.threshold ?? 6;
+      const duration = rule.duration ?? 1;
+      return workHours > threshold ? duration : 0;
+    }
+
+    return workHours > 6 ? 1 : 0;
+  };
+
   // 現在のセルの値を表示用に解析する関数
   const parseCurrentValue = (customText: string | undefined, staffTimes: CustomTimeSlot[]): {
     startHour: string;
@@ -226,11 +249,23 @@ export function ShiftInputPopover({
               if (parsed.isTimeFormat) {
                 const startTime = `${parsed.startHour}:${parsed.startMinute}`;
                 const endTime = `${parsed.endHour}:${parsed.endMinute}`;
-                const breakText = parsed.breakMinutes === 0 ? '休憩なし' : `休憩${parsed.breakMinutes}分`;
+
+                // 勤務時間を計算
+                const startHours = parseInt(parsed.startHour) + parseInt(parsed.startMinute) / 60;
+                const endHours = parseInt(parsed.endHour) + parseInt(parsed.endMinute) / 60;
+                const grossHours = endHours - startHours;
+
+                // 職員ルールに基づく休憩時間を計算
+                const breakHours = calculateStaffBreakTime(grossHours);
+                const netHours = grossHours - breakHours;
+
+                const breakText = breakHours === 0 ? '休憩なし' : `休憩${breakHours * 60}分`;
+
                 return (
                   <div className="text-right">
                     <div className="text-sm text-slate-600">{startTime}～{endTime}</div>
                     <div className="text-xs text-slate-400">{breakText}</div>
+                    <div className="text-xs font-bold text-indigo-500">正味 {netHours}時間</div>
                   </div>
                 );
               }

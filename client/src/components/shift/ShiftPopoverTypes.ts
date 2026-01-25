@@ -19,6 +19,12 @@ export interface PopoverCurrentValue {
   editedInActualMode?: boolean;
 }
 
+// 職員の休憩時間ルール
+export interface StaffBreakTimeRule {
+  threshold?: number;  // 何時間超えたら休憩が必要か（デフォルト6）
+  duration?: number;   // 休憩時間（時間単位、デフォルト1）
+}
+
 export interface PopoverState {
   isOpen: boolean;
   staffId: string | null;
@@ -27,6 +33,7 @@ export interface PopoverState {
   staffName: string;
   targetRect: DOMRect | null;
   currentValue: PopoverCurrentValue | null;
+  staffBreakTimeRule?: StaffBreakTimeRule | number | null;  // 職員の休憩ルール
 }
 
 export interface ShiftInputPopoverProps {
