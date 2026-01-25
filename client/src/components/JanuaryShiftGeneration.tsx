@@ -2936,12 +2936,12 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                     const timeBlocks = sufficiency?.timeBlocks || {};
                     const hasFullTime = sufficiency?.hasFullTime ?? true;
 
-                    // カラーバー用のステータス色を取得
-                    const getBlockColor = (status: string) => {
+                    // カラーバー用のステータス色を取得（インラインスタイル）
+                    const getBlockColorStyle = (status: string): React.CSSProperties => {
                       switch (status) {
-                        case 'critical': return 'bg-red-500';
-                        case 'shortage': return 'bg-yellow-400';
-                        default: return 'bg-emerald-400';
+                        case 'critical': return { backgroundColor: '#ef4444' }; // red-500
+                        case 'shortage': return { backgroundColor: '#facc15' }; // yellow-400
+                        default: return { backgroundColor: '#34d399' }; // emerald-400
                       }
                     };
 
@@ -2953,14 +2953,20 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                             {['日', '月', '火', '水', '木', '金', '土'][day]}
                           </span>
                           {/* カラーバー（配置判定） */}
-                          <div className="flex gap-[1px] justify-center mt-1 print:hidden">
+                          <div className="print:hidden" style={{ display: 'flex', gap: '2px', justifyContent: 'center', marginTop: '4px' }}>
                             {TIME_BLOCKS.map(block => {
                               const blockData = timeBlocks[block.id];
-                              const color = blockData ? getBlockColor(blockData.status) : 'bg-gray-300';
+                              const colorStyle = blockData ? getBlockColorStyle(blockData.status) : { backgroundColor: '#9ca3af' }; // gray-400
                               return (
                                 <div
                                   key={block.id}
-                                  className={`w-2 h-2 rounded-sm ${color}`}
+                                  style={{
+                                    width: '12px',
+                                    height: '8px',
+                                    borderRadius: '2px',
+                                    border: '1px solid rgba(100, 116, 139, 0.5)',
+                                    ...colorStyle
+                                  }}
                                   title={`${block.label}: ${blockData?.actual || 0}/${blockData?.required || 0}人`}
                                 />
                               );
