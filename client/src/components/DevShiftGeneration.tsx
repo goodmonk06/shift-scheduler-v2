@@ -248,37 +248,12 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       return;
     }
 
-    // 基本シフトの時間計算
-    // 日・日A・日B: 9:00-18:00 (9時間 - 休憩1時間 = 8時間)
-    if (text === '日' || text === '日A' || text === '日B' || type === 'DAY') {
-      const grossHours = 9;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      hours += grossHours - breakTime;
-      return;
-    }
-
-    // 早番: 7:00-16:00 (9時間 - 休憩1時間 = 8時間)
-    if (text === '早' || type === 'EARLY') {
-      const grossHours = 9;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      hours += grossHours - breakTime;
-      return;
-    }
-
-    // 遅番: 11:00-20:00 (9時間 - 休憩1時間 = 8時間)
-    if (text === '遅' || type === 'LATE') {
-      const grossHours = 9;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      hours += grossHours - breakTime;
-      return;
-    }
-
     // free: 勤務日数のみカウント、時間は0
     if (text === 'free' || type === 'FREE') {
       return;
     }
 
-    // カスタム時間入力の処理 --------------------------------
+    // ★★★ カスタム時間入力の処理を先に行う ★★★
 
     // HH:MM～HH:MM 形式（例: 09:00～18:00）
     const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
@@ -296,7 +271,7 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       return;
     }
 
-    // N～M や N半～M半 形式（例: 8～14, 8半～13半）
+    // N～M や N半～M半 形式（例: 8～14, 8半～13半, 9～15）
     const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
     if (match) {
       let start = parseInt(match[1]);
@@ -308,6 +283,41 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
       const breakTime = calculateBreakTime(grossHours, staffId);
       const netHours = grossHours - breakTime;
       hours += netHours > 0 ? netHours : 0;
+      return;
+    }
+
+    // ★★★ 以下はカスタム時間がない場合のデフォルト処理 ★★★
+
+    // 基本シフトの時間計算（textが完全一致の場合のみ）
+    // 日・日A・日B: 9:00-18:00 (9時間 - 休憩1時間 = 8時間)
+    if (text === '日' || text === '日A' || text === '日B') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return;
+    }
+
+    // 早番: 7:00-16:00 (9時間 - 休憩1時間 = 8時間)
+    if (text === '早') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return;
+    }
+
+    // 遅番: 11:00-20:00 (9時間 - 休憩1時間 = 8時間)
+    if (text === '遅') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return;
+    }
+
+    // typeベースのデフォルト（textがカスタムでない場合のフォールバック）
+    if (type === 'DAY' || type === 'EARLY' || type === 'LATE') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
       return;
     }
 
