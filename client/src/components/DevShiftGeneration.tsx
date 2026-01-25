@@ -652,36 +652,68 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
       return groups;
     };
 
-    // 時間帯ブロック別の集計
-    const timeBlocks: { [key: string]: { actual: number; required: number; status: 'ok' | 'shortage' | 'critical'; diff: number } } = {};
+    // 時間帯ブロック別の集計（スロット単位で判定し最悪を採用）
+    const timeBlocks: { [key: string]: {
+      actual: number;
+      required: number;
+      status: 'ok' | 'shortage' | 'critical';
+      diff: number;
+      shortageSlots: number;  // 不足スロット数
+      totalSlots: number;     // 総スロット数
+      worstSlotTime: string;  // 最悪スロットの時刻
+    } } = {};
 
     for (const block of TIME_BLOCKS) {
-      // ブロック内の最小人数（実際）と最大必要人数を計算
-      let minActual = Infinity;
-      let maxRequired = 0;
+      let worstDiff = Infinity;
+      let worstSlot = block.startSlot;
+      let shortageSlots = 0;
+      let criticalSlots = 0;
+      const totalSlots = block.endSlot - block.startSlot;
 
       for (let slot = block.startSlot; slot < block.endSlot; slot++) {
         const actual = halfHourCounts[slot] || 0;
         const required = requiredForDay[slot] || 1;
-        minActual = Math.min(minActual, actual);
-        maxRequired = Math.max(maxRequired, required);
+        const slotDiff = actual - required;
+
+        if (slotDiff < worstDiff) {
+          worstDiff = slotDiff;
+          worstSlot = slot;
+        }
+
+        if (slotDiff <= -2) {
+          criticalSlots++;
+          shortageSlots++;
+        } else if (slotDiff < 0) {
+          shortageSlots++;
+        }
       }
 
-      if (minActual === Infinity) minActual = 0;
+      if (worstDiff === Infinity) worstDiff = 0;
 
-      const diff = minActual - maxRequired;
+      // 最悪スロットの実際値と必要値を取得
+      const worstActual = halfHourCounts[worstSlot] || 0;
+      const worstRequired = requiredForDay[worstSlot] || 1;
+
+      // 最悪スロットの時刻を文字列化
+      const worstHour = Math.floor(worstSlot / 2);
+      const worstMin = (worstSlot % 2) === 0 ? '00' : '30';
+      const worstSlotTime = `${worstHour}:${worstMin}`;
+
       let status: 'ok' | 'shortage' | 'critical' = 'ok';
-      if (diff <= -2) {
+      if (worstDiff <= -2) {
         status = 'critical';
-      } else if (diff < 0) {
+      } else if (worstDiff < 0) {
         status = 'shortage';
       }
 
       timeBlocks[block.id] = {
-        actual: minActual,
-        required: maxRequired,
+        actual: worstActual,
+        required: worstRequired,
         status,
-        diff
+        diff: worstDiff,
+        shortageSlots,
+        totalSlots,
+        worstSlotTime
       };
     }
 
@@ -2715,21 +2747,30 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                           <div style={{ fontWeight: 'bold', marginBottom: '8px', textAlign: 'center', borderBottom: '1px solid #475569', paddingBottom: '4px' }}>
                             {date.getMonth() + 1}/{date.getDate()}({['日', '月', '火', '水', '木', '金', '土'][day]}) 配置状況
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {TIME_BLOCKS.map(block => {
                               const blockData = timeBlocks[block.id];
                               const statusIcon = blockData?.status === 'critical' ? '🔴' : blockData?.status === 'shortage' ? '🟡' : '🟢';
-                              const diffText = blockData && blockData.diff !== 0 ? `(${blockData.diff > 0 ? '+' : ''}${blockData.diff})` : '';
+                              const hasShortage = blockData && blockData.shortageSlots > 0;
                               return (
-                                <div key={block.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '11px' }}>{block.label}</span>
+                                <div key={block.id} style={{
+                                  padding: '6px',
+                                  backgroundColor: blockData?.status === 'critical' ? 'rgba(239,68,68,0.15)' : blockData?.status === 'shortage' ? 'rgba(250,204,21,0.15)' : 'rgba(52,211,153,0.1)',
+                                  borderRadius: '4px'
+                                }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                                    <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '11px' }}>{statusIcon} {block.label}</span>
                                     <span style={{ color: '#94a3b8', fontSize: '10px' }}>{block.startTime}～{block.endTime}</span>
                                   </div>
-                                  <span>
-                                    {statusIcon} {blockData?.actual || 0}/{blockData?.required || 0}人
-                                    <span style={{ color: blockData?.diff && blockData.diff < 0 ? '#f87171' : '#34d399' }}>{diffText}</span>
-                                  </span>
+                                  {hasShortage ? (
+                                    <div style={{ fontSize: '10px', color: '#f87171' }}>
+                                      不足: {blockData.shortageSlots}/{blockData.totalSlots}枠 （最悪: {blockData.worstSlotTime} {blockData.actual}/{blockData.required}人）
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize: '10px', color: '#34d399' }}>
+                                      充足 ✓
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
