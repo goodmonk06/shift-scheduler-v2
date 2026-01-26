@@ -108,7 +108,7 @@ const STAFF_RAW_DATA = [
   },
   { id: '24', name: '宝本 龍騎', role: 'staff', qualification: '初任者研修', schedule: { '2026-01-01': '10～15', '2026-01-02': '10～15', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '10～15' }, constraints: { defaultShift: '10～14', workDaysPerWeek: 3, fixedTimeOnly: true, breakTime: 0 } },
   { id: '28', name: '宮崎 伸子', role: 'staff', qualification: 'ヘルパー2級', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '25', name: '岩崎 亜友美', role: 'staff', qualification: '有料職員', schedule: { '2026-01-01': '8～17', '2026-01-02': '休', '2026-01-03': '8～17', '2026-01-04': '休', '2026-01-05': '8～17' }, constraints: { offDayOfWeek: [0, 3, 6], defaultShift: '8～17', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '25', name: '岩崎 亜友美', role: 'staff', qualification: '有料職員', schedule: { '2026-01-01': '8～17', '2026-01-02': '休', '2026-01-03': '8～17', '2026-01-04': '休', '2026-01-05': '8～17' }, constraints: { offDayOfWeek: [0, 3, 6], defaultShift: '8～17', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }, isArchived: true },  // 2月退職
   {
     id: '26', name: '伊藤 美穂', role: 'staff', qualification: '初任者研修',
     // 現在勤務できない状態（全日程空白でロック）
