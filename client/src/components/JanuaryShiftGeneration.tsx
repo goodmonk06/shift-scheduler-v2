@@ -3714,6 +3714,8 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
             width: 90px !important;
             min-width: 90px !important;
             max-width: 90px !important;
+            font-size: 10px !important;
+            font-weight: bold !important;
           }
 
           /* 2列目: 資格列 */
