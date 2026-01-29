@@ -133,13 +133,15 @@ export const generatePDFFromHTML = async (
         line-height: 1 !important;
       }
 
-      /* 名前列の幅確保・左寄せ・中央揃え */
+      /* 名前列の幅確保・左寄せ・中央揃え・フォントサイズ */
       .pdf-export-mode thead th:nth-child(1),
       .pdf-export-mode tbody td:nth-child(1) {
         min-width: 150px !important;
         white-space: nowrap !important;
         text-align: left !important;
         vertical-align: middle !important;
+        font-size: 14px !important;
+        font-weight: bold !important;
       }
 
       /* 名前列内のdivも左寄せ */
