@@ -3116,7 +3116,7 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                   return (
                     <tr key={staff.id} className="hover:bg-yellow-50 print:hover:bg-transparent h-12 transition-colors">
                       {/* 氏名列 */}
-                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px] print:text-left print:align-middle">
+                      <td className="border border-slate-600 px-2 text-left whitespace-nowrap font-bold text-slate-800 bg-white sticky left-0 z-10 shadow-lg border-r border-r-slate-600 w-30 min-w-[150px] print:text-left print:align-middle print:text-[11px]">
                         <div className="flex items-center gap-1">
                           <div className="flex flex-col print:hidden">
                             <button
