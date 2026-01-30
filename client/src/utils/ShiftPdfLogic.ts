@@ -140,7 +140,7 @@ export const generatePDFFromHTML = async (
         white-space: nowrap !important;
         text-align: left !important;
         vertical-align: middle !important;
-        font-size: 18px !important;
+        font-size: 22px !important;
         font-weight: bold !important;
       }
 
