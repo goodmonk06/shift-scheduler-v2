@@ -139,7 +139,7 @@ export const generatePDFFromHTML = async (
       /* ========== 行事予定行（1行目） ========== */
       .pdf-export-mode thead tr:first-child th,
       .pdf-export-mode thead tr:first-child td {
-        font-size: 16px !important;
+        font-size: 22px !important;
         font-weight: 600 !important;
         writing-mode: vertical-rl !important;
         text-orientation: mixed !important;
@@ -147,7 +147,7 @@ export const generatePDFFromHTML = async (
 
       /* 行事予定セル内のdiv */
       .pdf-export-mode thead tr:first-child td > div {
-        font-size: 16px !important;
+        font-size: 22px !important;
         line-height: 1.2 !important;
       }
 
