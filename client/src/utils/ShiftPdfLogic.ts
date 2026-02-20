@@ -153,7 +153,7 @@ export const generatePDFFromHTML = async (
 
       /* ========== シフト内容セル（3列目以降） ========== */
       .pdf-export-mode tbody td:nth-child(n+3) {
-        font-size: 20px !important;
+        font-size: 26px !important;
         font-weight: 700 !important;
         padding: 1px !important;
         line-height: 1 !important;
@@ -163,7 +163,7 @@ export const generatePDFFromHTML = async (
       .pdf-export-mode tbody td:nth-child(n+3) div,
       .pdf-export-mode tbody td:nth-child(n+3) span {
         transform: none !important;
-        font-size: 20px !important;
+        font-size: 26px !important;
         line-height: 1 !important;
       }
 
