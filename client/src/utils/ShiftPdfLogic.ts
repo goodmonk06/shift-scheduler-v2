@@ -112,14 +112,48 @@ export const generatePDFFromHTML = async (
         max-width: 80px !important;
       }
 
-      /* テーブル全体のprint:text-[8px]を上書き */
+      /* テーブル全体のベースフォントサイズ */
       .pdf-export-mode table {
-        font-size: 10px !important;
+        font-size: 18px !important;
       }
 
-      /* シフト内容セル（3列目以降）のフォントサイズを大きく太く、枠いっぱいに */
-      .pdf-export-mode tbody td:nth-child(n+3) {
+      /* ========== 日付・曜日ヘッダー（2行目） ========== */
+      .pdf-export-mode thead tr:nth-child(2) th {
+        font-size: 20px !important;
+        font-weight: bold !important;
+      }
+
+      /* 日付の数字 */
+      .pdf-export-mode thead tr:nth-child(2) th span:first-child {
+        font-size: 22px !important;
+        font-weight: bold !important;
+      }
+
+      /* 曜日 */
+      .pdf-export-mode thead tr:nth-child(2) th span:last-child {
+        font-size: 18px !important;
+        font-weight: bold !important;
+        opacity: 1 !important;
+      }
+
+      /* ========== 行事予定行（1行目） ========== */
+      .pdf-export-mode thead tr:first-child th,
+      .pdf-export-mode thead tr:first-child td {
         font-size: 16px !important;
+        font-weight: 600 !important;
+        writing-mode: vertical-rl !important;
+        text-orientation: mixed !important;
+      }
+
+      /* 行事予定セル内のdiv */
+      .pdf-export-mode thead tr:first-child td > div {
+        font-size: 16px !important;
+        line-height: 1.2 !important;
+      }
+
+      /* ========== シフト内容セル（3列目以降） ========== */
+      .pdf-export-mode tbody td:nth-child(n+3) {
+        font-size: 20px !important;
         font-weight: 700 !important;
         padding: 1px !important;
         line-height: 1 !important;
@@ -129,11 +163,11 @@ export const generatePDFFromHTML = async (
       .pdf-export-mode tbody td:nth-child(n+3) div,
       .pdf-export-mode tbody td:nth-child(n+3) span {
         transform: none !important;
-        font-size: 16px !important;
+        font-size: 20px !important;
         line-height: 1 !important;
       }
 
-      /* 名前列の幅確保・左寄せ・中央揃え・フォントサイズ */
+      /* ========== 名前列 ========== */
       .pdf-export-mode thead th:nth-child(1),
       .pdf-export-mode tbody td:nth-child(1) {
         min-width: 150px !important;
@@ -153,6 +187,19 @@ export const generatePDFFromHTML = async (
       /* 名前列内のボタンなどを非表示 */
       .pdf-export-mode tbody td:nth-child(1) button,
       .pdf-export-mode tbody td:nth-child(1) div.print\\:hidden {
+        display: none !important;
+      }
+
+      /* ========== 資格列 ========== */
+      .pdf-export-mode thead th:nth-child(2),
+      .pdf-export-mode tbody td:nth-child(2) {
+        font-size: 16px !important;
+        font-weight: 600 !important;
+      }
+
+      /* ========== print:hidden要素を確実に非表示 ========== */
+      .pdf-export-mode .print\\:hidden,
+      .pdf-export-mode [class*="print:hidden"] {
         display: none !important;
       }
     `;
