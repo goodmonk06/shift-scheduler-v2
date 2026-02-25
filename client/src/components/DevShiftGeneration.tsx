@@ -3242,9 +3242,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
               <button
                 onClick={handleSaveToDB}
                 disabled={isSaving}
-                className={`px-6 py-3 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-base shadow-lg hover:shadow-xl ${
-                  saveMode === 'overwrite' ? 'bg-blue-600' : 'bg-green-600'
-                }`}
+                style={{ backgroundColor: saveMode === 'overwrite' ? '#2563eb' : '#16a34a' }}
+                className="px-6 py-3 text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all text-base shadow-lg hover:shadow-xl"
               >
                 {isSaving ? '保存中...' : saveMode === 'overwrite' && loadedShiftId ? '上書き保存' : '保存'}
               </button>
