@@ -41,6 +41,7 @@ export const generatePDFFromHTML = async (
 ) => {
   // PDF用スタイルタグとDOM変更を追跡する変数
   let pdfStyle: HTMLStyleElement | null = null;
+  let injectedColgroup: Element | null = null;
   const modifiedCells: Array<{ element: HTMLElement; originalText: string }> = [];
   const modifiedStyles: Array<{ element: HTMLElement; originalWidth: string; originalMinWidth: string; originalMaxWidth: string }> = [];
 
@@ -113,9 +114,10 @@ export const generatePDFFromHTML = async (
         max-width: 80px !important;
       }
 
-      /* テーブル全体のベースフォントサイズ */
+      /* テーブル全体のベースフォントサイズ・レイアウト固定 */
       .pdf-export-mode table {
         font-size: 18px !important;
+        table-layout: fixed !important;
       }
 
       /* ========== 日付・曜日ヘッダー（2行目） ========== */
@@ -222,16 +224,34 @@ export const generatePDFFromHTML = async (
     `;
     document.head.appendChild(pdfStyle);
 
-    // 2a. 行事予定行の日付セル（event-date-cell）の幅をJSで直接固定
-    // CSSだけでは他ルールに負けるためinline styleで強制上書き
-    const eventDateCells = element.querySelectorAll('.event-date-cell');
-    eventDateCells.forEach((cell) => {
-      const el = cell as HTMLElement;
-      modifiedStyles.push({ element: el, originalWidth: el.style.width, originalMinWidth: el.style.minWidth, originalMaxWidth: el.style.maxWidth });
-      el.style.width = '70px';
-      el.style.minWidth = '70px';
-      el.style.maxWidth = '70px';
-    });
+    // 2a. table-layout: fixed + colgroup で列幅を確実に固定
+    // table-autoではCSSのwidthはブラウザのレイアウトアルゴリズムに無視されるため
+    // colgroupによる明示的な列幅定義が唯一の確実な方法
+    const table = element.querySelector('table');
+    if (table) {
+      const dateCount = element.querySelectorAll('.event-date-cell').length;
+      const colgroup = document.createElement('colgroup');
+
+      // 氏名列 (150px)
+      const colName = document.createElement('col');
+      colName.style.width = '150px';
+      colgroup.appendChild(colName);
+
+      // 資格列 (80px)
+      const colQual = document.createElement('col');
+      colQual.style.width = '80px';
+      colgroup.appendChild(colQual);
+
+      // 日付列 (70px × 日数)
+      for (let i = 0; i < dateCount; i++) {
+        const col = document.createElement('col');
+        col.style.width = '70px';
+        colgroup.appendChild(col);
+      }
+
+      table.prepend(colgroup);
+      injectedColgroup = colgroup;
+    }
 
     // 2. セル内のテキストを改行処理（tbodyのみ対象、tfootは除外）
     const cells = element.querySelectorAll('tbody td > div');
@@ -318,12 +338,10 @@ export const generatePDFFromHTML = async (
       htmlDiv.classList.remove('shift-cell-content');
     });
 
-    // セル幅を元に戻す
-    modifiedStyles.forEach(({ element: el, originalWidth, originalMinWidth, originalMaxWidth }) => {
-      el.style.width = originalWidth;
-      el.style.minWidth = originalMinWidth;
-      el.style.maxWidth = originalMaxWidth;
-    });
+    // colgroupを削除
+    if (injectedColgroup && injectedColgroup.parentNode) {
+      injectedColgroup.parentNode.removeChild(injectedColgroup);
+    }
 
     // スタイルタグを削除
     if (pdfStyle && pdfStyle.parentNode) {
@@ -345,12 +363,10 @@ export const generatePDFFromHTML = async (
     });
 
     // スタイルタグを削除
-    // セル幅を元に戻す
-    modifiedStyles.forEach(({ element: el, originalWidth, originalMinWidth, originalMaxWidth }) => {
-      el.style.width = originalWidth;
-      el.style.minWidth = originalMinWidth;
-      el.style.maxWidth = originalMaxWidth;
-    });
+    // colgroupを削除
+    if (injectedColgroup && injectedColgroup.parentNode) {
+      injectedColgroup.parentNode.removeChild(injectedColgroup);
+    }
 
     if (pdfStyle && pdfStyle.parentNode) {
       document.head.removeChild(pdfStyle);
