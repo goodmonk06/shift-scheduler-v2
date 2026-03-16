@@ -106,9 +106,9 @@ export const generatePDFFromHTML = async (
         background-color: transparent !important;
       }
 
-      /* 資格列を表示（幅を少し狭く） */
-      .pdf-export-mode th:nth-child(2),
-      .pdf-export-mode td:nth-child(2) {
+      /* 資格列を表示（幅を少し狭く）- tbodyに限定してイベント行の1日列に当たらないようにする */
+      .pdf-export-mode thead th:nth-child(2),
+      .pdf-export-mode tbody td:nth-child(2) {
         display: table-cell !important;
         width: auto !important;
         max-width: 80px !important;
