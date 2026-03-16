@@ -42,6 +42,7 @@ export const generatePDFFromHTML = async (
   // PDF用スタイルタグとDOM変更を追跡する変数
   let pdfStyle: HTMLStyleElement | null = null;
   const modifiedCells: Array<{ element: HTMLElement; originalText: string }> = [];
+  const modifiedStyles: Array<{ element: HTMLElement; originalWidth: string; originalMinWidth: string; originalMaxWidth: string }> = [];
 
   try {
     const element = document.getElementById(elementId);
@@ -221,6 +222,17 @@ export const generatePDFFromHTML = async (
     `;
     document.head.appendChild(pdfStyle);
 
+    // 2a. 行事予定行の日付セル（event-date-cell）の幅をJSで直接固定
+    // CSSだけでは他ルールに負けるためinline styleで強制上書き
+    const eventDateCells = element.querySelectorAll('.event-date-cell');
+    eventDateCells.forEach((cell) => {
+      const el = cell as HTMLElement;
+      modifiedStyles.push({ element: el, originalWidth: el.style.width, originalMinWidth: el.style.minWidth, originalMaxWidth: el.style.maxWidth });
+      el.style.width = '70px';
+      el.style.minWidth = '70px';
+      el.style.maxWidth = '70px';
+    });
+
     // 2. セル内のテキストを改行処理（tbodyのみ対象、tfootは除外）
     const cells = element.querySelectorAll('tbody td > div');
     cells.forEach((div) => {
@@ -306,6 +318,13 @@ export const generatePDFFromHTML = async (
       htmlDiv.classList.remove('shift-cell-content');
     });
 
+    // セル幅を元に戻す
+    modifiedStyles.forEach(({ element: el, originalWidth, originalMinWidth, originalMaxWidth }) => {
+      el.style.width = originalWidth;
+      el.style.minWidth = originalMinWidth;
+      el.style.maxWidth = originalMaxWidth;
+    });
+
     // スタイルタグを削除
     if (pdfStyle && pdfStyle.parentNode) {
       document.head.removeChild(pdfStyle);
@@ -326,6 +345,13 @@ export const generatePDFFromHTML = async (
     });
 
     // スタイルタグを削除
+    // セル幅を元に戻す
+    modifiedStyles.forEach(({ element: el, originalWidth, originalMinWidth, originalMaxWidth }) => {
+      el.style.width = originalWidth;
+      el.style.minWidth = originalMinWidth;
+      el.style.maxWidth = originalMaxWidth;
+    });
+
     if (pdfStyle && pdfStyle.parentNode) {
       document.head.removeChild(pdfStyle);
     }
