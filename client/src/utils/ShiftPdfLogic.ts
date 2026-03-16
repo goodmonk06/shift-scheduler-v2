@@ -167,6 +167,22 @@ export const generatePDFFromHTML = async (
         line-height: 1 !important;
       }
 
+      /* 長いシフトテキストは縮小（26px上書きより高い詳細度） */
+      .pdf-export-mode .long-shift-text {
+        font-size: 16px !important;
+        line-height: 1.1 !important;
+      }
+      .pdf-export-mode .medium-shift-text {
+        font-size: 20px !important;
+      }
+
+      /* 行事予定行の日付セル幅固定（colspan=2でnth-childがずれる問題を修正） */
+      .pdf-export-mode .event-date-cell {
+        width: 70px !important;
+        min-width: 70px !important;
+        max-width: 70px !important;
+      }
+
       /* ========== 名前列 ========== */
       .pdf-export-mode thead th:nth-child(1),
       .pdf-export-mode tbody td:nth-child(1) {

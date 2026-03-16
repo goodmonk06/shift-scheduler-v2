@@ -2984,8 +2984,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
 
                               <div className={`w-full h-full flex items-center justify-center font-semibold ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
                                 <span
-                                  className="inline-block whitespace-nowrap"
-                                  style={{ fontSize: cellData.customText.length > 5 ? '70%' : cellData.customText.length > 3 ? '85%' : undefined }}
+                                  className={`inline-block whitespace-nowrap${cellData.customText.length > 5 ? ' long-shift-text' : cellData.customText.length > 3 ? ' medium-shift-text' : ''}`}
                                 >
                                   {getDisplayText(cellData.customText, cellData.type)}
                                 </span>
