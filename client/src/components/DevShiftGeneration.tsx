@@ -62,7 +62,7 @@ const STAFF_RAW_DATA = [
     schedule: {},
     // 夜勤禁止
     constraints: { randomShifts: ['早', '8～17', '9～18'], forbiddenTypes: ['NIGHT'], breakTime: 1 },
-    isArchived: true  // 退職
+    archivedFrom: '2026-04-01'  // 退職（4月以降非表示）
   },
   { id: '4', name: '松嵜 愛梨', role: 'admin', qualification: 'サ責', schedule: { '2026-01-01': '明', '2026-01-02': '休' }, constraints: { defaultShift: '9～18', breakTime: 1 } },
   {
@@ -84,7 +84,7 @@ const STAFF_RAW_DATA = [
     schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
     // 時間固定、8-10を月1回
     constraints: { workDaysPerMonth: 13, defaultShift: '8～14', monthlyShiftCounts: { '8～10': 1 }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } },
-    isArchived: true  // 退職
+    archivedFrom: '2026-04-01'  // 退職（4月以降非表示）
   },
   { id: '10', name: '足立 洋子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '8～13', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～16' }, constraints: { fixedDayOfWeek: { 1: '9～16', 4: '8～16' }, offDayOfWeek: [0, 2, 3, 5, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   { id: '11', name: '野仲 彩香', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '8半～13半', fixedTimeOnly: true, breakTime: 0 } },
@@ -777,8 +777,17 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
   const dates = useMemo(() => generateDateRange(START_DATE, END_DATE), [START_DATE, END_DATE]);
 
   // 職員リストの並び替え機能（localStorageに保存）
+  // 指定年月時点でアクティブな職員を返すヘルパー
+  const getActiveStaff = (y: number, m: number) => {
+    const shiftStart = new Date(y, m - 1, 1);
+    return STAFF_RAW_DATA.filter(staff => {
+      if ((staff as any).archivedFrom) return shiftStart < new Date((staff as any).archivedFrom);
+      return !staff.isArchived;
+    });
+  };
+
   const [staffList, setStaffList] = useState(() => {
-    const filteredData = STAFF_RAW_DATA.filter(staff => !staff.isArchived);
+    const filteredData = getActiveStaff(year, month);
 
     // localStorageから保存済みの順序を取得
     const savedOrder = localStorage.getItem('devStaffOrder');
@@ -884,9 +893,25 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
     saveStaffOrder(newList);
   };
 
+  // 年月が変わったときに職員リストを再フィルタ
+  useEffect(() => {
+    const filteredData = getActiveStaff(year, month);
+    const savedOrder = localStorage.getItem('devStaffOrder');
+    if (savedOrder) {
+      try {
+        const orderIds = JSON.parse(savedOrder);
+        const ordered = orderIds.map((id: string) => filteredData.find((s: any) => s.id === id)).filter(Boolean);
+        const newStaff = filteredData.filter((s: any) => !orderIds.includes(s.id));
+        setStaffList([...ordered, ...newStaff]);
+        return;
+      } catch (e) { /* ignore */ }
+    }
+    setStaffList(filteredData);
+  }, [year, month]);
+
   // 職員の順序をリセット
   const resetStaffOrder = () => {
-    const originalOrder = STAFF_RAW_DATA.filter(staff => !staff.isArchived);
+    const originalOrder = getActiveStaff(year, month);
     setStaffList(originalOrder);
     localStorage.removeItem('devStaffOrder');
     toast.success('職員の順序をリセットしました');
@@ -3333,6 +3358,13 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           line-height: 1.2 !important;
         }
 
+        /* 行事予定行はcolspan=2で1列目が2列分なので、2番目の子(=1日)以降を同幅に */
+        .pdf-export-mode table thead tr:first-child th:nth-child(n+2):not(.print\\:hidden) {
+          min-width: 70px !important;
+          max-width: 70px !important;
+          width: 70px !important;
+        }
+
         /* PDF Print Styles v3.0 - Updated */
         @media print {
           @page {
@@ -3447,9 +3479,15 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           }
 
           /* 3列目以降: 日付列（統計列は印刷時非表示なので無視） */
-          /* table-fixedでは1行目（行事予定行）が列幅の基準になるため全thead行を対象にする */
           table thead tr th:nth-child(n+3):not([class*="print:hidden"]),
           table tbody tr td:nth-child(n+3):not([class*="print:hidden"]) {
+            width: 22px !important;
+            min-width: 22px !important;
+            max-width: 22px !important;
+          }
+
+          /* 行事予定行はcolspan=2で1列目が2列分なので、2番目の子(=1日)以降を同幅に */
+          table thead tr:first-child th:nth-child(n+2):not([class*="print:hidden"]) {
             width: 22px !important;
             min-width: 22px !important;
             max-width: 22px !important;
