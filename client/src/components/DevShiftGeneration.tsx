@@ -18,11 +18,11 @@ const REQUIRED_HOLIDAYS_FULLTIME = 9; // 正社員の公休数
 const MAX_CONSECUTIVE_WORK_DAYS = 4;  // 最大連勤数
 
 // 正社員IDリスト
-const FULL_TIME_STAFF_IDS = ['2', '3', '4', '5', '6', '7'];
+const FULL_TIME_STAFF_IDS = ['2', '4', '5', '6', '7'];
 // 事務員ID
 const CLERK_STAFF_ID = '27';
 // 管理者ID（9:00-16:00は人数カウント除外）
-const ADMIN_STAFF_IDS = ['2', '3']; // 山口 夕香里、馬渕 尊至
+const ADMIN_STAFF_IDS = ['2']; // 山口 夕香里
 
 // 配置基準マトリクス（曜日別・30分刻み、48分割）
 // インデックス: 0=日曜, 1=月曜, ..., 6=土曜
@@ -61,7 +61,8 @@ const STAFF_RAW_DATA = [
     id: '3', name: '馬渕 尊至', role: 'admin', qualification: '管理者兼サ責',
     schedule: {},
     // 夜勤禁止
-    constraints: { randomShifts: ['早', '8～17', '9～18'], forbiddenTypes: ['NIGHT'], breakTime: 1 }
+    constraints: { randomShifts: ['早', '8～17', '9～18'], forbiddenTypes: ['NIGHT'], breakTime: 1 },
+    isArchived: true  // 退職
   },
   { id: '4', name: '松嵜 愛梨', role: 'admin', qualification: 'サ責', schedule: { '2026-01-01': '明', '2026-01-02': '休' }, constraints: { defaultShift: '9～18', breakTime: 1 } },
   {
@@ -82,7 +83,8 @@ const STAFF_RAW_DATA = [
     id: '9', name: '若森 直子', role: 'staff', qualification: '介護福祉士',
     schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' },
     // 時間固定、8-10を月1回
-    constraints: { workDaysPerMonth: 13, defaultShift: '8～14', monthlyShiftCounts: { '8～10': 1 }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
+    constraints: { workDaysPerMonth: 13, defaultShift: '8～14', monthlyShiftCounts: { '8～10': 1 }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } },
+    isArchived: true  // 退職
   },
   { id: '10', name: '足立 洋子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '8～13', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～16' }, constraints: { fixedDayOfWeek: { 1: '9～16', 4: '8～16' }, offDayOfWeek: [0, 2, 3, 5, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   { id: '11', name: '野仲 彩香', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '8半～13半', fixedTimeOnly: true, breakTime: 0 } },
@@ -2590,9 +2592,14 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
             <div id="grid-wrapper" className={`shift-print-root print:overflow-visible print:h-auto ${printPreview ? 'overflow-visible m-0 p-0 w-full h-auto flex justify-center' : 'h-auto'}`}>
               {/* PDF専用タイトル - 通常時は非表示、PDF出力時のみ表示 */}
               <div className="hidden pdf-title-header">
-                <h1 className="text-2xl font-bold text-center py-4 text-slate-900">
-                  {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
-                </h1>
+                <div className="relative py-4">
+                  <h1 className="text-2xl font-bold text-center text-slate-900">
+                    {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
+                  </h1>
+                  <div className="absolute top-0 right-0 text-xs text-slate-600 font-serif pt-2 pr-1">
+                    作成日：{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                  </div>
+                </div>
               </div>
 
             <table className="min-w-max text-center border-collapse border border-slate-900 text-lg print:text-[8px] font-serif leading-tight relative table-auto mx-auto print:mx-0 print:table-fixed">
@@ -2951,7 +2958,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                               )}
 
                               <div className={`w-full h-full flex items-center justify-center font-semibold ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
-                                <span className={`transform inline-block whitespace-nowrap ${cellData.customText.length > 4 ? 'scale-75' : cellData.customText.length > 2 ? 'scale-90' : 'scale-100'}`}>
+                                <span className={`inline-block whitespace-nowrap ${cellData.customText.length > 5 ? 'text-[70%]' : cellData.customText.length > 3 ? 'text-[85%]' : ''}`}>
                                   {getDisplayText(cellData.customText, cellData.type)}
                                 </span>
                               </div>
@@ -3440,7 +3447,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           }
 
           /* 3列目以降: 日付列（統計列は印刷時非表示なので無視） */
-          table thead tr:nth-child(2) th:nth-child(n+3):not([class*="print:hidden"]),
+          /* table-fixedでは1行目（行事予定行）が列幅の基準になるため全thead行を対象にする */
+          table thead tr th:nth-child(n+3):not([class*="print:hidden"]),
           table tbody tr td:nth-child(n+3):not([class*="print:hidden"]) {
             width: 22px !important;
             min-width: 22px !important;
