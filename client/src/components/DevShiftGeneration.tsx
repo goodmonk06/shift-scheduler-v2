@@ -2642,7 +2642,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                     return (
                       <td
                         key={date.toString()}
-                        className="border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px] cursor-pointer hover:bg-blue-50 print:cursor-default"
+                        className="event-date-cell border border-slate-600 text-[9px] text-slate-700 font-medium p-0.5 bg-slate-50 print:bg-transparent !w-[105px] !min-w-[105px] !max-w-[105px] cursor-pointer hover:bg-blue-50 print:cursor-default"
                         style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
                         onClick={() => {
                           if (!isEditing) {
@@ -2983,7 +2983,10 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                               )}
 
                               <div className={`w-full h-full flex items-center justify-center font-semibold ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
-                                <span className={`inline-block whitespace-nowrap ${cellData.customText.length > 5 ? 'text-[70%]' : cellData.customText.length > 3 ? 'text-[85%]' : ''}`}>
+                                <span
+                                  className="inline-block whitespace-nowrap"
+                                  style={{ fontSize: cellData.customText.length > 5 ? '70%' : cellData.customText.length > 3 ? '85%' : undefined }}
+                                >
                                   {getDisplayText(cellData.customText, cellData.type)}
                                 </span>
                               </div>
@@ -3358,8 +3361,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           line-height: 1.2 !important;
         }
 
-        /* 行事予定行はcolspan=2で1列目が2列分なので、2番目の子(=1日)以降を同幅に */
-        .pdf-export-mode table thead tr:first-child th:nth-child(n+2):not(.print\\:hidden) {
+        /* 行事予定行の日付セル（colspan=2のため通常セレクタでは1日がずれる問題を修正） */
+        .pdf-export-mode .event-date-cell {
           min-width: 70px !important;
           max-width: 70px !important;
           width: 70px !important;
@@ -3486,8 +3489,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
             max-width: 22px !important;
           }
 
-          /* 行事予定行はcolspan=2で1列目が2列分なので、2番目の子(=1日)以降を同幅に */
-          table thead tr:first-child th:nth-child(n+2):not([class*="print:hidden"]) {
+          /* 行事予定行の日付セル（colspan=2のため通常セレクタでは1日がずれる問題を修正） */
+          .event-date-cell {
             width: 22px !important;
             min-width: 22px !important;
             max-width: 22px !important;
