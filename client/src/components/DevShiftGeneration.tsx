@@ -86,7 +86,7 @@ const STAFF_RAW_DATA = [
     constraints: { workDaysPerMonth: 13, defaultShift: '8～14', monthlyShiftCounts: { '8～10': 1 }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } },
     archivedFrom: '2026-04-01'  // 退職（4月以降非表示）
   },
-  { id: '10', name: '足立 洋子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '8～13', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～16' }, constraints: { fixedDayOfWeek: { 1: '9～16', 4: '8～16' }, offDayOfWeek: [0, 2, 3, 5, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '10', name: '足立 洋子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '8～13', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '9～16' }, constraints: { fixedDayOfWeek: { 1: '9～16', 4: '8～16' }, offDayOfWeek: [0, 2, 3, 5, 6], fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }, archivedFrom: '2026-04-01' },
   { id: '11', name: '野仲 彩香', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '8半～13半', fixedTimeOnly: true, breakTime: 0 } },
   { id: '12', name: '桂川 美幸', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '18～20', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '18～20', '2026-01-05': '18～20' }, constraints: { fixedDayOfWeek: { 1: '18～20', 3: '18～20', 5: '18～20', 0: '18～20' }, offDayOfWeek: [2, 4, 6], fixedTimeOnly: true, breakTime: 0 } },
   { id: '13', name: '加藤 広大', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-03': '16～20', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { fixedDayOfWeek: { 3: '11～20', 6: '11～20' }, offDayOfWeek: [2], defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
@@ -101,7 +101,7 @@ const STAFF_RAW_DATA = [
     constraints: { defaultShift: '9～15', workDaysPerMonth: 15, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }
   },
   { id: '19', name: '足立 豊子', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '休', '2026-01-02': '有給', '2026-01-03': '休', '2026-01-04': '休' }, constraints: { defaultShift: '9～17', workDaysPerMonth: 18, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
-  { id: '20', name: '関田 あゆみ', role: 'staff', qualification: '実務者研修', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '9～12', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], fixedDayOfWeek: { 1: '9～15', 2: '9～15', 4: '9～15', 3: '9～16', 5: '9～16' }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  { id: '20', name: '関田 あゆみ', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '9～12', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], fixedDayOfWeek: { 1: '9～15', 2: '9～15', 4: '9～15', 3: '9～16', 5: '9～16' }, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   { id: '21', name: '長山 真梨奈', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '9～12半', '2026-01-03': '9～12半', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { offHolidays: true, offDayOfWeek: [0, 6], defaultShift: '9～13半', fixedTimeOnly: true, breakTime: 0 } },
   { id: '22', name: '近藤 由美子', role: 'staff', qualification: '介護福祉士', schedule: { '2026-01-01': '休', '2026-01-02': '休', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '休' }, constraints: { workDaysPerWeek: 1, defaultShift: '9～13', fixedTimeOnly: true, breakTime: 0 }, isArchived: true },
   {
@@ -781,7 +781,10 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
   const getActiveStaff = (y: number, m: number) => {
     const shiftStart = new Date(y, m - 1, 1);
     return STAFF_RAW_DATA.filter(staff => {
-      if ((staff as any).archivedFrom) return shiftStart < new Date((staff as any).archivedFrom);
+      if ((staff as any).archivedFrom) {
+        const shiftYM = `${y}-${String(m).padStart(2, '0')}-01`;
+        return shiftYM < (staff as any).archivedFrom;
+      }
       return !staff.isArchived;
     });
   };
@@ -2593,7 +2596,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                 </h1>
                 <p className="text-xs text-slate-500 font-medium ml-1">SHIFT SCHEDULE TABLE</p>
               </div>
-              <div className="text-xs text-right">
+              <div className="text-sm text-right">
                 <table className="border-collapse border border-slate-400 inline-table mr-4 shadow-sm bg-white">
                   <tbody>
                     <tr>
@@ -2621,7 +2624,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                   <h1 className="text-2xl font-bold text-center text-slate-900">
                     {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
                   </h1>
-                  <div className="absolute top-0 right-0 text-xs text-slate-600 font-serif pt-2 pr-1">
+                  <div className="absolute top-0 right-0 text-sm text-slate-600 font-serif pt-2 pr-1">
                     作成日：{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                   </div>
                 </div>
