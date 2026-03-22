@@ -2596,7 +2596,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                 </h1>
                 <p className="text-xs text-slate-500 font-medium ml-1">SHIFT SCHEDULE TABLE</p>
               </div>
-              <div className="text-base text-right">
+              <div className="text-lg font-bold text-right">
                 <table className="border-collapse border border-slate-400 inline-table mr-4 shadow-sm bg-white">
                   <tbody>
                     <tr>
@@ -2624,7 +2624,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                   <h1 className="text-2xl font-bold text-center text-slate-900">
                     {START_DATE.getFullYear()}年{START_DATE.getMonth() + 1}月　{FACILITY_NAME}　勤務表
                   </h1>
-                  <div className="absolute top-0 right-0 text-base text-slate-600 font-serif pt-2 pr-1">
+                  <div className="absolute top-0 right-0 text-lg font-bold text-slate-600 font-serif pt-2 pr-1">
                     作成日：{new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                   </div>
                 </div>
