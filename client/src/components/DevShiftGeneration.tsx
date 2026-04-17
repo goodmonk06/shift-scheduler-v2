@@ -112,6 +112,8 @@ const STAFF_RAW_DATA = [
   { id: '24', name: '宝本 龍騎', role: 'staff', qualification: '初任者研修', schedule: { '2026-01-01': '10～15', '2026-01-02': '10～15', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '10～15' }, constraints: { defaultShift: '10～14', workDaysPerWeek: 3, fixedTimeOnly: true, breakTime: 0 } },
   { id: '28', name: '宮崎 伸子', role: 'staff', qualification: 'ヘルパー2級', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   { id: '29', name: '大沢 彩華', role: 'staff', qualification: '初任者研修', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  // 藤野 麻紀子様（休職→復職・2026年5月から）
+  { id: '30', name: '藤野 麻紀子', role: 'staff', qualification: '初任者研修', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }, activeFrom: '2026-05-01' },
   { id: '25', name: '岩崎 亜友美', role: 'staff', qualification: '有料職員', schedule: { '2026-01-01': '8～17', '2026-01-02': '休', '2026-01-03': '8～17', '2026-01-04': '休', '2026-01-05': '8～17' }, constraints: { offDayOfWeek: [0, 3, 6], defaultShift: '8～17', workDaysPerWeek: 4, fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }, isArchived: true },  // 2月退職
   {
     id: '26', name: '伊藤 美穂', role: 'staff', qualification: '初任者研修',
@@ -202,12 +204,111 @@ const getEventName = (date: Date): string => {
   return '';
 };
 
-const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days: number; hours: number; nightCount: number; holidays: number; paidHolidays: number } => {
+// 2026年5月以降は早番を6:00スタートに変更（7:00→6:00）
+const isNewEarlyShiftRule = (year: number, month: number): boolean => {
+  return year > 2026 || (year === 2026 && month >= 5);
+};
+
+const EARLY_SHIFT_START_NEW = 6;
+const EARLY_SHIFT_START_OLD = 7;
+const EARLY_SHIFT_END = 16; // 9時間勤務維持のため終了は16時固定（開始が6なら終了は15、7なら16）
+// 実時刻: 新 6-15, 旧 7-16
+
+const calculateWorkStats = (shifts: any, staffId: string, dates: Date[], year: number, month: number): { days: number; hours: number; nightCount: number; holidays: number; paidHolidays: number } => {
   let days = 0;
   let hours = 0;
   let nightCount = 0;
   let holidays = 0;
   let paidHolidays = 0;
+
+  // 1行分のテキストを処理して hours を増やすヘルパー
+  // 戻り値: { countedAsWork: boolean, kind: 'work'|'night'|'ake'|'off'|'paid'|'free'|'empty' }
+  const processSingleLine = (rawText: string, type: string): { kind: 'work'|'night'|'ake'|'off'|'paid'|'free'|'empty' } => {
+    const text = rawText.trim();
+    if (text === '') return { kind: 'empty' };
+
+    // 有給判定: "有"を含む（有、有給、有/健康など）
+    if (text.includes('有')) return { kind: 'paid' };
+
+    // 休日判定: 休、休職、冬、○休（誕休・生休など末尾"休"）
+    if (text === '休' || text === '休職' || text === '冬' || text.endsWith('休') || type === 'OFF' || type === 'WINTER') {
+      return { kind: 'off' };
+    }
+
+    // 夜勤
+    if (text === '夜' || type === 'NIGHT') {
+      hours += 15;
+      return { kind: 'night' };
+    }
+
+    // 明け
+    if (text === '明') return { kind: 'ake' };
+
+    // free
+    if (text === 'free' || type === 'FREE') return { kind: 'free' };
+
+    // HH:MM～HH:MM
+    const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
+    if (timeMatch) {
+      const start = parseInt(timeMatch[1]) + parseInt(timeMatch[2]) / 60;
+      const end = parseInt(timeMatch[3]) + parseInt(timeMatch[4]) / 60;
+      const grossHours = end - start;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      const netHours = grossHours - breakTime;
+      hours += netHours > 0 ? netHours : 0;
+      return { kind: 'work' };
+    }
+
+    // N～M / N半～M半
+    const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
+    if (match) {
+      let start = parseInt(match[1]); if (match[2] === '半') start += 0.5;
+      let end = parseInt(match[3]); if (match[4] === '半') end += 0.5;
+      const grossHours = end - start;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      const netHours = grossHours - breakTime;
+      hours += netHours > 0 ? netHours : 0;
+      return { kind: 'work' };
+    }
+
+    // 基本シフトのデフォルト（完全一致）
+    if (text === '日' || text === '日A' || text === '日B') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return { kind: 'work' };
+    }
+
+    // 早番: 2026-05以降は 6:00-15:00、以前は 7:00-16:00（どちらも9時間）
+    if (text === '早') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return { kind: 'work' };
+    }
+
+    // 遅番: 11:00-20:00
+    if (text === '遅') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return { kind: 'work' };
+    }
+
+    // typeベースのフォールバック
+    if (type === 'DAY' || type === 'EARLY' || type === 'LATE') {
+      const grossHours = 9;
+      const breakTime = calculateBreakTime(grossHours, staffId);
+      hours += grossHours - breakTime;
+      return { kind: 'work' };
+    }
+
+    // 最終フォールバック（8h）
+    const grossHours = 8;
+    const breakTime = calculateBreakTime(grossHours, staffId);
+    hours += grossHours - breakTime;
+    return { kind: 'work' };
+  };
 
   // すべての日付を集計
   dates.forEach(date => {
@@ -215,120 +316,31 @@ const calculateWorkStats = (shifts: any, staffId: string, dates: Date[]): { days
     const cell = shifts[key];
     if (!cell) return;
 
-    const text = cell.customText || '';
+    const rawText = cell.customText || '';
     const type = cell.type;
 
-    // 空白セルはスキップ
-    if (text === '') {
-      return;
-    }
+    if (rawText === '') return;
 
-    // 有給判定: "有"を含む文字列（有、有給、有/健康など）は有給扱い
-    if (text.includes('有')) {
+    // ダブルワーク対応: 改行区切りで複数の勤務を集計
+    // 例: "・蘇原 9～12\n・各務原 14～18" → 2行それぞれの時間を合算
+    const lines = rawText.split('\n').map((l: string) => l.trim()).filter((l: string) => l !== '');
+    const kinds: string[] = [];
+    lines.forEach((line: string) => {
+      const r = processSingleLine(line, type);
+      kinds.push(r.kind);
+    });
+
+    // 集計ラベル判定（日数・夜勤・休等のカウントは「その日」単位）
+    if (kinds.every(k => k === 'paid')) {
       paidHolidays++;
-      return;
-    }
-
-    // 休日判定: 休、休職、冬（冬休み）
-    if (text === '休' || text === '休職' || text === '冬' || type === 'OFF' || type === 'WINTER') {
+    } else if (kinds.every(k => k === 'off')) {
       holidays++;
-      return;
-    }
-
-    // ここから勤務日の処理 --------------------------------
-
-    // 勤務日数にカウント（明けも含む）
-    days++;
-
-    // 夜勤: 17時間勤務 - 2時間休憩 = 15時間
-    if (text === '夜' || type === 'NIGHT') {
+    } else if (kinds.includes('night')) {
       nightCount++;
-      hours += 15;
-      return;
+      days++;
+    } else if (kinds.includes('work') || kinds.includes('ake') || kinds.includes('free')) {
+      days++;
     }
-
-    // 明け: 勤務日数のみカウント、時間は夜勤に含まれているのでスキップ
-    if (text === '明') {
-      return;
-    }
-
-    // free: 勤務日数のみカウント、時間は0
-    if (text === 'free' || type === 'FREE') {
-      return;
-    }
-
-    // ★★★ カスタム時間入力の処理を先に行う ★★★
-
-    // HH:MM～HH:MM 形式（例: 09:00～18:00）
-    const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
-    if (timeMatch) {
-      const startHour = parseInt(timeMatch[1]);
-      const startMin = parseInt(timeMatch[2]);
-      const endHour = parseInt(timeMatch[3]);
-      const endMin = parseInt(timeMatch[4]);
-      const start = startHour + startMin / 60;
-      const end = endHour + endMin / 60;
-      const grossHours = end - start;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      const netHours = grossHours - breakTime;
-      hours += netHours > 0 ? netHours : 0;
-      return;
-    }
-
-    // N～M や N半～M半 形式（例: 8～14, 8半～13半, 9～15）
-    const match = text.match(/(\d+)(半)?～(\d+)(半)?/);
-    if (match) {
-      let start = parseInt(match[1]);
-      if (match[2] === '半') start += 0.5;
-      let end = parseInt(match[3]);
-      if (match[4] === '半') end += 0.5;
-
-      const grossHours = end - start;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      const netHours = grossHours - breakTime;
-      hours += netHours > 0 ? netHours : 0;
-      return;
-    }
-
-    // ★★★ 以下はカスタム時間がない場合のデフォルト処理 ★★★
-
-    // 基本シフトの時間計算（textが完全一致の場合のみ）
-    // 日・日A・日B: 9:00-18:00 (9時間 - 休憩1時間 = 8時間)
-    if (text === '日' || text === '日A' || text === '日B') {
-      const grossHours = 9;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      hours += grossHours - breakTime;
-      return;
-    }
-
-    // 早番: 7:00-16:00 (9時間 - 休憩1時間 = 8時間)
-    if (text === '早') {
-      const grossHours = 9;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      hours += grossHours - breakTime;
-      return;
-    }
-
-    // 遅番: 11:00-20:00 (9時間 - 休憩1時間 = 8時間)
-    if (text === '遅') {
-      const grossHours = 9;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      hours += grossHours - breakTime;
-      return;
-    }
-
-    // typeベースのデフォルト（textがカスタムでない場合のフォールバック）
-    if (type === 'DAY' || type === 'EARLY' || type === 'LATE') {
-      const grossHours = 9;
-      const breakTime = calculateBreakTime(grossHours, staffId);
-      hours += grossHours - breakTime;
-      return;
-    }
-
-    // どのパターンにもマッチしない場合は8時間とする
-    const grossHours = 8;
-    const breakTime = calculateBreakTime(grossHours, staffId);
-    hours += grossHours - breakTime;
   });
 
   // 時間は小数点第1位で丸める
@@ -379,16 +391,22 @@ const calculateBreakTime = (workHours: number, staffId: string): number => {
 };
 
 
-const parseShiftTime = (text: string, type: string): { start: number; end: number } | null => {
+const parseShiftTime = (text: string, type: string, year?: number, month?: number): { start: number; end: number } | null => {
   // null/undefinedは休みとして扱う
   if (!text) return null;
+
+  // ダブルワーク対応: 改行があれば最初の行（蘇原メイン）で時間帯判定
+  if (text.includes('\n')) {
+    const firstLine = text.split('\n')[0].trim();
+    if (firstLine !== '') return parseShiftTime(firstLine, type, year, month);
+  }
 
   // 夜勤は16時～24時（翌日0時～9時は前日夜勤チェックでカウント）
   if (text === '夜' || type === 'NIGHT') return { start: 16, end: 24 };
   // 「明」は0時～9時勤務
   if (text === '明') return { start: 0, end: 9 };
-  // 休み扱い（配置判定に含めない）
-  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修' || text === 'free' || type === 'FREE') return null;
+  // 休み扱い（配置判定に含めない）- 誕休・生休などの○休もカバー
+  if (text === '休' || type === 'OFF' || text === '' || text === '有' || text === '冬' || text === '研修' || text === 'free' || type === 'FREE' || text.endsWith('休')) return null;
 
   // HH:MM～HH:MM 形式を先にチェック
   const timeMatch = text.match(/(\d+):(\d+)～(\d+):(\d+)/);
@@ -416,7 +434,11 @@ const parseShiftTime = (text: string, type: string): { start: number; end: numbe
   if (text === '日' || type === 'DAY') return { start: 9, end: 18 };
   if (text === '日A') return { start: 8, end: 17 };
   if (text === '日B') return { start: 9, end: 18 };
-  if (text === '早' || type === 'EARLY') return { start: 7, end: 16 };
+  if (text === '早' || type === 'EARLY') {
+    // 2026-05以降は 6:00-15:00、以前は 7:00-16:00
+    const useNew = year !== undefined && month !== undefined && isNewEarlyShiftRule(year, month);
+    return useNew ? { start: 6, end: 15 } : { start: 7, end: 16 };
+  }
   if (text === '遅' || type === 'LATE') return { start: 11, end: 20 };
 
   return { start: 9, end: 18 };
@@ -448,6 +470,9 @@ const formatLabel = (text: string): string => {
 
 const getDisplayText = (text: string, type: string) => {
   if (!text) return '';
+
+  // ダブルワーク等で既に改行で複数行になっている場合はそのまま表示
+  if (text.includes('\n')) return text;
 
   // 優先される記号系（改行処理を適用）
   if (text === '日A') return '日A';
@@ -482,7 +507,7 @@ const TIME_BLOCKS = [
   { id: 'night', label: '夜勤', startSlot: 40, endSlot: 48, startTime: '20時', endTime: '翌9時' },   // 20:00-翌9:00
 ];
 
-const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any => {
+const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[], year: number, month: number): any => {
   const results: any = {};
 
   dates.forEach((date, dateIdx) => {
@@ -526,7 +551,7 @@ const calculateSufficiency = (dates: Date[], shifts: any, staffList: any[]): any
     staffList.forEach(staff => {
       const cell = shifts[`${staff.id}_${dateIso}`];
       if (!cell) return;
-      const time = parseShiftTime(cell.customText, cell.type);
+      const time = parseShiftTime(cell.customText, cell.type, year, month);
       if (!time) return;
 
       let start = time.start;
@@ -780,9 +805,13 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
   // 指定年月時点でアクティブな職員を返すヘルパー
   const getActiveStaff = (y: number, m: number) => {
     const shiftStart = new Date(y, m - 1, 1);
+    const shiftYM = `${y}-${String(m).padStart(2, '0')}-01`;
     return STAFF_RAW_DATA.filter(staff => {
+      // 稼働開始日 (activeFrom) がある場合、それ以降の月のみ表示（例: 復職職員）
+      if ((staff as any).activeFrom && shiftYM < (staff as any).activeFrom) {
+        return false;
+      }
       if ((staff as any).archivedFrom) {
-        const shiftYM = `${y}-${String(m).padStart(2, '0')}-01`;
         return shiftYM < (staff as any).archivedFrom;
       }
       return !staff.isArchived;
@@ -1261,14 +1290,14 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
   const staffStats = useMemo(() => {
     const stats: any = {};
     staffList.forEach(staff => {
-      stats[staff.id] = calculateWorkStats(shifts, staff.id, dates);
+      stats[staff.id] = calculateWorkStats(shifts, staff.id, dates, year, month);
     });
     return stats;
-  }, [shifts, staffList, dates]);
+  }, [shifts, staffList, dates, year, month]);
 
   const sufficiencyData = useMemo(() => {
-    return calculateSufficiency(dates, shifts, staffList);
-  }, [dates, shifts, staffList]);
+    return calculateSufficiency(dates, shifts, staffList, year, month);
+  }, [dates, shifts, staffList, year, month]);
 
   // ====================================================================
   // PDF出力（HTML to Canvas to PDF 方式）
@@ -1580,7 +1609,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
       })).filter((x) => x.cell);
 
       const earlyCells = staffCells.filter((x) =>
-        x.cell.customText === '早' || x.cell.customText === '7～16'
+        x.cell.customText === '早' || x.cell.customText === '7～16' || x.cell.customText === '6～15'
       );
       const earlyCount = earlyCells.length;
 
@@ -1783,7 +1812,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
           const cell = newShifts[`${s.id}_${keySuffix}`];
           return cell && (
             cell.customText === '早' ||
-            cell.customText === '7～16' // 新しい早番
+            cell.customText === '7～16' || // 旧早番
+            cell.customText === '6～15'    // 2026-05以降の早番
           );
         });
 
@@ -1939,7 +1969,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                     const cell = newShifts[`${s.id}_${getIsoDate(date)}`];
                     return cell && (
                       cell.customText === '早' ||
-                      cell.customText === '7～16'
+                      cell.customText === '7～16' ||
+                      cell.customText === '6～15'
                     );
                   });
 
@@ -2987,7 +3018,7 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
 
                               <div className={`w-full h-full flex items-center justify-center font-semibold ${isNightPrint ? 'print:font-extrabold text-base' : ''}`}>
                                 <span
-                                  className={`inline-block whitespace-nowrap${cellData.customText.length > 5 ? ' long-shift-text' : cellData.customText.length > 3 ? ' medium-shift-text' : ''}`}
+                                  className={`inline-block ${cellData.customText.includes('\n') ? 'whitespace-pre-line leading-tight text-[10px]' : 'whitespace-nowrap'}${cellData.customText.length > 5 ? ' long-shift-text' : cellData.customText.length > 3 ? ' medium-shift-text' : ''}`}
                                 >
                                   {getDisplayText(cellData.customText, cellData.type)}
                                 </span>
