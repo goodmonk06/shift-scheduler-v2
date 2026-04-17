@@ -110,7 +110,8 @@ const STAFF_RAW_DATA = [
     isArchived: true  // 2026年3月退職
   },
   { id: '24', name: '宝本 龍騎', role: 'staff', qualification: '初任者研修', schedule: { '2026-01-01': '10～15', '2026-01-02': '10～15', '2026-01-03': '休', '2026-01-04': '休', '2026-01-05': '10～15' }, constraints: { defaultShift: '10～14', workDaysPerWeek: 3, fixedTimeOnly: true, breakTime: 0 } },
-  { id: '28', name: '宮崎 伸子', role: 'staff', qualification: 'ヘルパー2級', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
+  // 宮崎 伸子様：2026-05以降は 蘇原 × 各務原 のダブルワーク（行を2段に分割表示）
+  { id: '28', name: '宮崎 伸子', role: 'staff', qualification: 'ヘルパー2級', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }, dualWorkplace: { primaryLabel: '蘇', secondaryLabel: '各', activeFrom: '2026-05-01' } },
   { id: '29', name: '大沢 彩華', role: 'staff', qualification: '初任者研修', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } } },
   // 藤野 麻紀子様（休職→復職・2026年5月から）
   { id: '30', name: '藤野 麻紀子', role: 'staff', qualification: '初任者研修', schedule: {}, constraints: { defaultShift: '9～18', fixedTimeOnly: true, breakTime: { threshold: 6, duration: 1 } }, activeFrom: '2026-05-01' },
@@ -359,8 +360,9 @@ const getSurname = (fullname: string): string => {
  * @returns 休憩時間
  */
 const calculateBreakTime = (workHours: number, staffId: string): number => {
-  // 職員データから休憩時間ルールを取得
-  const staff = STAFF_RAW_DATA.find(s => s.id === staffId);
+  // ダブルワーク展開時の接尾辞（__P/__S）を除いた元IDで検索
+  const baseStaffId = staffId.replace(/__[PS]$/, '');
+  const staff = STAFF_RAW_DATA.find(s => s.id === baseStaffId);
   const breakTimeRule = staff?.constraints?.breakTime;
 
   if (breakTimeRule !== undefined) {
@@ -375,7 +377,7 @@ const calculateBreakTime = (workHours: number, staffId: string): number => {
       const duration = rule.duration ?? 1;
 
       // 平井様（ID: 16）のみ特殊処理: 6時間以上で休憩30分
-      if (staffId === '16') {
+      if (baseStaffId === '16') {
         return workHours >= threshold ? duration : 0;
       }
 
@@ -803,19 +805,52 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
 
   // 職員リストの並び替え機能（localStorageに保存）
   // 指定年月時点でアクティブな職員を返すヘルパー
+  // ダブルワーク職員（dualWorkplace設定あり）は 2 行に展開する
+  // 展開後の各行は:
+  //   id: 元id + '__P' (蘇原=primary) / '__S' (各務原=secondary)
+  //   name: 元名 + '（蘇）' / '（各）'
+  //   dbName: DBマッチ用の元の名前
+  //   workplaceKind: 'primary' | 'secondary'
   const getActiveStaff = (y: number, m: number) => {
-    const shiftStart = new Date(y, m - 1, 1);
     const shiftYM = `${y}-${String(m).padStart(2, '0')}-01`;
-    return STAFF_RAW_DATA.filter(staff => {
-      // 稼働開始日 (activeFrom) がある場合、それ以降の月のみ表示（例: 復職職員）
-      if ((staff as any).activeFrom && shiftYM < (staff as any).activeFrom) {
-        return false;
-      }
-      if ((staff as any).archivedFrom) {
-        return shiftYM < (staff as any).archivedFrom;
-      }
+    const filtered = STAFF_RAW_DATA.filter(staff => {
+      if ((staff as any).activeFrom && shiftYM < (staff as any).activeFrom) return false;
+      if ((staff as any).archivedFrom) return shiftYM < (staff as any).archivedFrom;
       return !staff.isArchived;
     });
+
+    // ダブルワーク展開
+    const expanded: any[] = [];
+    filtered.forEach(staff => {
+      const dw: any = (staff as any).dualWorkplace;
+      if (dw && (!dw.activeFrom || shiftYM >= dw.activeFrom)) {
+        // 蘇原 (primary)
+        expanded.push({
+          ...staff,
+          id: `${staff.id}__P`,
+          name: `${staff.name}（${dw.primaryLabel}）`,
+          dbName: staff.name,
+          workplaceKind: 'primary' as const,
+          isDualWorkplaceRow: true,
+        });
+        // 各務原 (secondary)
+        expanded.push({
+          ...staff,
+          id: `${staff.id}__S`,
+          name: `${staff.name}（${dw.secondaryLabel}）`,
+          dbName: staff.name,
+          workplaceKind: 'secondary' as const,
+          isDualWorkplaceRow: true,
+        });
+      } else {
+        expanded.push({
+          ...staff,
+          dbName: staff.name,
+          workplaceKind: 'single' as const,
+        });
+      }
+    });
+    return expanded;
   };
 
   const [staffList, setStaffList] = useState(() => {
@@ -985,21 +1020,67 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
     setIsSaving(true);
     try {
       const entries = [];
-      for (const staff of staffList) {
+
+      // ダブルワーク職員（isDualWorkplaceRow=true）は dbName でグループ化してから
+      // primary/secondary の customText を \n 結合して 1 件として保存する
+      const dualWorkGroups: Record<string, any[]> = {};
+      const singleStaffs: any[] = [];
+      for (const s of staffList as any[]) {
+        if (s.isDualWorkplaceRow && s.dbName) {
+          if (!dualWorkGroups[s.dbName]) dualWorkGroups[s.dbName] = [];
+          dualWorkGroups[s.dbName].push(s);
+        } else {
+          singleStaffs.push(s);
+        }
+      }
+
+      // 通常職員
+      for (const staff of singleStaffs) {
         for (const date of dates) {
           const key = `${staff.id}_${getIsoDate(date)}`;
           const cell = shifts[key];
-          // 空欄（customTextが空でtype === 'OFF'）の場合はスキップ
           if (cell && !(cell.type === 'OFF' && !cell.customText)) {
             entries.push({
-              employeeName: staff.name,
-              date: getIsoDate(date), // Full date string YYYY-MM-DD instead of just day number
+              employeeName: (staff as any).dbName || staff.name,
+              date: getIsoDate(date),
               type: cell.type === 'OFF' ? 'holiday' : 'work',
               text: cell.customText,
-              isLocked: cell.isLocked || false, // ロック状態を送信
-              editedInActualMode: cell.editedInActualMode || false, // 実際の稼働シフト編集フラグ
+              isLocked: cell.isLocked || false,
+              editedInActualMode: cell.editedInActualMode || false,
             });
           }
+        }
+      }
+
+      // ダブルワーク職員: 同一dbNameで primary/secondary を結合
+      for (const dbName of Object.keys(dualWorkGroups)) {
+        const group = dualWorkGroups[dbName];
+        const primary = group.find((s: any) => s.workplaceKind === 'primary');
+        const secondary = group.find((s: any) => s.workplaceKind === 'secondary');
+        for (const date of dates) {
+          const dateStr = getIsoDate(date);
+          const pCell = primary ? shifts[`${primary.id}_${dateStr}`] : null;
+          const sCell = secondary ? shifts[`${secondary.id}_${dateStr}`] : null;
+          const pText = pCell?.customText?.trim() || '';
+          const sText = sCell?.customText?.trim() || '';
+
+          // 両方空 または どちらも OFF で text なし → スキップ
+          if (!pText && !sText) continue;
+
+          // 結合: 両方あれば \n 区切り、片方のみなら片方だけ
+          const combinedText = (pText && sText) ? `${pText}\n${sText}` : (pText || sText);
+          // 両方 OFF なら off として扱う（text が入っていれば work）
+          const bothOff = pCell && sCell && pCell.type === 'OFF' && sCell.type === 'OFF' && !pText && !sText;
+          const anyWork = (pCell && pCell.type !== 'OFF') || (sCell && sCell.type !== 'OFF') || pText || sText;
+
+          entries.push({
+            employeeName: dbName,
+            date: dateStr,
+            type: anyWork ? 'work' : 'holiday',
+            text: combinedText,
+            isLocked: (pCell?.isLocked || sCell?.isLocked) || false,
+            editedInActualMode: (pCell?.editedInActualMode || sCell?.editedInActualMode) || false,
+          });
         }
       }
 
@@ -1160,15 +1241,14 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
         let unmatchedEmployees: string[] = [];
 
         for (const detail of shiftData.shiftDetails) {
-          // employeeIdからstaff情報を検索
-          const staff = staffList.find(s => {
-            // 名前で検索（スペースを正規化して比較）
-            const detailName = detail.employee?.name?.replace(/\s+/g, ' ').trim();
-            const staffName = s.name?.replace(/\s+/g, ' ').trim();
-            return detailName === staffName;
+          // employeeIdからstaff情報を検索（ダブルワーク職員は dbName で名寄せ）
+          const detailName = detail.employee?.name?.replace(/\s+/g, ' ').trim();
+          const matchedStaffs = staffList.filter((s: any) => {
+            const targetName = (s.dbName || s.name || '').replace(/\s+/g, ' ').trim();
+            return detailName === targetName;
           });
 
-          if (!staff) {
+          if (matchedStaffs.length === 0) {
             if (detail.employee?.name && !unmatchedEmployees.includes(detail.employee.name)) {
               unmatchedEmployees.push(detail.employee.name);
             }
@@ -1177,26 +1257,19 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
 
           matchedCount++;
 
-          // 日付をパース (YYYY-MM-DD形式)
-          // 開発専用シフト：すべての日付をコピー
           const dateStr = detail.date;
-          const key = `${staff.id}_${dateStr}`;
 
           // displayTextを優先、なければフォールバック
           let customText = '';
           if (detail.displayText) {
-            // displayTextがあればそれを使用（元の表示をそのまま復元）
             customText = detail.displayText;
           } else if (detail.status === 'off') {
-            // leaveTypeがない場合は空文字列（空欄として扱う）
             customText = detail.leaveType || '';
           } else if (detail.timeSlot) {
             customText = detail.timeSlot.displayLabel || detail.timeSlot.name || '';
           } else if (detail.startTime && detail.endTime) {
-            // timeSlotがnullでもstartTime/endTimeから復元
-            const start = detail.startTime.substring(0, 5); // "HH:MM"
+            const start = detail.startTime.substring(0, 5);
             const end = detail.endTime.substring(0, 5);
-            // "08:30～13:00" → "8半～13" のような形式に変換
             const startHour = parseInt(start.split(':')[0]);
             const startMin = start.split(':')[1];
             const endHour = parseInt(end.split(':')[0]);
@@ -1204,20 +1277,33 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
             customText = `${startStr}～${endHour}`;
           }
 
-          // generatedByからロック状態を判定
           const isLocked = detail.generatedBy === 'leave_request' || detail.generatedBy === 'work_preference';
-
-          newShifts[key] = {
+          const baseCell = {
             type: detail.status === 'off' ? 'OFF' : 'WORK',
-            customText: customText,
-            backgroundColor: undefined, // デフォルトの色を使用
-            isLocked: isLocked, // ロック状態を設定
-            editedInActualMode: detail.editedInActualMode || false, // 実際の稼働シフト編集フラグ
+            backgroundColor: undefined,
+            isLocked,
+            editedInActualMode: detail.editedInActualMode || false,
           };
 
-          // デバッグ: ロックされたセルをログ出力
+          // ダブルワーク: displayText を \n で分割して primary/secondary に振り分け
+          if (matchedStaffs.length > 1 && matchedStaffs.some((s: any) => s.isDualWorkplaceRow)) {
+            const lines = (customText || '').split('\n');
+            const primaryText = (lines[0] ?? '').trim();
+            const secondaryText = (lines[1] ?? '').trim();
+            matchedStaffs.forEach((s: any) => {
+              const line = s.workplaceKind === 'primary' ? primaryText : secondaryText;
+              const key = `${s.id}_${dateStr}`;
+              newShifts[key] = { ...baseCell, customText: line };
+            });
+          } else {
+            // 通常職員 or ダブルワーク展開前月（行は1本のみ）
+            const staff: any = matchedStaffs[0];
+            const key = `${staff.id}_${dateStr}`;
+            newShifts[key] = { ...baseCell, customText };
+          }
+
           if (isLocked) {
-            console.log('[DevShiftGeneration] Locked cell found:', { key, generatedBy: detail.generatedBy, customText, isLocked });
+            console.log('[DevShiftGeneration] Locked cell found:', { detailName, dateStr, customText, isLocked });
           }
         }
 

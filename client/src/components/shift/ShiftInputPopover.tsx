@@ -475,24 +475,20 @@ export function ShiftInputPopover({
             <div className="space-y-3">
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <textarea
+                  <input
                     id="custom-shift-input"
-                    rows={2}
-                    className="w-full border-2 border-slate-300 rounded-lg pl-3 pr-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow resize-y"
-                    placeholder="入力 (Wワークは Shift+Enter で2段目)"
+                    type="text"
+                    className="w-full border-2 border-slate-300 rounded-lg pl-3 pr-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                    placeholder="入力..."
                     defaultValue={popoverState.currentValue?.customText || ''}
                     onKeyDown={(e) => {
-                      // Enter単独=保存 / Shift+Enter=改行
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSaveShift({ type: 'DAY', customText: (e.target as HTMLTextAreaElement).value });
-                      }
+                      if (e.key === 'Enter') handleSaveShift({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
                     }}
                   />
                 </div>
                 <button
                   onClick={() => {
-                    const input = document.getElementById('custom-shift-input') as HTMLTextAreaElement;
+                    const input = document.getElementById('custom-shift-input') as HTMLInputElement;
                     if (input && input.value) {
                       handleSaveShift({ type: 'DAY', customText: input.value });
                     }
@@ -501,22 +497,6 @@ export function ShiftInputPopover({
                 >
                   保存
                 </button>
-              </div>
-              {/* Wワーク（ダブルワーク）テンプレート */}
-              <div className="flex gap-2 items-center flex-wrap">
-                <button
-                  onClick={() => {
-                    const input = document.getElementById('custom-shift-input') as HTMLTextAreaElement;
-                    if (input) {
-                      input.value = '・蘇原 \n・各務原 ';
-                      input.focus();
-                    }
-                  }}
-                  className="px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-300 rounded-lg hover:bg-indigo-100 transition-all"
-                >
-                  Wワーク2段テンプレ
-                </button>
-                <span className="text-[10px] text-slate-500">例: ・蘇原 9～12 / ・各務原 14～18</span>
               </div>
               <div className="flex justify-center">
                 <button
