@@ -3032,7 +3032,8 @@ export function DevShiftGeneration({ year, month, initialShiftId, onUnsavedChang
                           styles.color = '#000000';
                           styles.backgroundColor = isLockedAndActive ? '#ffffff' : '#ffffff';
                         }
-                        else if (cellData.customText === '早' || cellData.customText.startsWith('7')) {
+                        else if (cellData.customText === '早' || cellData.customText.startsWith('7') || cellData.customText.startsWith('6')) {
+                          // 2026-05以降は6時始業も早番（同じ緑）
                           styles.color = '#1f2937';
                           styles.backgroundColor = isLockedAndActive ? '#6ee7b7' : '#86efac'; // Green 300（濃く）
                         }

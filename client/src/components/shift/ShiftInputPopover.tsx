@@ -482,7 +482,10 @@ export function ShiftInputPopover({
                     placeholder="入力..."
                     defaultValue={popoverState.currentValue?.customText || ''}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveShift({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
+                      // IME変換中のEnterは無視（isComposing or keyCode=229）
+                      if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                        handleSaveShift({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
+                      }
                     }}
                   />
                 </div>

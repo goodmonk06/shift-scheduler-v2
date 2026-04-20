@@ -2611,7 +2611,10 @@ export function JanuaryShiftGeneration({ initialShiftId, onUnsavedChanges }: Jan
                         placeholder="入力..."
                         defaultValue={popoverState.currentValue.customText}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveShiftChange({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
+                          // IME変換中のEnterは無視（isComposing or keyCode=229）
+                          if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                            saveShiftChange({ type: 'DAY', customText: (e.target as HTMLInputElement).value });
+                          }
                         }}
                       />
                     </div>
